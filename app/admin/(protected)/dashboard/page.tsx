@@ -1,125 +1,127 @@
 
 'use client';
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { getOrders, getCakes } from "@/services/cake-service";
-import type { Order, Cake } from "@/lib/types";
-import { useEffect, useState } from "react";
-import { formatPrice } from "@/lib/utils";
-import { DollarSign, ShoppingCart, Users, Package } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle } from "lucide-react";
+
+import { useEffect, useState } from 'react';
+import { getDashboardData } from '@/services/hotel-service';
+import type { DashboardData } from '@/lib/types';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Skeleton } from '@/components/ui/skeleton';
+import { DollarSign, ArrowDownRight, TrendingUp } from 'lucide-react';
+import { formatPrice } from '@/lib/utils';
 
 export default function DashboardPage() {
-    const [orders, setOrders] = useState<Order[]>([]);
-    const [cakes, setCakes] = useState<Cake[]>([]);
+    const [data, setData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const { toast } = useToast();
 
     useEffect(() => {
-        async function fetchData() {
-            setLoading(true);
-            setError(null);
-            try {
-                const [ordersData, cakesData] = await Promise.all([getOrders(), getCakes()]);
-                setOrders(ordersData);
-                setCakes(cakesData);
-            } catch (err) {
-                const errorMessage = err instanceof Error ? err.message : "An unknown error occurred.";
-                setError(errorMessage);
-                toast({
-                    variant: "destructive",
-                    title: "Failed to load dashboard data",
-                    description: errorMessage,
-                });
-            } finally {
-                setLoading(false);
-            }
-        }
+        const fetchData = async () => {
+            const result = await getDashboardData();
+            setData(result);
+            setLoading(false);
+        };
         fetchData();
     }, []);
 
-    const totalRevenue = orders.reduce((sum, order) => sum + order.total_price, 0);
-    const totalOrders = orders.length;
-    const totalCakes = cakes.length;
-    const uniqueCustomers = new Set(orders.map(o => o.customer_phone)).size;
-
-    if (loading) {
-        return (
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-                <Card><CardHeader><Skeleton className="h-6 w-2/3" /></CardHeader><CardContent><Skeleton className="h-8 w-1/2" /></CardContent></Card>
-                <Card><CardHeader><Skeleton className="h-6 w-2/3" /></CardHeader><CardContent><Skeleton className="h-8 w-1/2" /></CardContent></Card>
-                <Card><CardHeader><Skeleton className="h-6 w-2/3" /></CardHeader><CardContent><Skeleton className="h-8 w-1/2" /></CardContent></Card>
-                <Card><CardHeader><Skeleton className="h-6 w-2/3" /></CardHeader><CardContent><Skeleton className="h-8 w-1/2" /></CardContent></Card>
+    if (loading || !data) {
+        return <div className="p-8 space-y-4">
+            <div className="grid gap-4 md:grid-cols-3">
+                <Skeleton className="h-32 w-full" />
+                <Skeleton className="h-32 w-full" />
+                <Skeleton className="h-32 w-full" />
             </div>
-        );
+            <Skeleton className="h-[400px] w-full" />
+        </div>;
     }
 
-    if (error) {
-        return (
-            <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Loading Error</AlertTitle>
-                <AlertDescription>
-                    {error} Your session may have expired. Please try refreshing the page or logging out and back in.
-                </AlertDescription>
-            </Alert>
-        )
-    }
-    
+    const chartData = data.moduleStats.map(s => ({
+        name: s.module.charAt(0).toUpperCase() + s.module.slice(1),
+        revenue: s.sales,
+        profit: s.profit
+    }));
+
     return (
-        <div>
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="space-y-6">
+            <div className="flex flex-col gap-2">
+                <h1 className="text-3xl font-bold tracking-tight">Financial Overview</h1>
+                <p className="text-muted-foreground">Detailed Profit & Loss analysis for Wamaghach Kahua-ini Hotel.</p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{formatPrice(totalRevenue)}</div>
-                        <p className="text-xs text-muted-foreground">From all sales</p>
+                        <div className="text-2xl font-bold">{formatPrice(data.totalRevenue)}</div>
+                        <p className="text-xs text-muted-foreground">Accumulated across all modules today</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-                        <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium">Total Operating Costs</CardTitle>
+                        <ArrowDownRight className="h-4 w-4 text-destructive" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">+{totalOrders}</div>
-                        <p className="text-xs text-muted-foreground">Total orders placed</p>
+                        <div className="text-2xl font-bold">{formatPrice(data.totalCosts)}</div>
+                        <p className="text-xs text-muted-foreground">Inventory & material expenses</p>
                     </CardContent>
                 </Card>
-                <Card>
+                <Card className="bg-primary/5 border-primary/20">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Customers</CardTitle>
-                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium">Net Profit</CardTitle>
+                        <TrendingUp className="h-4 w-4 text-primary" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">+{uniqueCustomers}</div>
-                        <p className="text-xs text-muted-foreground">Unique customers</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Products</CardTitle>
-                        <Package className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{totalCakes}</div>
-                        <p className="text-xs text-muted-foreground">Different cakes available</p>
+                        <div className="text-2xl font-bold text-primary">{formatPrice(data.totalProfit)}</div>
+                        <p className="text-xs text-muted-foreground">Real-time bottom line</p>
                     </CardContent>
                 </Card>
             </div>
-            <div className="mt-6">
-                <Card>
+
+            <div className="grid gap-4 md:grid-cols-7">
+                <Card className="col-span-4">
                     <CardHeader>
-                        <CardTitle>Welcome Admin!</CardTitle>
+                        <CardTitle>Revenue by Module</CardTitle>
+                        <CardDescription>Comparison of sales performance across hotel services.</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <p>This is your central hub for managing WhiskeDelights. You can view recent orders, manage your cakes and special offers, and see key statistics about your store. Use the navigation on the left to get started.</p>
+                    <CardContent className="pl-2">
+                        <div className="h-[350px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={chartData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} />
+                                    <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `Ksh${value}`} />
+                                    <Tooltip 
+                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                                        formatter={(value: number) => [formatPrice(value), '']}
+                                    />
+                                    <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="col-span-3">
+                    <CardHeader>
+                        <CardTitle>Profit Distribution</CardTitle>
+                        <CardDescription>Performance breakdown by module.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {data.moduleStats.map((stat) => (
+                            <div key={stat.module} className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                    <p className="text-sm font-medium leading-none capitalize">{stat.module}</p>
+                                    <p className="text-xs text-muted-foreground">{stat.orders} transactions</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-sm font-bold">{formatPrice(stat.profit)}</p>
+                                    <p className="text-[10px] text-muted-foreground">Margin: {stat.sales ? Math.round((stat.profit / stat.sales) * 100) : 0}%</p>
+                                </div>
+                            </div>
+                        ))}
                     </CardContent>
                 </Card>
             </div>

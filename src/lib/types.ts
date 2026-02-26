@@ -1,128 +1,52 @@
 
+export type HotelModule = 'restaurant' | 'bar' | 'carwash' | 'accommodation';
 
-export interface Cake {
+export interface Product {
   id: string;
   name: string;
   description: string;
-  base_price: number;
-  image_data_uri?: string | null;
-  rating: number;
   category: string;
-  orders_count: number;
-  ready_time: string;
-  defaultFlavorId?: string;
-  customizable: boolean;
-}
-
-export interface SpecialOffer {
-  cake: Cake;
-  discount_percentage: number;
-  original_price: number;
-  special_price: number;
-  savings: number;
-}
-
-export interface Flavor {
-  id: string;
-  name: string;
-  description?: string;
+  module: HotelModule;
   price: number;
-  color?: string;
+  costPrice: number;
+  stock: number;
+  minStockLevel: number;
+  unit: string;
+  image_data_uri?: string | null;
 }
 
-export interface Size {
-  id: string;
-  name:string;
-  serves: string;
-  price: number;
-}
-
-export interface Color {
-  id: string;
-  name: string;
-  hex_value: string;
-  price: number;
-}
-
-export interface Topping {
-  id: string;
-  name: string;
-  price: number;
-}
-
-export interface CustomizationOptions {
-  flavors: Flavor[];
-  sizes: Size[];
-  colors: Color[];
-  toppings: Topping[];
-}
-
-export type CustomizationCategory = 'flavors' | 'sizes' | 'colors' | 'toppings';
-
-export type CustomizationData = Flavor | Size | Color | Topping;
-
-export interface Customizations {
-  flavor: string | null;
-  size: string | null;
-  color: string | null;
-  toppings: string[];
-}
-
-export interface DeliveryInfo {
-  name: string;
-  phone: string;
-  address: string;
-  delivery_date: string;
-  delivery_time: string;
-  delivery_method: 'delivery' | 'pickup';
-  pickup_location: string;
-  special_instructions: string;
-  coordinates: { lat: number; lng: number } | null;
-}
-
-export interface CartItem {
-  id: string; // Unique ID for each cart item instance
+export interface SaleItem {
+  productId: string;
   name: string;
   quantity: number;
-  price: number; // Final price per item, including customizations
-  image_data_uri?: string | null;
-  cakeId: string;
-  customizations?: Customizations;
+  price: number;
+  total: number;
 }
 
-export interface OrderPayload {
-    items: CartItem[];
-    deliveryInfo: DeliveryInfo;
-    totalPrice: number;
-    depositAmount: number;
+export interface Transaction {
+  id: string;
+  orderNumber: string;
+  module: HotelModule;
+  items: SaleItem[];
+  totalAmount: number;
+  totalCost: number;
+  timestamp: string;
+  paymentMethod: 'cash' | 'mpesa' | 'card';
+  customerName?: string;
 }
 
-export interface Order {
-  id: number;
-  order_number: string;
-  customer_name: string;
-  customer_phone: string;
-  delivery_method: 'delivery' | 'pickup';
-  delivery_address?: string;
-  latitude?: number;
-  longitude?: number;
-  pickup_location?: string;
-  delivery_date?: string;
-  special_instructions?: string;
-  total_price: number;
-  deposit_amount: number;
-  payment_status: 'pending' | 'paid';
-  order_status: 'processing' | 'complete' | 'cancelled';
-  created_at: string; // ISO date string
-  items: CartItem[];
+export interface ModuleStats {
+  module: HotelModule;
+  sales: number;
+  costs: number;
+  profit: number;
+  orders: number;
 }
 
-export interface LoginCredentials {
-    email: string;
-    password: string;
-}
-
-export interface SpecialOfferUpdatePayload {
-    cake_id: string;
-    discount_percentage: number;
+export interface DashboardData {
+  totalRevenue: number;
+  totalCosts: number;
+  totalProfit: number;
+  moduleStats: ModuleStats[];
+  recentTransactions: Transaction[];
 }

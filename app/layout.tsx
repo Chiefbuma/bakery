@@ -1,12 +1,11 @@
+
 import type { Metadata } from 'next';
-import Script from 'next/script';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
-import { CartProvider } from '@/hooks/use-cart';
 
 export const metadata: Metadata = {
-  title: 'WhiskeDelights',
-  description: 'Premium Artisan Cakes & Custom Creations',
+  title: 'Wamaghach Kahua-ini Hotel | Management System',
+  description: 'Premium Hotel Management, POS, and Inventory System',
 };
 
 export default function RootLayout({
@@ -21,14 +20,10 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400..900&display=swap" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-        <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <CartProvider>
-          {children}
-          <Toaster />
-        </CartProvider>
-        <Script src="https://js.paystack.co/v1/inline.js" strategy="beforeInteractive" />
+        {children}
+        <Toaster />
       </body>
     </html>
   );
