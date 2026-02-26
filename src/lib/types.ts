@@ -1,5 +1,5 @@
 
-export type HotelModule = 'restaurant' | 'bar' | 'carwash' | 'accommodation';
+export type HotelModule = 'restaurant' | 'bar' | 'carwash' | 'accommodation' | 'general';
 
 export interface Product {
   id: string;
@@ -8,11 +8,31 @@ export interface Product {
   category: string;
   module: HotelModule;
   price: number;
-  costPrice: number;
+  costPrice: number; // Unit cost to produce/provide
   stock: number;
   minStockLevel: number;
   unit: string;
   image_url: string;
+}
+
+export interface Supply {
+  id: string;
+  name: string;
+  category: string;
+  module: HotelModule;
+  quantity: number;
+  unit: string;
+  unitCost: number;
+  lastPurchased: string;
+}
+
+export interface Expense {
+  id: string;
+  category: 'salary' | 'utility' | 'maintenance' | 'rent' | 'miscellaneous' | 'garbage';
+  amount: number;
+  description: string;
+  date: string;
+  module: HotelModule;
 }
 
 export interface SaleItem {
@@ -20,6 +40,7 @@ export interface SaleItem {
   name: string;
   quantity: number;
   price: number;
+  costPrice: number; // Captured at time of sale for P&L accuracy
   total: number;
 }
 
@@ -48,8 +69,9 @@ export interface ModuleStats {
 
 export interface DashboardData {
   totalRevenue: number;
-  totalCosts: number;
-  totalProfit: number;
+  totalCOGS: number;
+  totalExpenses: number;
+  netProfit: number;
   moduleStats: ModuleStats[];
   recentTransactions: Transaction[];
 }
