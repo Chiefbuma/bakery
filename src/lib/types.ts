@@ -12,7 +12,7 @@ export interface Product {
   stock: number;
   minStockLevel: number;
   unit: string;
-  image_data_uri?: string | null;
+  image_url: string;
 }
 
 export interface SaleItem {
@@ -31,8 +31,11 @@ export interface Transaction {
   totalAmount: number;
   totalCost: number;
   timestamp: string;
-  paymentMethod: 'cash' | 'mpesa' | 'card';
+  paymentMethod: 'cash' | 'mpesa' | 'card' | 'none';
+  status: 'paid' | 'pending';
   customerName?: string;
+  amountReceived?: number;
+  balance?: number;
 }
 
 export interface ModuleStats {
