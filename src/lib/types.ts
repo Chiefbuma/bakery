@@ -1,5 +1,5 @@
 
-export type HotelModule = 'restaurant' | 'bar' | 'carwash' | 'accommodation' | 'general';
+export type HotelModule = 'restaurant' | 'bar' | 'carwash' | 'accommodation' | 'entertainment' | 'general';
 
 export interface Product {
   id: string;

@@ -126,7 +126,7 @@ export default function InventoryPage() {
                             <Input placeholder="Search..." className="pl-8" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                         </div>
                         <Select value={activeModule} onValueChange={(v) => setActiveModule(v as any)}>
-                            <SelectTrigger className="w-[150px]">
+                            <SelectTrigger className="w-[180px]">
                                 <SelectValue placeholder="All Modules" />
                             </SelectTrigger>
                             <SelectContent>
@@ -135,6 +135,7 @@ export default function InventoryPage() {
                                 <SelectItem value="bar">Bar</SelectItem>
                                 <SelectItem value="carwash">Car Wash</SelectItem>
                                 <SelectItem value="accommodation">Accommodation</SelectItem>
+                                <SelectItem value="entertainment">Entertainment</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -167,17 +168,19 @@ export default function InventoryPage() {
                                     </TableHeader>
                                     <TableBody>
                                         {filteredProducts.map((p) => {
-                                            const low = p.stock <= p.minStockLevel && p.module !== 'carwash';
+                                            const low = p.stock <= p.minStockLevel && p.module !== 'carwash' && p.module !== 'entertainment';
                                             return (
                                                 <TableRow key={p.id}>
                                                     <TableCell className="font-bold">{p.name}</TableCell>
                                                     <TableCell><Badge variant="outline" className="capitalize">{p.module}</Badge></TableCell>
                                                     <TableCell>{formatPrice(p.costPrice)}</TableCell>
                                                     <TableCell>{formatPrice(p.price)}</TableCell>
-                                                    <TableCell className={low ? 'text-destructive font-bold' : ''}>{p.stock} {p.unit}</TableCell>
+                                                    <TableCell className={low ? 'text-destructive font-bold' : ''}>
+                                                        {(p.module === 'carwash' || p.module === 'entertainment') ? '∞' : `${p.stock} ${p.unit}`}
+                                                    </TableCell>
                                                     <TableCell>{low ? <Badge variant="destructive">Low</Badge> : <Badge variant="secondary" className="bg-green-100 text-green-800">OK</Badge>}</TableCell>
                                                     <TableCell className="text-right">
-                                                        <Button variant="outline" size="sm" onClick={() => handleUpdateStock(p.id, 10)}>
+                                                        <Button variant="outline" size="sm" onClick={() => handleUpdateStock(p.id, 10)} disabled={p.module === 'carwash' || p.module === 'entertainment'}>
                                                             <PackagePlus className="h-4 w-4" />
                                                         </Button>
                                                     </TableCell>
@@ -247,6 +250,7 @@ export default function InventoryPage() {
                                         <SelectItem value="bar">Bar</SelectItem>
                                         <SelectItem value="carwash">Car Wash</SelectItem>
                                         <SelectItem value="accommodation">Accommodation</SelectItem>
+                                        <SelectItem value="entertainment">Entertainment</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -256,7 +260,7 @@ export default function InventoryPage() {
                             <div className="space-y-2"><Label>Cost per Unit (Ksh)</Label><Input name="costPrice" type="number" required /></div>
                         </div>
                         <div className="grid grid-cols-3 gap-4">
-                            <div className="space-y-2"><Label>Stock</Label><Input name="stock" type="number" required /></div>
+                            <div className="space-y-2"><Label>Initial Stock</Label><Input name="stock" type="number" required /></div>
                             <div className="space-y-2"><Label>Min Level</Label><Input name="minStockLevel" type="number" required /></div>
                             <div className="space-y-2"><Label>Unit (e.g. Kg)</Label><Input name="unit" required /></div>
                         </div>
@@ -284,6 +288,7 @@ export default function InventoryPage() {
                                         <SelectItem value="bar">Bar</SelectItem>
                                         <SelectItem value="carwash">Car Wash</SelectItem>
                                         <SelectItem value="accommodation">Accommodation</SelectItem>
+                                        <SelectItem value="entertainment">Entertainment</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

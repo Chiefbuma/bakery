@@ -3,11 +3,11 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarTrigger } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LayoutDashboard, Hotel, Package, LogOut, Home, Loader2, CreditCard, Receipt } from "lucide-react";
+import { LayoutDashboard, Hotel, Package, LogOut, Loader2, CreditCard, Receipt } from "lucide-react";
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 export default function AdminProtectedLayout({
   children,
@@ -17,8 +17,6 @@ export default function AdminProtectedLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-
-  const isPOS = pathname === '/admin/pos';
 
   useEffect(() => {
     setIsCheckingAuth(false);
@@ -32,61 +30,55 @@ export default function AdminProtectedLayout({
     return <div className="flex min-h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
   }
 
+  const navItems = [
+    { label: 'POS Terminal', href: '/admin/pos', icon: CreditCard },
+    { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+    { label: 'Inventory', href: '/admin/inventory', icon: Package },
+    { label: 'Expenses', href: '/admin/expenses', icon: Receipt },
+  ];
+
   return (
-    <SidebarProvider defaultOpen={!isPOS}>
-      <div className="flex min-h-screen bg-muted/40 w-full">
-        {!isPOS && (
-          <Sidebar collapsible="icon" className="border-r">
-            <SidebarHeader className="h-14 flex items-center justify-center">
-               <Link href="/" className="flex items-center gap-2 font-bold text-lg text-primary">
-                  <Hotel className="h-6 w-6" />
-                  <span className="group-data-[collapsible=icon]:hidden">Wamaghach</span>
-               </Link>
-            </SidebarHeader>
-            <SidebarContent className="p-2">
-              <SidebarMenu>
-                <SidebarMenuItem>
-                   <SidebarMenuButton asChild isActive={pathname === '/admin/dashboard'}>
-                      <Link href="/admin/dashboard"><LayoutDashboard /><span>Dashboard</span></Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/admin/pos'}>
-                      <Link href="/admin/pos"><CreditCard /><span>POS Terminal</span></Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/admin/inventory'}>
-                      <Link href="/admin/inventory"><Package /><span>Inventory</span></Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/admin/expenses'}>
-                      <Link href="/admin/expenses"><Receipt /><span>Expenses</span></Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarContent>
-            <SidebarFooter className="p-2">
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                      <SidebarMenuButton tooltip="Logout" onClick={handleLogout}><LogOut /><span>Logout</span></SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-            </SidebarFooter>
-          </Sidebar>
-        )}
-        <main className="flex-1 flex flex-col min-w-0">
-           <header className="flex h-14 items-center gap-4 border-b bg-background px-6">
-                {!isPOS && <SidebarTrigger className="md:hidden" />}
-                <div className="flex-1"><h1 className="text-lg font-semibold">{isPOS ? 'POS Terminal' : 'Wamaghach Executive'}</h1></div>
-                <Avatar><AvatarImage src="https://i.pravatar.cc/150?u=admin" /><AvatarFallback>A</AvatarFallback></Avatar>
-           </header>
-          <div className={cn("flex-1 overflow-auto", isPOS ? "p-0" : "p-4 md:p-6")}>
-            {children}
-          </div>
-        </main>
-      </div>
-    </SidebarProvider>
+    <div className="flex min-h-screen bg-muted/40 w-full flex-col">
+      {/* Horizontal Header Navigation */}
+      <header className="flex h-16 items-center gap-4 border-b bg-background px-6 sticky top-0 z-50">
+        <Link href="/" className="flex items-center gap-2 font-bold text-lg text-primary mr-8">
+          <Hotel className="h-6 w-6" />
+          <span className="hidden md:inline">Wamaghach</span>
+        </Link>
+
+        <nav className="flex-1 flex items-center gap-1 md:gap-2">
+          {navItems.map((item) => (
+            <Link key={item.href} href={item.href}>
+              <Button 
+                variant={pathname === item.href ? "secondary" : "ghost"} 
+                className={cn(
+                  "gap-2 h-10 px-3 md:px-4 text-sm font-semibold",
+                  pathname === item.href ? "text-primary bg-primary/10" : "text-muted-foreground"
+                )}
+              >
+                <item.icon className="h-4 w-4" />
+                <span className="hidden sm:inline">{item.label}</span>
+              </Button>
+            </Link>
+          ))}
+        </nav>
+
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={handleLogout} title="Logout" className="text-muted-foreground hover:text-destructive">
+            <LogOut className="h-5 w-5" />
+          </Button>
+          <Avatar className="h-9 w-9 border-2 border-primary/20">
+            <AvatarImage src="https://i.pravatar.cc/150?u=admin" />
+            <AvatarFallback>A</AvatarFallback>
+          </Avatar>
+        </div>
+      </header>
+
+      <main className="flex-1 overflow-auto">
+        <div className={cn("flex-1", pathname === '/admin/pos' ? "p-0" : "p-4 md:p-8 container mx-auto")}>
+          {children}
+        </div>
+      </main>
+    </div>
   );
 }

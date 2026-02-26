@@ -1,10 +1,9 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from "react";
-import { getProducts, placeOrder, getPendingOrders, completePayment } from "@/services/hotel-service";
+import { useState, useEffect } from "react";
+import { getProducts, placeOrder, getPendingOrders } from "@/services/hotel-service";
 import type { Product, HotelModule, SaleItem, Transaction } from "@/lib/types";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -67,6 +66,7 @@ export default function POSPage() {
                 name: product.name, 
                 quantity: 1, 
                 price: product.price, 
+                costPrice: product.costPrice,
                 total: product.price 
             }];
         });
@@ -104,13 +104,10 @@ export default function POSPage() {
         if (cart.length === 0) return;
         setIsProcessing(true);
         try {
-            const totalCost = cart.reduce((acc, item) => {
-                const p = products.find(prod => prod.id === item.productId);
-                return acc + ((p?.costPrice || 0) * item.quantity);
-            }, 0);
+            const totalCost = cart.reduce((acc, item) => acc + (item.costPrice * item.quantity), 0);
 
             await placeOrder({
-                orderNumber: `ORD-${Date.now()}`,
+                orderNumber: `WD-${Date.now()}`,
                 module: activeModule,
                 items: cart,
                 totalAmount: cartTotal,
@@ -141,13 +138,10 @@ export default function POSPage() {
 
         setIsProcessing(true);
         try {
-            const totalCost = cart.reduce((acc, item) => {
-                const p = products.find(prod => prod.id === item.productId);
-                return acc + ((p?.costPrice || 0) * item.quantity);
-            }, 0);
+            const totalCost = cart.reduce((acc, item) => acc + (item.costPrice * item.quantity), 0);
 
             const transaction = await placeOrder({
-                orderNumber: `ORD-${Date.now()}`,
+                orderNumber: `WD-${Date.now()}`,
                 module: activeModule,
                 items: cart,
                 totalAmount: cartTotal,
@@ -177,8 +171,6 @@ export default function POSPage() {
         setCustomerName(order.customerName || "");
         setActiveModule(order.module);
         setIsHistoryOpen(false);
-        // We actually load it back to cart to process payment.
-        // In a real system we'd update the existing ID, but here we just process it.
         toast({ title: "Order Loaded", description: `Processing payment for ${order.orderNumber}` });
     };
 
@@ -187,7 +179,7 @@ export default function POSPage() {
     );
 
     return (
-        <div className="flex h-[calc(100vh-56px)] overflow-hidden bg-background">
+        <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-background">
             {/* Menu Section */}
             <div className="flex-1 flex flex-col min-w-0 border-r">
                 <div className="p-4 border-b bg-card flex items-center justify-between gap-4">
@@ -201,7 +193,7 @@ export default function POSPage() {
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
-                        <Button variant="outline" size="icon" onClick={() => setIsHistoryOpen(true)} title="Pending Orders">
+                        <Button variant="outline" size="icon" onClick={() => setIsHistoryOpen(true)} className="relative" title="Pending Orders">
                             <History className="h-4 w-4" />
                             {pendingOrders.length > 0 && (
                                 <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center bg-primary text-[10px]">
@@ -210,12 +202,13 @@ export default function POSPage() {
                             )}
                         </Button>
                     </div>
-                    <Tabs defaultValue="restaurant" className="w-auto" onValueChange={(v) => setActiveModule(v as HotelModule)}>
-                        <TabsList className="grid grid-cols-4 w-[400px]">
-                            <TabsTrigger value="restaurant">Restaurant</TabsTrigger>
-                            <TabsTrigger value="bar">Bar</TabsTrigger>
-                            <TabsTrigger value="carwash">Car Wash</TabsTrigger>
-                            <TabsTrigger value="accommodation">Rooms</TabsTrigger>
+                    <Tabs value={activeModule} className="w-auto" onValueChange={(v) => setActiveModule(v as HotelModule)}>
+                        <TabsList className="flex w-fit overflow-x-auto no-scrollbar">
+                            <TabsTrigger value="restaurant" className="px-6">Restaurant</TabsTrigger>
+                            <TabsTrigger value="bar" className="px-6">Bar</TabsTrigger>
+                            <TabsTrigger value="carwash" className="px-6">Car Wash</TabsTrigger>
+                            <TabsTrigger value="accommodation" className="px-6">Rooms</TabsTrigger>
+                            <TabsTrigger value="entertainment" className="px-6">Entertainment</TabsTrigger>
                         </TabsList>
                     </Tabs>
                 </div>
@@ -227,7 +220,7 @@ export default function POSPage() {
                                 key={product.id} 
                                 className="group relative flex flex-col bg-card rounded-xl border hover:border-primary hover:shadow-lg transition-all text-left overflow-hidden h-fit"
                                 onClick={() => addToCart(product)}
-                                disabled={product.module !== 'carwash' && product.stock <= 0}
+                                disabled={(product.module !== 'carwash' && product.module !== 'entertainment') && product.stock <= 0}
                             >
                                 <div className="relative h-40 w-full bg-muted">
                                     <Image 
@@ -236,7 +229,7 @@ export default function POSPage() {
                                         fill 
                                         className="object-cover group-hover:scale-105 transition-transform duration-300"
                                     />
-                                    {product.module !== 'carwash' && product.stock <= 0 && (
+                                    {(product.module !== 'carwash' && product.module !== 'entertainment') && product.stock <= 0 && (
                                         <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
                                             <Badge variant="destructive">OUT OF STOCK</Badge>
                                         </div>
@@ -246,7 +239,7 @@ export default function POSPage() {
                                     <h3 className="font-bold text-sm line-clamp-1">{product.name}</h3>
                                     <div className="flex justify-between items-center">
                                         <span className="text-primary font-bold">{formatPrice(product.price)}</span>
-                                        {product.module !== 'carwash' && (
+                                        {(product.module !== 'carwash' && product.module !== 'entertainment') && (
                                             <span className={cn("text-[10px]", product.stock < 10 ? 'text-destructive font-bold' : 'text-muted-foreground')}>
                                                 Stock: {product.stock} {product.unit}
                                             </span>

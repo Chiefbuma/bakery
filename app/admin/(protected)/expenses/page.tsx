@@ -126,6 +126,7 @@ export default function ExpensesPage() {
                                     <SelectItem value="bar">Bar</SelectItem>
                                     <SelectItem value="carwash">Car Wash</SelectItem>
                                     <SelectItem value="accommodation">Accommodation</SelectItem>
+                                    <SelectItem value="entertainment">Entertainment</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
