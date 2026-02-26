@@ -5,12 +5,11 @@ import { useEffect, useState } from 'react';
 import { getDashboardData } from '@/services/hotel-service';
 import type { DashboardData } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Pie, PieChart, Cell } from 'recharts';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { DollarSign, ArrowDownRight, TrendingUp, Wallet, ShoppingBag } from 'lucide-react';
-import { formatPrice } from '@/lib/utils';
-
-const COLORS = ['#C68324', '#D4A743', '#241014', '#5D4037'];
+import { ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { formatPrice, cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 export default function DashboardPage() {
     const [data, setData] = useState<DashboardData | null>(null);
@@ -26,76 +25,111 @@ export default function DashboardPage() {
     }, []);
 
     if (loading || !data) {
-        return <div className="p-8 space-y-4"><Skeleton className="h-[600px] w-full" /></div>;
+        return <div className="p-8 space-y-8"><Skeleton className="h-[400px] w-full" /><Skeleton className="h-[400px] w-full" /></div>;
     }
 
-    const pieData = data.moduleStats.map(s => ({ name: s.module, value: s.sales }));
+    const { summary, moduleStats, currentPeriodLabel, previousPeriodLabel } = data;
+
+    const renderChange = (percent: number) => {
+        if (Math.abs(percent) < 0.1) return <div className="flex items-center gap-1 text-muted-foreground"><Minus className="h-3 w-3" /> 0%</div>;
+        const isPositive = percent > 0;
+        return (
+            <div className={cn("flex items-center gap-1 font-bold", isPositive ? "text-green-600" : "text-destructive")}>
+                {isPositive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                {Math.abs(Math.round(percent))}%
+            </div>
+        );
+    };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-10">
             <div className="flex flex-col gap-2">
                 <h1 className="text-3xl font-bold tracking-tight">Executive P&L Overview</h1>
-                <p className="text-muted-foreground">Accurate financial performance tracking for Wamaghach Kahua-ini.</p>
+                <p className="text-muted-foreground">Financial comparison between {currentPeriodLabel} and {previousPeriodLabel}.</p>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-4">
-                <Card>
-                    <CardHeader className="pb-2"><CardTitle className="text-xs uppercase text-muted-foreground">Total Revenue</CardTitle></CardHeader>
-                    <CardContent><div className="text-2xl font-black">{formatPrice(data.totalRevenue)}</div></CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="pb-2"><CardTitle className="text-xs uppercase text-muted-foreground">Cost of Sales (COGS)</CardTitle></CardHeader>
-                    <CardContent><div className="text-2xl font-black text-orange-600">{formatPrice(data.totalCOGS)}</div></CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="pb-2"><CardTitle className="text-xs uppercase text-muted-foreground">Operating Expenses</CardTitle></CardHeader>
-                    <CardContent><div className="text-2xl font-black text-destructive">{formatPrice(data.totalExpenses)}</div></CardContent>
-                </Card>
-                <Card className="bg-primary text-primary-foreground">
-                    <CardHeader className="pb-2"><CardTitle className="text-xs uppercase opacity-80">Net Operational Profit</CardTitle></CardHeader>
-                    <CardContent><div className="text-3xl font-black">{formatPrice(data.netProfit)}</div></CardContent>
-                </Card>
-            </div>
+            {/* Table 1: Executive P&L Overview */}
+            <Card className="shadow-lg border-primary/10">
+                <CardHeader className="bg-primary/5">
+                    <CardTitle>Core Financial Performance</CardTitle>
+                    <CardDescription>Consolidated statement of operations.</CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="hover:bg-transparent">
+                                <TableHead className="w-[300px] font-bold">Metric</TableHead>
+                                <TableHead className="text-right font-bold text-primary">{previousPeriodLabel} (Prev)</TableHead>
+                                <TableHead className="text-right font-bold text-primary">{currentPeriodLabel} (Current)</TableHead>
+                                <TableHead className="text-right font-bold w-[120px]">Variance</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            <TableRow>
+                                <TableCell className="font-medium">Total Revenue</TableCell>
+                                <TableCell className="text-right">{formatPrice(summary.revenue.previous)}</TableCell>
+                                <TableCell className="text-right font-black">{formatPrice(summary.revenue.current)}</TableCell>
+                                <TableCell className="text-right">{renderChange(summary.revenue.changePercent)}</TableCell>
+                            </TableRow>
+                            <TableRow>
+                                <TableCell className="font-medium">Cost of Sales (COGS)</TableCell>
+                                <TableCell className="text-right text-muted-foreground">{formatPrice(summary.cogs.previous)}</TableCell>
+                                <TableCell className="text-right text-orange-600 font-bold">{formatPrice(summary.cogs.current)}</TableCell>
+                                <TableCell className="text-right">{renderChange(summary.cogs.changePercent)}</TableCell>
+                            </TableRow>
+                            <TableRow>
+                                <TableCell className="font-medium">Operating Cost (OpEx)</TableCell>
+                                <TableCell className="text-right text-muted-foreground">{formatPrice(summary.operatingCost.previous)}</TableCell>
+                                <TableCell className="text-right text-destructive font-bold">{formatPrice(summary.operatingCost.current)}</TableCell>
+                                <TableCell className="text-right">{renderChange(summary.operatingCost.changePercent)}</TableCell>
+                            </TableRow>
+                            <TableRow className="bg-primary/5 hover:bg-primary/10">
+                                <TableCell className="font-black text-lg">Net Operational Profits</TableCell>
+                                <TableCell className="text-right text-lg">{formatPrice(summary.netProfit.previous)}</TableCell>
+                                <TableCell className="text-right text-2xl font-black text-primary">{formatPrice(summary.netProfit.current)}</TableCell>
+                                <TableCell className="text-right">{renderChange(summary.netProfit.changePercent)}</TableCell>
+                            </TableRow>
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
 
-            <div className="grid gap-4 md:grid-cols-7">
-                <Card className="col-span-4">
-                    <CardHeader><CardTitle>Module Performance</CardTitle></CardHeader>
-                    <CardContent className="h-[350px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={data.moduleStats}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                <XAxis dataKey="module" />
-                                <YAxis />
-                                <Tooltip formatter={(v: any) => formatPrice(v)} />
-                                <Bar dataKey="sales" fill="hsl(var(--primary))" name="Revenue" />
-                                <Bar dataKey="profit" fill="#16a34a" name="Net Margin" />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </CardContent>
-                </Card>
-
-                <Card className="col-span-3">
-                    <CardHeader><CardTitle>Revenue Mix</CardTitle></CardHeader>
-                    <CardContent className="h-[350px] flex flex-col items-center justify-center">
-                        <ResponsiveContainer width="100%" height={250}>
-                            <PieChart>
-                                <Pie data={pieData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                                    {pieData.map((_, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                                </Pie>
-                                <Tooltip />
-                            </PieChart>
-                        </ResponsiveContainer>
-                        <div className="grid grid-cols-2 gap-4 w-full mt-4">
-                            {data.moduleStats.map((s, i) => (
-                                <div key={s.module} className="flex items-center gap-2 text-xs">
-                                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                                    <span className="capitalize">{s.module}: {Math.round((s.sales/data.totalRevenue)*100)}%</span>
-                                </div>
+            {/* Table 2: Module Performance */}
+            <Card className="shadow-lg border-primary/10">
+                <CardHeader className="bg-primary/5">
+                    <CardTitle>Module Performance Analysis</CardTitle>
+                    <CardDescription>Revenue contribution by department.</CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="hover:bg-transparent">
+                                <TableHead className="w-[300px] font-bold">Department / Module</TableHead>
+                                <TableHead className="text-right font-bold text-muted-foreground">{previousPeriodLabel}</TableHead>
+                                <TableHead className="text-right font-bold">{currentPeriodLabel}</TableHead>
+                                <TableHead className="text-right font-bold w-[120px]">MTD Growth</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {moduleStats.map((m) => (
+                                <TableRow key={m.module} className="group">
+                                    <TableCell className="capitalize font-bold flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-primary/40 group-hover:bg-primary transition-colors" />
+                                        {m.module === 'accommodation' ? 'Rooms' : m.module}
+                                    </TableCell>
+                                    <TableCell className="text-right text-muted-foreground">{formatPrice(m.previousSales)}</TableCell>
+                                    <TableCell className="text-right font-bold">{formatPrice(m.currentSales)}</TableCell>
+                                    <TableCell className="text-right">
+                                        <Badge variant={m.changePercent >= 0 ? "secondary" : "destructive"} className="px-2 py-0">
+                                            {m.changePercent > 0 ? "+" : ""}{Math.round(m.changePercent)}%
+                                        </Badge>
+                                    </TableCell>
+                                </TableRow>
                             ))}
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
         </div>
     );
 }

@@ -1,5 +1,8 @@
 
+'use client';
+
 import type { Product, Transaction, HotelModule, DashboardData, SaleItem, Supply, Expense } from '@/lib/types';
+import { startOfMonth, subMonths, format, isWithinInterval } from 'date-fns';
 
 // Sellable Products
 let products: Product[] = [
@@ -82,33 +85,59 @@ export async function getPendingOrders(): Promise<Transaction[]> {
   return transactions.filter(t => t.status === 'pending');
 }
 
+function calculateChange(current: number, previous: number) {
+  if (previous === 0) return 0;
+  return ((current - previous) / previous) * 100;
+}
+
 export async function getDashboardData(): Promise<DashboardData> {
-  const paidTx = transactions.filter(t => t.status === 'paid');
-  const totalRevenue = paidTx.reduce((acc, curr) => acc + curr.totalAmount, 0);
-  const totalCOGS = paidTx.reduce((acc, curr) => acc + curr.totalCost, 0);
-  const totalExpenses = expenses.reduce((acc, curr) => acc + curr.amount, 0);
+  const now = new Date();
+  const currentStart = startOfMonth(now);
+  const prevDate = subMonths(now, 1);
+  const prevStart = startOfMonth(prevDate);
+  const dayOfMonth = now.getDate();
+
+  const currentPeriod = { start: currentStart, end: now };
+  const prevPeriod = { start: prevStart, end: new Date(prevStart.getFullYear(), prevStart.getMonth(), dayOfMonth) };
+
+  const currentTransactions = transactions.filter(t => t.status === 'paid' && isWithinInterval(new Date(t.timestamp), currentPeriod));
+  const prevTransactions = transactions.filter(t => t.status === 'paid' && isWithinInterval(new Date(t.timestamp), prevPeriod));
+
+  const currentRevenue = currentTransactions.reduce((acc, curr) => acc + curr.totalAmount, 0);
+  const prevRevenue = prevTransactions.reduce((acc, curr) => acc + curr.totalAmount, 0) || (currentRevenue * 0.85); // Mock fallback for demo
+
+  const currentCOGS = currentTransactions.reduce((acc, curr) => acc + curr.totalCost, 0);
+  const prevCOGS = prevTransactions.reduce((acc, curr) => acc + curr.totalCost, 0) || (currentCOGS * 0.8); // Mock fallback
+
+  const currentOpEx = expenses.reduce((acc, curr) => acc + curr.amount, 0);
+  const prevOpEx = currentOpEx * 0.95; // Mock fallback
+
+  const modules: HotelModule[] = ['restaurant', 'bar', 'carwash', 'entertainment', 'accommodation'];
   
-  const modules: HotelModule[] = ['restaurant', 'bar', 'carwash', 'accommodation', 'entertainment'];
   const moduleStats = modules.map(m => {
-    const moduleTx = paidTx.filter(t => m === t.module);
-    const modRevenue = moduleTx.reduce((acc, curr) => acc + curr.totalAmount, 0);
-    const modCOGS = moduleTx.reduce((acc, curr) => acc + curr.totalCost, 0);
-    const modEx = expenses.filter(e => e.module === m).reduce((acc, curr) => acc + curr.amount, 0);
+    const currentModSales = currentTransactions.filter(t => t.module === m).reduce((acc, curr) => acc + curr.totalAmount, 0);
+    const prevModSales = prevTransactions.filter(t => t.module === m).reduce((acc, curr) => acc + curr.totalAmount, 0) || (currentModSales * 0.9);
     return {
       module: m,
-      sales: modRevenue,
-      costs: modCOGS + modEx,
-      profit: modRevenue - (modCOGS + modEx),
-      orders: moduleTx.length
+      currentSales: currentModSales,
+      previousSales: prevModSales,
+      changePercent: calculateChange(currentModSales, prevModSales)
     };
   });
 
   return {
-    totalRevenue,
-    totalCOGS,
-    totalExpenses,
-    netProfit: totalRevenue - (totalCOGS + totalExpenses),
+    summary: {
+      revenue: { current: currentRevenue, previous: prevRevenue, changePercent: calculateChange(currentRevenue, prevRevenue) },
+      cogs: { current: currentCOGS, previous: prevCOGS, changePercent: calculateChange(currentCOGS, prevCOGS) },
+      operatingCost: { current: currentOpEx, previous: prevOpEx, changePercent: calculateChange(currentOpEx, prevOpEx) },
+      netProfit: { 
+        current: currentRevenue - currentCOGS - currentOpEx, 
+        previous: prevRevenue - prevCOGS - prevOpEx, 
+        changePercent: calculateChange(currentRevenue - currentCOGS - currentOpEx, prevRevenue - prevCOGS - prevOpEx) 
+      }
+    },
     moduleStats,
-    recentTransactions: paidTx.slice(0, 10)
+    currentPeriodLabel: `${format(currentStart, 'MMM 1')}-${format(now, 'd')}`,
+    previousPeriodLabel: `${format(prevStart, 'MMM 1')}-${format(prevPeriod.end, 'd')}`
   };
 }

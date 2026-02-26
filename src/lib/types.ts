@@ -59,19 +59,27 @@ export interface Transaction {
   balance?: number;
 }
 
-export interface ModuleStats {
+export interface ComparisonMetric {
+  current: number;
+  previous: number;
+  changePercent: number;
+}
+
+export interface ModuleComparison {
   module: HotelModule;
-  sales: number;
-  costs: number;
-  profit: number;
-  orders: number;
+  currentSales: number;
+  previousSales: number;
+  changePercent: number;
 }
 
 export interface DashboardData {
-  totalRevenue: number;
-  totalCOGS: number;
-  totalExpenses: number;
-  netProfit: number;
-  moduleStats: ModuleStats[];
-  recentTransactions: Transaction[];
+  summary: {
+    revenue: ComparisonMetric;
+    cogs: ComparisonMetric;
+    operatingCost: ComparisonMetric;
+    netProfit: ComparisonMetric;
+  };
+  moduleStats: ModuleComparison[];
+  currentPeriodLabel: string;
+  previousPeriodLabel: string;
 }
