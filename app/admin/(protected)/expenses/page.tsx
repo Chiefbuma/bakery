@@ -9,12 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/utils";
-import { PlusCircle, Loader2, Trash2, MoreHorizontal, Edit, ChevronLeft, ChevronRight } from "lucide-react";
+import { PlusCircle, Loader2, Trash2, Edit, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useForm } from "react-hook-form";
 import {
     AlertDialog,
@@ -32,7 +31,7 @@ export default function ExpensesPage() {
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [editingExpense, setEditingUser] = useState<Expense | null>(null);
+    const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
     const [targetExpense, setTargetExpense] = useState<string | null>(null);
     
     // Pagination
@@ -40,7 +39,7 @@ export default function ExpensesPage() {
     const ITEMS_PER_PAGE = 8;
 
     const { toast } = useToast();
-    const { register, handleSubmit, reset, setValue } = useForm<Omit<Expense, 'id'>>();
+    const { register, handleSubmit, reset, setValue, watch } = useForm<Omit<Expense, 'id'>>();
 
     const load = useCallback(async () => {
         try {
@@ -58,7 +57,7 @@ export default function ExpensesPage() {
 
     const handleOpenDialog = (expense?: Expense) => {
         if (expense) {
-            setEditingUser(expense);
+            setEditingExpense(expense);
             reset({
                 category: expense.category,
                 amount: expense.amount,
@@ -67,7 +66,7 @@ export default function ExpensesPage() {
                 module: expense.module
             });
         } else {
-            setEditingUser(null);
+            setEditingExpense(null);
             reset({
                 category: 'miscellaneous',
                 amount: 0,
@@ -90,7 +89,7 @@ export default function ExpensesPage() {
                 toast({ title: "Expense Recorded" });
             }
             setIsDialogOpen(false);
-            await load();
+            setTimeout(() => load(), 100);
         } catch (error) {
             toast({ variant: "destructive", title: "Operation Failed" });
         } finally {
@@ -160,21 +159,24 @@ export default function ExpensesPage() {
                                         <TableCell className="capitalize text-muted-foreground">{e.module}</TableCell>
                                         <TableCell className="text-right font-bold text-destructive">-{formatPrice(e.amount)}</TableCell>
                                         <TableCell className="text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem onClick={() => handleOpenDialog(e)}>
-                                                        <Edit className="mr-2 h-4 w-4" /> Edit Record
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem className="text-destructive" onClick={() => setTargetExpense(e.id)}>
-                                                        <Trash2 className="mr-2 h-4 w-4" /> Remove
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                            <div className="flex justify-end gap-2">
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    className="h-8 w-8 text-primary hover:bg-primary/10"
+                                                    onClick={() => handleOpenDialog(e)}
+                                                >
+                                                    <Edit className="h-4 w-4" />
+                                                </Button>
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                                                    onClick={() => setTargetExpense(e.id)}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -211,7 +213,7 @@ export default function ExpensesPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label>Category</Label>
-                                <Select defaultValue="miscellaneous" onValueChange={(v) => setValue('category', v as any)}>
+                                <Select value={watch('category') || 'miscellaneous'} onValueChange={(v) => setValue('category', v as any)}>
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="salary">Salary</SelectItem>

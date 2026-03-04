@@ -8,12 +8,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus, Loader2, Trash2, MoreHorizontal, Edit, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { UserPlus, Loader2, Trash2, Edit, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -97,9 +96,12 @@ export default function UsersPage() {
                 toast({ title: "User Created", description: "Account is ready for use." });
             }
             
+            // Critical sequence to prevent UI freezing: Close, then Reset, then Refresh
             setIsDialogOpen(false);
             setEditingUser(null);
-            await loadUsers();
+            setTimeout(() => {
+                loadUsers();
+            }, 100);
         } catch (error) {
             toast({ variant: "destructive", title: "Operation Failed", description: "Could not save user changes." });
         } finally {
@@ -203,25 +205,25 @@ export default function UsersPage() {
                                             {new Date(u.createdAt).toLocaleDateString()}
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem onClick={() => handleOpenDialog(u)}>
-                                                        <Edit className="mr-2 h-4 w-4" /> Edit Profile
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem 
-                                                        className="text-destructive" 
-                                                        onClick={() => { setTargetUser({id: u.id, name: u.name}); setDeleteConfirmOpen(true); }}
-                                                        disabled={u.email === 'admin@wamaghach.com'}
-                                                    >
-                                                        <Trash2 className="mr-2 h-4 w-4" /> Delete Account
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                            <div className="flex justify-end gap-2">
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    className="h-8 w-8 text-primary hover:bg-primary/10"
+                                                    onClick={() => handleOpenDialog(u)}
+                                                >
+                                                    <Edit className="h-4 w-4" />
+                                                </Button>
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                                                    disabled={u.email === 'admin@wamaghach.com'}
+                                                    onClick={() => { setTargetUser({id: u.id, name: u.name}); setDeleteConfirmOpen(true); }}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -261,7 +263,7 @@ export default function UsersPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label>System Role</Label>
-                                <Select defaultValue="staff" onValueChange={(v) => setValue('role', v as UserRole)}>
+                                <Select value={editingUser?.role || 'staff'} onValueChange={(v) => setValue('role', v as UserRole)}>
                                     <SelectTrigger>
                                         <SelectValue />
                                     </SelectTrigger>

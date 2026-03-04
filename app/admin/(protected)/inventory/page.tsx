@@ -18,12 +18,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/utils";
-import { PlusCircle, Search, Loader2, Trash2, MoreHorizontal, Edit, ChevronLeft, ChevronRight } from "lucide-react";
+import { PlusCircle, Search, Loader2, Trash2, Edit, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion } from "framer-motion";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useForm } from "react-hook-form";
@@ -153,7 +152,7 @@ export default function InventoryPage() {
                 toast({ title: "Product Added" });
             }
             setIsProductDialogOpen(false);
-            await loadData();
+            setTimeout(() => loadData(), 100);
         } catch (error) {
             toast({ variant: "destructive", title: "Operation Failed" });
         } finally {
@@ -172,7 +171,7 @@ export default function InventoryPage() {
                 toast({ title: "Supply Added" });
             }
             setIsSupplyDialogOpen(false);
-            await loadData();
+            setTimeout(() => loadData(), 100);
         } catch (error) {
             toast({ variant: "destructive", title: "Operation Failed" });
         } finally {
@@ -288,21 +287,24 @@ export default function InventoryPage() {
                                                     <TableCell>{(p.module === 'carwash' || p.module === 'entertainment') ? '∞' : `${p.stock} ${p.unit}`}</TableCell>
                                                     <TableCell>{isLow ? <Badge variant="destructive">Low</Badge> : <Badge variant="secondary" className="bg-green-50 text-green-700">OK</Badge>}</TableCell>
                                                     <TableCell className="text-right">
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger asChild>
-                                                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                                    <MoreHorizontal className="h-4 w-4" />
-                                                                </Button>
-                                                            </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end">
-                                                                <DropdownMenuItem onClick={() => handleOpenProductDialog(p)}>
-                                                                    <Edit className="mr-2 h-4 w-4" /> Edit
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem className="text-destructive" onClick={() => setTargetItem({id: p.id, type: 'product'})}>
-                                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                                                </DropdownMenuItem>
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
+                                                        <div className="flex justify-end gap-2">
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="icon" 
+                                                                className="h-8 w-8 text-primary hover:bg-primary/10"
+                                                                onClick={() => handleOpenProductDialog(p)}
+                                                            >
+                                                                <Edit className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="icon" 
+                                                                className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                                                                onClick={() => setTargetItem({id: p.id, type: 'product'})}
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
                                                     </TableCell>
                                                 </TableRow>
                                             );
@@ -349,21 +351,24 @@ export default function InventoryPage() {
                                                 <TableCell>{formatPrice(s.unitCost)}</TableCell>
                                                 <TableCell className="text-xs text-muted-foreground">{new Date(s.lastPurchased).toLocaleDateString()}</TableCell>
                                                 <TableCell className="text-right">
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                                <MoreHorizontal className="h-4 w-4" />
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end">
-                                                            <DropdownMenuItem onClick={() => handleOpenSupplyDialog(s)}>
-                                                                <Edit className="mr-2 h-4 w-4" /> Edit
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem className="text-destructive" onClick={() => setTargetItem({id: s.id, type: 'supply'})}>
-                                                                <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                                            </DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
+                                                    <div className="flex justify-end gap-2">
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            size="icon" 
+                                                            className="h-8 w-8 text-primary hover:bg-primary/10"
+                                                            onClick={() => handleOpenSupplyDialog(s)}
+                                                        >
+                                                            <Edit className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            size="icon" 
+                                                            className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                                                            onClick={() => setTargetItem({id: s.id, type: 'supply'})}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
                                                 </TableCell>
                                             </TableRow>
                                         ))}
@@ -401,7 +406,7 @@ export default function InventoryPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label>Module</Label>
-                                <Select defaultValue="restaurant" onValueChange={(v) => productForm.setValue('module', v as HotelModule)}>
+                                <Select value={productForm.watch('module') || 'restaurant'} onValueChange={(v) => productForm.setValue('module', v as HotelModule)}>
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="restaurant">Restaurant</SelectItem>
