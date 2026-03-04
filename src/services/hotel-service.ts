@@ -54,7 +54,7 @@ export async function addUser(user: Omit<User, 'id' | 'createdAt'>): Promise<Use
     id: `U-${Date.now()}`,
     createdAt: new Date().toISOString(),
   };
-  users.push(newUser);
+  users = [newUser, ...users];
   return newUser;
 }
 
@@ -82,7 +82,7 @@ export async function getProducts(module?: HotelModule): Promise<Product[]> {
 export async function addProduct(product: Omit<Product, 'id'>): Promise<Product> {
   await delay(300);
   const newProduct = { ...product, id: `PROD-${Date.now()}` };
-  products.push(newProduct);
+  products = [newProduct, ...products];
   return newProduct;
 }
 
@@ -104,7 +104,7 @@ export async function getSupplies(module?: HotelModule): Promise<Supply[]> {
 export async function addSupply(supply: Omit<Supply, 'id'>): Promise<Supply> {
   await delay(300);
   const newSupply = { ...supply, id: `SUP-${Date.now()}` };
-  supplies.push(newSupply);
+  supplies = [newSupply, ...supplies];
   return newSupply;
 }
 
@@ -121,7 +121,7 @@ export async function getExpenses(): Promise<Expense[]> {
 export async function addExpense(expense: Omit<Expense, 'id'>): Promise<Expense> {
   await delay(300);
   const newExpense = { ...expense, id: `EXP-${Date.now()}` };
-  expenses.push(newExpense);
+  expenses = [newExpense, ...expenses];
   return newExpense;
 }
 
