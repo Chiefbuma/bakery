@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -96,9 +97,11 @@ export default function UsersPage() {
                 toast({ title: "User Created", description: "Account is ready for use." });
             }
             
-            // Critical sequence to prevent UI freezing: Close, then Reset, then Refresh
+            // CRITICAL: Close dialog first to release focus traps
             setIsDialogOpen(false);
             setEditingUser(null);
+            
+            // DELAY data refresh slightly to allow DOM cleanup
             setTimeout(() => {
                 loadUsers();
             }, 100);
@@ -254,12 +257,12 @@ export default function UsersPage() {
                     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4 pt-4">
                         <div className="space-y-2">
                             <Label>Full Name</Label>
-                            <Input {...register('name', { required: true })} disabled={isSubmitting} placeholder="e.g. John Doe" />
+                            <input {...register('name', { required: true })} disabled={isSubmitting} placeholder="e.g. John Doe" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label>Email Address</Label>
-                                <Input type="email" {...register('email', { required: true })} disabled={isSubmitting} placeholder="john@wamaghach.com" />
+                                <input type="email" {...register('email', { required: true })} disabled={isSubmitting} placeholder="john@wamaghach.com" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
                             </div>
                             <div className="space-y-2">
                                 <Label>System Role</Label>
@@ -277,7 +280,7 @@ export default function UsersPage() {
                         {!editingUser && (
                             <div className="space-y-2">
                                 <Label>Initial Access Key</Label>
-                                <Input type="password" placeholder="••••••••" {...register('password')} disabled={isSubmitting} />
+                                <input type="password" placeholder="••••••••" {...register('password')} disabled={isSubmitting} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
                             </div>
                         )}
                         <DialogFooter className="pt-4">

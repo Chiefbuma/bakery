@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -44,19 +45,16 @@ export default function InventoryPage() {
     const [activeModule, setActiveModule] = useState<HotelModule | 'all'>('all');
     const [searchQuery, setSearchQuery] = useState("");
     
-    // Pagination
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 8;
 
-    // Dialog States
     const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
     const [isSupplyDialogOpen, setIsSupplyDialogOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [editingSupply, setEditingSupply] = useState<Supply | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     
-    // Deletion states
-    const [targetItem, setTargetItem] = useState<{id: string, type: 'product' | 'supply' } | null>(null);
+    const [targetItem, setTargetItem] = useState<{id: string, name: string, type: 'product' | 'supply' } | null>(null);
 
     const { toast } = useToast();
     
@@ -84,18 +82,7 @@ export default function InventoryPage() {
     const handleOpenProductDialog = (product?: Product) => {
         if (product) {
             setEditingProduct(product);
-            productForm.reset({
-                name: product.name,
-                description: product.description,
-                category: product.category,
-                module: product.module,
-                price: product.price,
-                costPrice: product.costPrice,
-                stock: product.stock,
-                minStockLevel: product.minStockLevel,
-                unit: product.unit,
-                image_url: product.image_url
-            });
+            productForm.reset({ ...product });
         } else {
             setEditingProduct(null);
             productForm.reset({
@@ -117,15 +104,7 @@ export default function InventoryPage() {
     const handleOpenSupplyDialog = (supply?: Supply) => {
         if (supply) {
             setEditingSupply(supply);
-            supplyForm.reset({
-                name: supply.name,
-                category: supply.category,
-                module: supply.module,
-                quantity: supply.quantity,
-                unit: supply.unit,
-                unitCost: supply.unitCost,
-                lastPurchased: supply.lastPurchased
-            });
+            supplyForm.reset({ ...supply });
         } else {
             setEditingSupply(null);
             supplyForm.reset({
@@ -152,6 +131,7 @@ export default function InventoryPage() {
                 toast({ title: "Product Added" });
             }
             setIsProductDialogOpen(false);
+            setEditingProduct(null);
             setTimeout(() => loadData(), 100);
         } catch (error) {
             toast({ variant: "destructive", title: "Operation Failed" });
@@ -171,6 +151,7 @@ export default function InventoryPage() {
                 toast({ title: "Supply Added" });
             }
             setIsSupplyDialogOpen(false);
+            setEditingSupply(null);
             setTimeout(() => loadData(), 100);
         } catch (error) {
             toast({ variant: "destructive", title: "Operation Failed" });
@@ -268,15 +249,14 @@ export default function InventoryPage() {
                                             <TableHead>Module</TableHead>
                                             <TableHead>Price</TableHead>
                                             <TableHead>Stock</TableHead>
-                                            <TableHead>Status</TableHead>
                                             <TableHead className="text-right">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {loading ? (
-                                            <TableRow><TableCell colSpan={6} className="h-24 text-center"><Loader2 className="animate-spin inline-block mr-2" /> Loading...</TableCell></TableRow>
+                                            <TableRow><TableCell colSpan={5} className="h-24 text-center"><Loader2 className="animate-spin inline-block mr-2" /> Loading...</TableCell></TableRow>
                                         ) : paginatedProducts.length === 0 ? (
-                                            <TableRow><TableCell colSpan={6} className="h-24 text-center text-muted-foreground">No products found.</TableCell></TableRow>
+                                            <TableRow><TableCell colSpan={5} className="h-24 text-center text-muted-foreground">No products found.</TableCell></TableRow>
                                         ) : paginatedProducts.map((p) => {
                                             const isLow = p.stock <= p.minStockLevel && p.module !== 'carwash' && p.module !== 'entertainment';
                                             return (
@@ -284,26 +264,14 @@ export default function InventoryPage() {
                                                     <TableCell className="font-bold">{p.name}</TableCell>
                                                     <TableCell className="capitalize text-xs text-muted-foreground">{p.module}</TableCell>
                                                     <TableCell>{formatPrice(p.price)}</TableCell>
-                                                    <TableCell>{(p.module === 'carwash' || p.module === 'entertainment') ? '∞' : `${p.stock} ${p.unit}`}</TableCell>
-                                                    <TableCell>{isLow ? <Badge variant="destructive">Low</Badge> : <Badge variant="secondary" className="bg-green-50 text-green-700">OK</Badge>}</TableCell>
+                                                    <TableCell>
+                                                        {(p.module === 'carwash' || p.module === 'entertainment') ? '∞' : `${p.stock} ${p.unit}`}
+                                                        {isLow && <Badge variant="destructive" className="ml-2">Low</Badge>}
+                                                    </TableCell>
                                                     <TableCell className="text-right">
                                                         <div className="flex justify-end gap-2">
-                                                            <Button 
-                                                                variant="ghost" 
-                                                                size="icon" 
-                                                                className="h-8 w-8 text-primary hover:bg-primary/10"
-                                                                onClick={() => handleOpenProductDialog(p)}
-                                                            >
-                                                                <Edit className="h-4 w-4" />
-                                                            </Button>
-                                                            <Button 
-                                                                variant="ghost" 
-                                                                size="icon" 
-                                                                className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                                                                onClick={() => setTargetItem({id: p.id, type: 'product'})}
-                                                            >
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </Button>
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => handleOpenProductDialog(p)}><Edit className="h-4 w-4" /></Button>
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setTargetItem({id: p.id, name: p.name, type: 'product'})}><Trash2 className="h-4 w-4" /></Button>
                                                         </div>
                                                     </TableCell>
                                                 </TableRow>
@@ -335,39 +303,23 @@ export default function InventoryPage() {
                                             <TableHead>Supply</TableHead>
                                             <TableHead>Quantity</TableHead>
                                             <TableHead>Unit Cost</TableHead>
-                                            <TableHead>Last Purchased</TableHead>
                                             <TableHead className="text-right">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {loading ? (
-                                            <TableRow><TableCell colSpan={5} className="h-24 text-center">Loading...</TableCell></TableRow>
+                                            <TableRow><TableCell colSpan={4} className="h-24 text-center">Loading...</TableCell></TableRow>
                                         ) : paginatedSupplies.length === 0 ? (
-                                            <TableRow><TableCell colSpan={5} className="h-24 text-center text-muted-foreground">No supplies found.</TableCell></TableRow>
+                                            <TableRow><TableCell colSpan={4} className="h-24 text-center text-muted-foreground">No supplies found.</TableCell></TableRow>
                                         ) : paginatedSupplies.map((s) => (
                                             <TableRow key={s.id}>
                                                 <TableCell className="font-bold">{s.name}</TableCell>
                                                 <TableCell>{s.quantity} {s.unit}</TableCell>
                                                 <TableCell>{formatPrice(s.unitCost)}</TableCell>
-                                                <TableCell className="text-xs text-muted-foreground">{new Date(s.lastPurchased).toLocaleDateString()}</TableCell>
                                                 <TableCell className="text-right">
                                                     <div className="flex justify-end gap-2">
-                                                        <Button 
-                                                            variant="ghost" 
-                                                            size="icon" 
-                                                            className="h-8 w-8 text-primary hover:bg-primary/10"
-                                                            onClick={() => handleOpenSupplyDialog(s)}
-                                                        >
-                                                            <Edit className="h-4 w-4" />
-                                                        </Button>
-                                                        <Button 
-                                                            variant="ghost" 
-                                                            size="icon" 
-                                                            className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                                                            onClick={() => setTargetItem({id: s.id, type: 'supply'})}
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => handleOpenSupplyDialog(s)}><Edit className="h-4 w-4" /></Button>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setTargetItem({id: s.id, name: s.name, type: 'supply'})}><Trash2 className="h-4 w-4" /></Button>
                                                     </div>
                                                 </TableCell>
                                             </TableRow>
@@ -380,7 +332,6 @@ export default function InventoryPage() {
                 </TabsContent>
             </Tabs>
 
-            {/* Pagination Controls */}
             <div className="flex items-center justify-end space-x-2 py-4">
                 <span className="text-xs text-muted-foreground">Page {currentPage} of {totalPages || 1}</span>
                 <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
@@ -391,75 +342,54 @@ export default function InventoryPage() {
                 </Button>
             </div>
 
-            {/* Product Dialog */}
             <Dialog open={isProductDialogOpen} onOpenChange={(open) => { if(!isSubmitting) setIsProductDialogOpen(open); }}>
                 <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
                         <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
-                        <DialogDescription>Enter product details for the POS and inventory tracking.</DialogDescription>
+                        <DialogDescription>Enter product details for tracking.</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={productForm.handleSubmit(onProductSubmit)} className="space-y-4 pt-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2 col-span-2">
                                 <Label>Product Name</Label>
-                                <Input {...productForm.register('name', { required: true })} disabled={isSubmitting} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Module</Label>
-                                <Select value={productForm.watch('module') || 'restaurant'} onValueChange={(v) => productForm.setValue('module', v as HotelModule)}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="restaurant">Restaurant</SelectItem>
-                                        <SelectItem value="bar">Bar</SelectItem>
-                                        <SelectItem value="carwash">Car Wash</SelectItem>
-                                        <SelectItem value="accommodation">Rooms</SelectItem>
-                                        <SelectItem value="entertainment">Entertainment</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                <input {...productForm.register('name', { required: true })} disabled={isSubmitting} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
                             </div>
                             <div className="space-y-2">
                                 <Label>Selling Price (Ksh)</Label>
-                                <Input type="number" {...productForm.register('price', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
+                                <input type="number" {...productForm.register('price', { required: true, valueAsNumber: true })} disabled={isSubmitting} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
                             </div>
                             <div className="space-y-2">
                                 <Label>Cost Price (Ksh)</Label>
-                                <Input type="number" {...productForm.register('costPrice', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Initial Stock</Label>
-                                <Input type="number" {...productForm.register('stock', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
+                                <input type="number" {...productForm.register('costPrice', { required: true, valueAsNumber: true })} disabled={isSubmitting} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
                             </div>
                         </div>
                         <DialogFooter className="pt-4">
                             <Button variant="outline" type="button" onClick={() => setIsProductDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
-                            <Button type="submit" disabled={isSubmitting}>
-                                {isSubmitting ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Saving...</> : "Save Product"}
-                            </Button>
+                            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Saving..." : "Save Product"}</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
             </Dialog>
 
-            {/* Supply Dialog */}
             <Dialog open={isSupplyDialogOpen} onOpenChange={(open) => { if(!isSubmitting) setIsSupplyDialogOpen(open); }}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle>{editingSupply ? 'Edit Supply' : 'Add Raw Supply'}</DialogTitle>
-                        <DialogDescription>Track raw materials and production inputs.</DialogDescription>
+                        <DialogDescription>Track production inputs.</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={supplyForm.handleSubmit(onSupplySubmit)} className="space-y-4 pt-4">
                         <div className="space-y-2">
                             <Label>Supply Name</Label>
-                            <Input {...supplyForm.register('name', { required: true })} disabled={isSubmitting} />
+                            <input {...supplyForm.register('name', { required: true })} disabled={isSubmitting} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label>Quantity</Label>
-                                <Input type="number" {...supplyForm.register('quantity', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
+                                <input type="number" {...supplyForm.register('quantity', { required: true, valueAsNumber: true })} disabled={isSubmitting} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
                             </div>
                             <div className="space-y-2">
                                 <Label>Unit Cost (Ksh)</Label>
-                                <Input type="number" {...supplyForm.register('unitCost', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
+                                <input type="number" {...supplyForm.register('unitCost', { required: true, valueAsNumber: true })} disabled={isSubmitting} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
                             </div>
                         </div>
                         <DialogFooter className="pt-4">
@@ -473,12 +403,12 @@ export default function InventoryPage() {
             <AlertDialog open={!!targetItem} onOpenChange={(open) => !open && setTargetItem(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Confirm deletion?</AlertDialogTitle>
-                        <AlertDialogDescription>This will remove the selected inventory record permanently.</AlertDialogDescription>
+                        <AlertDialogTitle>Delete {targetItem?.name}?</AlertDialogTitle>
+                        <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteItem} className="bg-destructive text-white hover:bg-destructive/90">Delete Record</AlertDialogAction>
+                        <AlertDialogAction onClick={handleDeleteItem} className="bg-destructive text-white">Delete Record</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

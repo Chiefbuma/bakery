@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -6,7 +7,6 @@ import type { Expense, HotelModule } from "@/lib/types";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/utils";
 import { PlusCircle, Loader2, Trash2, Edit, ChevronLeft, ChevronRight } from "lucide-react";
@@ -32,9 +32,8 @@ export default function ExpensesPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
-    const [targetExpense, setTargetExpense] = useState<string | null>(null);
+    const [targetExpense, setTargetExpense] = useState<{id: string, description: string} | null>(null);
     
-    // Pagination
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 8;
 
@@ -58,13 +57,7 @@ export default function ExpensesPage() {
     const handleOpenDialog = (expense?: Expense) => {
         if (expense) {
             setEditingExpense(expense);
-            reset({
-                category: expense.category,
-                amount: expense.amount,
-                description: expense.description,
-                date: expense.date,
-                module: expense.module
-            });
+            reset({ ...expense });
         } else {
             setEditingExpense(null);
             reset({
@@ -89,6 +82,7 @@ export default function ExpensesPage() {
                 toast({ title: "Expense Recorded" });
             }
             setIsDialogOpen(false);
+            setEditingExpense(null);
             setTimeout(() => load(), 100);
         } catch (error) {
             toast({ variant: "destructive", title: "Operation Failed" });
@@ -100,7 +94,7 @@ export default function ExpensesPage() {
     const handleDeleteExpense = async () => {
         if (!targetExpense) return;
         try {
-            await deleteExpenses([targetExpense]);
+            await deleteExpenses([targetExpense.id]);
             await load();
             toast({ title: "Expense Cleared" });
         } catch (error) {
@@ -139,7 +133,6 @@ export default function ExpensesPage() {
                             <TableHeader>
                                 <TableRow className="bg-muted/50">
                                     <TableHead>Date</TableHead>
-                                    <TableHead>Category</TableHead>
                                     <TableHead>Description</TableHead>
                                     <TableHead>Module</TableHead>
                                     <TableHead className="text-right">Amount</TableHead>
@@ -148,34 +141,19 @@ export default function ExpensesPage() {
                             </TableHeader>
                             <TableBody>
                                 {loading ? (
-                                    <TableRow><TableCell colSpan={6} className="h-24 text-center">Loading...</TableCell></TableRow>
+                                    <TableRow><TableCell colSpan={5} className="h-24 text-center">Loading...</TableCell></TableRow>
                                 ) : paginatedExpenses.length === 0 ? (
-                                    <TableRow><TableCell colSpan={6} className="h-24 text-center text-muted-foreground">No records found.</TableCell></TableRow>
+                                    <TableRow><TableCell colSpan={5} className="h-24 text-center text-muted-foreground">No records found.</TableCell></TableRow>
                                 ) : paginatedExpenses.map((e) => (
                                     <TableRow key={e.id}>
                                         <TableCell className="text-xs">{new Date(e.date).toLocaleDateString()}</TableCell>
-                                        <TableCell><Badge variant="outline" className="capitalize">{e.category}</Badge></TableCell>
                                         <TableCell className="font-medium">{e.description}</TableCell>
                                         <TableCell className="capitalize text-muted-foreground">{e.module}</TableCell>
                                         <TableCell className="text-right font-bold text-destructive">-{formatPrice(e.amount)}</TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-2">
-                                                <Button 
-                                                    variant="ghost" 
-                                                    size="icon" 
-                                                    className="h-8 w-8 text-primary hover:bg-primary/10"
-                                                    onClick={() => handleOpenDialog(e)}
-                                                >
-                                                    <Edit className="h-4 w-4" />
-                                                </Button>
-                                                <Button 
-                                                    variant="ghost" 
-                                                    size="icon" 
-                                                    className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                                                    onClick={() => setTargetExpense(e.id)}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => handleOpenDialog(e)}><Edit className="h-4 w-4" /></Button>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setTargetExpense({id: e.id, description: e.description})}><Trash2 className="h-4 w-4" /></Button>
                                             </div>
                                         </TableCell>
                                     </TableRow>
@@ -185,12 +163,8 @@ export default function ExpensesPage() {
                     </div>
                     <div className="flex items-center justify-end space-x-2 py-4">
                         <span className="text-xs text-muted-foreground">Page {currentPage} of {totalPages || 1}</span>
-                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1}>
-                            <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages || totalPages === 0}>
-                            <ChevronRight className="h-4 w-4" />
-                        </Button>
+                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1}><ChevronLeft className="h-4 w-4" /></Button>
+                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages || totalPages === 0}><ChevronRight className="h-4 w-4" /></Button>
                     </div>
                 </CardContent>
             </Card>
@@ -198,18 +172,18 @@ export default function ExpensesPage() {
             <Dialog open={isDialogOpen} onOpenChange={(open) => { if(!isSubmitting) setIsDialogOpen(open); }}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>{editingExpense ? 'Edit Expense Record' : 'Record New Expense'}</DialogTitle>
-                        <DialogDescription>Log operational costs for P&L analysis.</DialogDescription>
+                        <DialogTitle>{editingExpense ? 'Edit Expense' : 'Record New Expense'}</DialogTitle>
+                        <DialogDescription>Log operational costs.</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4 pt-4">
                         <div className="space-y-2">
                             <Label>Description</Label>
-                            <Input {...register('description', { required: true })} disabled={isSubmitting} placeholder="e.g. Water Bill Jan" />
+                            <input {...register('description', { required: true })} disabled={isSubmitting} placeholder="e.g. Water Bill Jan" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label>Amount (Ksh)</Label>
-                                <Input type="number" {...register('amount', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
+                                <input type="number" {...register('amount', { required: true, valueAsNumber: true })} disabled={isSubmitting} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
                             </div>
                             <div className="space-y-2">
                                 <Label>Category</Label>
@@ -228,9 +202,7 @@ export default function ExpensesPage() {
                         </div>
                         <DialogFooter className="pt-4">
                             <Button variant="outline" type="button" onClick={() => setIsDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
-                            <Button type="submit" disabled={isSubmitting}>
-                                {isSubmitting ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Saving...</> : "Save Record"}
-                            </Button>
+                            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Saving..." : "Save Record"}</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -239,12 +211,12 @@ export default function ExpensesPage() {
             <AlertDialog open={!!targetExpense} onOpenChange={(open) => !open && setTargetExpense(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Delete entry?</AlertDialogTitle>
-                        <AlertDialogDescription>This will remove the record from the ledger. This cannot be undone.</AlertDialogDescription>
+                        <AlertDialogTitle>Delete record?</AlertDialogTitle>
+                        <AlertDialogDescription>This cannot be undone.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteExpense} className="bg-destructive hover:bg-destructive/90 text-white">Confirm Removal</AlertDialogAction>
+                        <AlertDialogAction onClick={handleDeleteExpense} className="bg-destructive text-white">Confirm Removal</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
