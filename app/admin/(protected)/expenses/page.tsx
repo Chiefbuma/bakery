@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { getExpenses, addExpense } from "@/services/hotel-service";
+import { getExpenses, addExpense, deleteExpenses } from "@/services/hotel-service";
 import type { Expense, HotelModule } from "@/lib/types";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,16 +10,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/utils";
-import { PlusCircle, Wallet, Receipt, Calendar as CalendarIcon, Loader2 } from "lucide-react";
+import { PlusCircle, Loader2, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function ExpensesPage() {
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [selectedExpenses, setSelectedExpenses] = useState<Set<string>>(new Set());
     const { toast } = useToast();
 
     const load = async () => {
@@ -51,6 +53,24 @@ export default function ExpensesPage() {
         }
     };
 
+    const handleBulkDelete = async () => {
+        if (!confirm(`Remove ${selectedExpenses.size} expense entries?`)) return;
+        try {
+            await deleteExpenses(Array.from(selectedExpenses));
+            setSelectedExpenses(new Set());
+            await load();
+            toast({ title: "Expenses Cleared" });
+        } catch (error) {
+            toast({ variant: "destructive", title: "Action Failed" });
+        }
+    };
+
+    const toggleSelect = (id: string) => {
+        const next = new Set(selectedExpenses);
+        if (next.has(id)) next.delete(id); else next.add(id);
+        setSelectedExpenses(next);
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col gap-2">
@@ -64,15 +84,25 @@ export default function ExpensesPage() {
                         <CardTitle>Overhead Ledger</CardTitle>
                         <CardDescription>Daily and recurring operational costs.</CardDescription>
                     </div>
-                    <Button onClick={() => setIsAddOpen(true)}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Record Expense
-                    </Button>
+                    <div className="flex gap-2">
+                        {selectedExpenses.size > 0 && (
+                            <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete Selected ({selectedExpenses.size})
+                            </Button>
+                        )}
+                        <Button onClick={() => setIsAddOpen(true)}>
+                            <PlusCircle className="mr-2 h-4 w-4" /> Record Expense
+                        </Button>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <div className="rounded-md border">
                         <Table>
                             <TableHeader>
                                 <TableRow>
+                                    <TableHead className="w-12">
+                                        <Checkbox checked={selectedExpenses.size === expenses.length && expenses.length > 0} onCheckedChange={() => setSelectedExpenses(selectedExpenses.size === expenses.length ? new Set() : new Set(expenses.map(e => e.id)))} />
+                                    </TableHead>
                                     <TableHead>Date</TableHead>
                                     <TableHead>Category</TableHead>
                                     <TableHead>Description</TableHead>
@@ -81,8 +111,13 @@ export default function ExpensesPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {expenses.map((e) => (
+                                {expenses.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">No records found.</TableCell>
+                                    </TableRow>
+                                ) : expenses.map((e) => (
                                     <TableRow key={e.id}>
+                                        <TableCell><Checkbox checked={selectedExpenses.has(e.id)} onCheckedChange={() => toggleSelect(e.id)} /></TableCell>
                                         <TableCell className="text-xs">{new Date(e.date).toLocaleDateString()}</TableCell>
                                         <TableCell><Badge variant="outline" className="capitalize">{e.category}</Badge></TableCell>
                                         <TableCell className="font-medium">{e.description}</TableCell>

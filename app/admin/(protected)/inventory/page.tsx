@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { getProducts, updateProduct, getSupplies, addProduct, addSupply } from "@/services/hotel-service";
+import { getProducts, updateProduct, getSupplies, addProduct, addSupply, deleteProducts, deleteSupplies } from "@/services/hotel-service";
 import type { Product, HotelModule, Supply } from "@/lib/types";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,13 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/utils";
-import { PlusCircle, Search, PackagePlus, Box, Loader2 } from "lucide-react";
+import { PlusCircle, Search, PackagePlus, Box, Loader2, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion } from "framer-motion";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function InventoryPage() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -26,6 +27,8 @@ export default function InventoryPage() {
     const [isAddProductOpen, setIsAddProductOpen] = useState(false);
     const [isAddSupplyOpen, setIsAddSupplyOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
+    const [selectedSupplies, setSelectedSupplies] = useState<Set<string>>(new Set());
     const { toast } = useToast();
 
     const loadData = async () => {
@@ -54,12 +57,36 @@ export default function InventoryPage() {
         }
     };
 
+    const handleBulkDeleteProducts = async () => {
+        if (!confirm(`Delete ${selectedProducts.size} selected products?`)) return;
+        try {
+            await deleteProducts(Array.from(selectedProducts));
+            setSelectedProducts(new Set());
+            await loadData();
+            toast({ title: "Products Deleted" });
+        } catch (error) {
+            toast({ variant: "destructive", title: "Action Failed" });
+        }
+    };
+
+    const handleBulkDeleteSupplies = async () => {
+        if (!confirm(`Delete ${selectedSupplies.size} selected supplies?`)) return;
+        try {
+            await deleteSupplies(Array.from(selectedSupplies));
+            setSelectedSupplies(new Set());
+            await loadData();
+            toast({ title: "Supplies Deleted" });
+        } catch (error) {
+            toast({ variant: "destructive", title: "Action Failed" });
+        }
+    };
+
     const handleAddProduct = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setIsSubmitting(true);
         const formData = new FormData(e.currentTarget);
         try {
-            await new Promise(r => setTimeout(resolve, 800)); // Artificial delay for spinner
+            await new Promise(r => setTimeout(r, 800));
             await addProduct({
                 name: formData.get('name') as string,
                 description: formData.get('description') as string,
@@ -87,7 +114,7 @@ export default function InventoryPage() {
         setIsSubmitting(true);
         const formData = new FormData(e.currentTarget);
         try {
-            await new Promise(r => setTimeout(resolve, 800));
+            await new Promise(r => setTimeout(r, 800));
             await addSupply({
                 name: formData.get('name') as string,
                 category: formData.get('category') as string,
@@ -109,6 +136,18 @@ export default function InventoryPage() {
 
     const filteredProducts = products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
     const filteredSupplies = supplies.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    const toggleSelectProduct = (id: string) => {
+        const next = new Set(selectedProducts);
+        if (next.has(id)) next.delete(id); else next.add(id);
+        setSelectedProducts(next);
+    };
+
+    const toggleSelectSupply = (id: string) => {
+        const next = new Set(selectedSupplies);
+        if (next.has(id)) next.delete(id); else next.add(id);
+        setSelectedSupplies(next);
+    };
 
     return (
         <motion.div 
@@ -155,15 +194,25 @@ export default function InventoryPage() {
                                 <CardTitle>Master Stock List</CardTitle>
                                 <CardDescription>Tracking finished goods and services.</CardDescription>
                             </div>
-                            <Button onClick={() => setIsAddProductOpen(true)}>
-                                <PlusCircle className="mr-2 h-4 w-4" /> Add Product
-                            </Button>
+                            <div className="flex gap-2">
+                                {selectedProducts.size > 0 && (
+                                    <Button variant="destructive" size="sm" onClick={handleBulkDeleteProducts}>
+                                        <Trash2 className="mr-2 h-4 w-4" /> Delete ({selectedProducts.size})
+                                    </Button>
+                                )}
+                                <Button onClick={() => setIsAddProductOpen(true)}>
+                                    <PlusCircle className="mr-2 h-4 w-4" /> Add Product
+                                </Button>
+                            </div>
                         </CardHeader>
                         <CardContent>
                             <div className="rounded-md border">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
+                                            <TableHead className="w-12">
+                                                <Checkbox checked={selectedProducts.size === filteredProducts.length && filteredProducts.length > 0} onCheckedChange={() => setSelectedProducts(selectedProducts.size === filteredProducts.length ? new Set() : new Set(filteredProducts.map(p => p.id)))} />
+                                            </TableHead>
                                             <TableHead>Product</TableHead>
                                             <TableHead>Module</TableHead>
                                             <TableHead>Cost</TableHead>
@@ -178,6 +227,7 @@ export default function InventoryPage() {
                                             const low = p.stock <= p.minStockLevel && p.module !== 'carwash' && p.module !== 'entertainment';
                                             return (
                                                 <TableRow key={p.id}>
+                                                    <TableCell><Checkbox checked={selectedProducts.has(p.id)} onCheckedChange={() => toggleSelectProduct(p.id)} /></TableCell>
                                                     <TableCell className="font-bold">{p.name}</TableCell>
                                                     <TableCell><Badge variant="outline" className="capitalize">{p.module}</Badge></TableCell>
                                                     <TableCell>{formatPrice(p.costPrice)}</TableCell>
@@ -208,15 +258,25 @@ export default function InventoryPage() {
                                 <CardTitle>Raw Materials & Supplies</CardTitle>
                                 <CardDescription>Track inputs used to produce goods.</CardDescription>
                             </div>
-                            <Button onClick={() => setIsAddSupplyOpen(true)}>
-                                <Box className="mr-2 h-4 w-4" /> Add Supply
-                            </Button>
+                            <div className="flex gap-2">
+                                {selectedSupplies.size > 0 && (
+                                    <Button variant="destructive" size="sm" onClick={handleBulkDeleteSupplies}>
+                                        <Trash2 className="mr-2 h-4 w-4" /> Delete ({selectedSupplies.size})
+                                    </Button>
+                                )}
+                                <Button onClick={() => setIsAddSupplyOpen(true)}>
+                                    <Box className="mr-2 h-4 w-4" /> Add Supply
+                                </Button>
+                            </div>
                         </CardHeader>
                         <CardContent>
                             <div className="rounded-md border">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
+                                            <TableHead className="w-12">
+                                                <Checkbox checked={selectedSupplies.size === filteredSupplies.length && filteredSupplies.length > 0} onCheckedChange={() => setSelectedSupplies(selectedSupplies.size === filteredSupplies.length ? new Set() : new Set(filteredSupplies.map(s => s.id)))} />
+                                            </TableHead>
                                             <TableHead>Supply Item</TableHead>
                                             <TableHead>Module</TableHead>
                                             <TableHead>Qty On Hand</TableHead>
@@ -227,6 +287,7 @@ export default function InventoryPage() {
                                     <TableBody>
                                         {filteredSupplies.map((s) => (
                                             <TableRow key={s.id}>
+                                                <TableCell><Checkbox checked={selectedSupplies.has(s.id)} onCheckedChange={() => toggleSelectSupply(s.id)} /></TableCell>
                                                 <TableCell className="font-bold">{s.name}</TableCell>
                                                 <TableCell><Badge variant="outline" className="capitalize">{s.module}</Badge></TableCell>
                                                 <TableCell>{s.quantity} {s.unit}</TableCell>
