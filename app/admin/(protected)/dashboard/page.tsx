@@ -11,6 +11,9 @@ import { ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown, Minus } from 'l
 import { formatPrice, cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 
+// CRITICAL: Force dynamic rendering to prevent build-time DB connection attempts
+export const dynamic = 'force-dynamic';
+
 export default function DashboardPage() {
     const [data, setData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState(true);
@@ -25,7 +28,12 @@ export default function DashboardPage() {
     }, []);
 
     if (loading || !data) {
-        return <div className="p-8 space-y-8"><Skeleton className="h-[400px] w-full" /><Skeleton className="h-[400px] w-full" /></div>;
+        return (
+            <div className="p-8 space-y-8">
+                <Skeleton className="h-[200px] w-full" />
+                <Skeleton className="h-[400px] w-full" />
+            </div>
+        );
     }
 
     const { summary, moduleStats, currentPeriodLabel, previousPeriodLabel } = data;
@@ -48,11 +56,11 @@ export default function DashboardPage() {
                 <p className="text-muted-foreground">Financial comparison between {currentPeriodLabel} and {previousPeriodLabel}.</p>
             </div>
 
-            {/* Table 1: Executive P&L Overview */}
-            <Card className="shadow-lg border-primary/10">
+            {/* Core Financial Performance */}
+            <Card className="shadow-lg border-primary/10 overflow-hidden">
                 <CardHeader className="bg-primary/5">
-                    <CardTitle>Core Financial Performance</CardTitle>
-                    <CardDescription>Consolidated statement of operations.</CardDescription>
+                    <CardTitle>Consolidated Financial Statement</CardTitle>
+                    <CardDescription>Real-time operational metrics across all hotel modules.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                     <Table>
@@ -66,13 +74,13 @@ export default function DashboardPage() {
                         </TableHeader>
                         <TableBody>
                             <TableRow>
-                                <TableCell className="font-medium">Total Revenue</TableCell>
+                                <TableCell className="font-medium">Total Gross Revenue</TableCell>
                                 <TableCell className="text-right">{formatPrice(summary.revenue.previous)}</TableCell>
                                 <TableCell className="text-right font-black">{formatPrice(summary.revenue.current)}</TableCell>
                                 <TableCell className="text-right">{renderChange(summary.revenue.changePercent)}</TableCell>
                             </TableRow>
                             <TableRow>
-                                <TableCell className="font-medium">Cost of Sales (COGS)</TableCell>
+                                <TableCell className="font-medium">Cost of Goods Sold (COGS)</TableCell>
                                 <TableCell className="text-right text-muted-foreground">{formatPrice(summary.cogs.previous)}</TableCell>
                                 <TableCell className="text-right text-orange-600 font-bold">{formatPrice(summary.cogs.current)}</TableCell>
                                 <TableCell className="text-right">{renderChange(summary.cogs.changePercent)}</TableCell>
@@ -94,11 +102,11 @@ export default function DashboardPage() {
                 </CardContent>
             </Card>
 
-            {/* Table 2: Module Performance */}
-            <Card className="shadow-lg border-primary/10">
+            {/* Module Performance Analysis */}
+            <Card className="shadow-lg border-primary/10 overflow-hidden">
                 <CardHeader className="bg-primary/5">
-                    <CardTitle>Module Performance Analysis</CardTitle>
-                    <CardDescription>Revenue contribution by department.</CardDescription>
+                    <CardTitle>Module Contribution Analysis</CardTitle>
+                    <CardDescription>Revenue and growth breakdown by department.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                     <Table>

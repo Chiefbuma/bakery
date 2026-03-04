@@ -2,9 +2,6 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
-/**
- * Next.js 15 dynamic route parameter handling.
- */
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;

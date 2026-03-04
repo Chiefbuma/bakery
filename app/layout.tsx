@@ -3,6 +3,9 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 
+// Force dynamic rendering to ensure DB-dependent components work at runtime
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Wamaghach Kahua-ini Hotel | Management System',
   description: 'Premium Hotel Management, POS, and Inventory System',

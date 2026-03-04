@@ -5,8 +5,7 @@ import pool from '@/lib/db';
 export async function POST(req: Request, { params }: { params: Promise<{ productId: string }> }) {
   const connection = await pool.getConnection();
   try {
-    const resolvedParams = await params;
-    const { productId } = resolvedParams;
+    const { productId } = await params;
     const consumptions = await req.json(); 
     
     await connection.beginTransaction();

@@ -4,7 +4,7 @@ import mysql from 'mysql2/promise';
 /**
  * Optimized Database connection pool for MySQL.
  * Configured for Next.js 15 production stability on shared hosting.
- * Uses credentials from the Node.js server panel.
+ * Uses credentials provided in the hosting panel's environment variables.
  */
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
@@ -18,21 +18,11 @@ const pool = mysql.createPool({
   enableKeepAlive: true,
   keepAliveInitialDelay: 10000,
   connectTimeout: 30000,
-  timezone: '+03:00', // Matches East Africa Time
-  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined
+  timezone: '+03:00', // East Africa Time
 });
 
-// Build-safe connectivity test
-if (process.env.NODE_ENV === 'production' && typeof window === 'undefined') {
-  pool.getConnection()
-    .then(conn => {
-      console.log('✅ Wamaghach Database Engine: Ready');
-      conn.release();
-    })
-    .catch(err => {
-      // Log failure but don't crash process during build
-      console.error('❌ Wamaghach Database Connection Error:', err.message);
-    });
-}
+// We no longer test the connection immediately during the build phase 
+// to prevent ECONNREFUSED errors in build logs.
+// Connections are established lazily at runtime.
 
 export default pool;

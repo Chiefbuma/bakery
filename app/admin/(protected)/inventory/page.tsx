@@ -41,6 +41,9 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+// CRITICAL: Force dynamic rendering to prevent build-time DB connection attempts
+export const dynamic = 'force-dynamic';
+
 export default function InventoryPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [supplies, setSupplies] = useState<Supply[]>([]);
