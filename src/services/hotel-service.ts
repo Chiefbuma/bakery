@@ -12,19 +12,16 @@ let users: User[] = [
 
 // Expanded Product List
 let products: Product[] = [
-  // Restaurant
   { id: 'r1', name: 'Nyama Choma (1kg)', description: 'Prime goat meat grilled to perfection over charcoal.', category: 'Food', module: 'restaurant', price: 1200, costPrice: 700, stock: 50, minStockLevel: 10, unit: 'kg', image_url: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=800&q=80' },
   { id: 'r2', name: 'Swahili Pilau', description: 'Fragrant rice cooked with beef and traditional spices.', category: 'Food', module: 'restaurant', price: 650, costPrice: 300, stock: 40, minStockLevel: 5, unit: 'plates', image_url: 'https://images.unsplash.com/photo-1512058560366-cd2427ff5e70?w=800&q=80' },
   { id: 'r3', name: 'Wet Fry Tilapia', description: 'Fresh lake fish served with kachumbari and ugali.', category: 'Food', module: 'restaurant', price: 950, costPrice: 450, stock: 25, minStockLevel: 5, unit: 'fish', image_url: 'https://images.unsplash.com/photo-1580476262798-bddd9f4b7369?w=800&q=80' },
   { id: 'r4', name: 'Chicken Tikka', description: 'Oven-roasted chicken in a spicy marinade.', category: 'Food', module: 'restaurant', price: 850, costPrice: 400, stock: 30, minStockLevel: 5, unit: 'servings', image_url: 'https://images.unsplash.com/photo-1599481238640-4c1288750d7a?w=800&q=80' },
   { id: 'r5', name: 'Beef Stew', description: 'Tender beef cubes slow-cooked with root vegetables.', category: 'Food', module: 'restaurant', price: 550, costPrice: 250, stock: 45, minStockLevel: 10, unit: 'plates', image_url: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=800&q=80' },
-  // Bar
   { id: 'b1', name: 'Tusker Lager', description: 'Kenyan favorite since 1922.', category: 'Beer', module: 'bar', price: 350, costPrice: 220, stock: 240, minStockLevel: 48, unit: 'bottles', image_url: 'https://images.unsplash.com/photo-1518176258769-f227c798150e?w=800&q=80' },
   { id: 'b2', name: 'White Cap', description: 'Premium crisp lager.', category: 'Beer', module: 'bar', price: 380, costPrice: 240, stock: 120, minStockLevel: 24, unit: 'bottles', image_url: 'https://images.unsplash.com/photo-1608270586620-248524c67de9?w=800&q=80' },
-  // Car Wash
   { id: 'c1', name: 'Executive Body Wash', description: 'High-pressure foam wash and dry.', category: 'Cleaning', module: 'carwash', price: 500, costPrice: 100, stock: 1, minStockLevel: 0, unit: 'car', image_url: 'https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=800&q=80' },
-  // Rooms
   { id: 'a1', name: 'Deluxe Room', description: 'Ensuite King bed with garden view.', category: 'Rooms', module: 'accommodation', price: 5500, costPrice: 1200, stock: 10, minStockLevel: 2, unit: 'nights', image_url: 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800&q=80' },
+  { id: 'e1', name: 'Live Band Setup', description: 'Full audio setup for events.', category: 'Sound', module: 'entertainment', price: 15000, costPrice: 2000, stock: 5, minStockLevel: 1, unit: 'setup', image_url: 'https://images.unsplash.com/photo-1514525253361-bee8a4874093?w=800&q=80' }
 ];
 
 // Raw Supplies
@@ -41,12 +38,17 @@ let expenses: Expense[] = [
 
 let transactions: Transaction[] = [];
 
+// Helper to simulate async delay
+const delay = (ms: number = 500) => new Promise(resolve => setTimeout(resolve, ms));
+
 // --- User Services ---
 export async function getUsers(): Promise<User[]> {
-  return users;
+  await delay(100);
+  return [...users];
 }
 
 export async function addUser(user: Omit<User, 'id' | 'createdAt'>): Promise<User> {
+  await delay(300);
   const newUser: User = {
     ...user,
     id: `U-${Date.now()}`,
@@ -57,65 +59,79 @@ export async function addUser(user: Omit<User, 'id' | 'createdAt'>): Promise<Use
 }
 
 export async function updateUser(id: string, updates: Partial<User>): Promise<void> {
+  await delay(300);
   users = users.map(u => u.id === id ? { ...u, ...updates } : u);
 }
 
 export async function deleteUser(id: string): Promise<void> {
+  await delay(200);
   users = users.filter(u => u.id !== id);
 }
 
 export async function deleteUsers(ids: string[]): Promise<void> {
+  await delay(200);
   users = users.filter(u => !ids.includes(u.id));
 }
 
 // --- Product/Inventory Services ---
 export async function getProducts(module?: HotelModule): Promise<Product[]> {
-  return module ? products.filter(p => p.module === module) : products;
+  await delay(100);
+  return module ? products.filter(p => p.module === module) : [...products];
 }
 
 export async function addProduct(product: Omit<Product, 'id'>): Promise<Product> {
+  await delay(300);
   const newProduct = { ...product, id: `PROD-${Date.now()}` };
   products.push(newProduct);
   return newProduct;
 }
 
 export async function updateProduct(id: string, updates: Partial<Product>): Promise<void> {
+  await delay(200);
   products = products.map(p => p.id === id ? { ...p, ...updates } : p);
 }
 
 export async function deleteProducts(ids: string[]): Promise<void> {
+  await delay(200);
   products = products.filter(p => !ids.includes(p.id));
 }
 
 export async function getSupplies(module?: HotelModule): Promise<Supply[]> {
-  return module ? supplies.filter(s => s.module === module) : supplies;
+  await delay(100);
+  return module ? supplies.filter(s => s.module === module) : [...supplies];
 }
 
 export async function addSupply(supply: Omit<Supply, 'id'>): Promise<Supply> {
+  await delay(300);
   const newSupply = { ...supply, id: `SUP-${Date.now()}` };
   supplies.push(newSupply);
   return newSupply;
 }
 
 export async function deleteSupplies(ids: string[]): Promise<void> {
+  await delay(200);
   supplies = supplies.filter(s => !ids.includes(s.id));
 }
 
 export async function getExpenses(): Promise<Expense[]> {
-  return expenses;
+  await delay(100);
+  return [...expenses];
 }
 
 export async function addExpense(expense: Omit<Expense, 'id'>): Promise<Expense> {
+  await delay(300);
   const newExpense = { ...expense, id: `EXP-${Date.now()}` };
   expenses.push(newExpense);
   return newExpense;
 }
 
 export async function deleteExpenses(ids: string[]): Promise<void> {
+  await delay(200);
   expenses = expenses.filter(e => !ids.includes(e.id));
 }
 
 export async function placeOrder(transaction: Omit<Transaction, 'id' | 'timestamp'>): Promise<Transaction> {
+  await delay(400);
   const newTransaction: Transaction = {
     ...transaction,
     id: `TX-${Date.now()}`,
@@ -134,6 +150,7 @@ export async function placeOrder(transaction: Omit<Transaction, 'id' | 'timestam
 }
 
 export async function getPendingOrders(): Promise<Transaction[]> {
+  await delay(100);
   return transactions.filter(t => t.status === 'pending');
 }
 
@@ -143,6 +160,7 @@ function calculateChange(current: number, previous: number) {
 }
 
 export async function getDashboardData(): Promise<DashboardData> {
+  await delay(200);
   const now = new Date();
   const currentStart = startOfMonth(now);
   const prevDate = subMonths(now, 1);

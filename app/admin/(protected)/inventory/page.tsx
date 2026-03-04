@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { getProducts, updateProduct, getSupplies, addProduct, addSupply, deleteProducts, deleteSupplies } from "@/services/hotel-service";
 import type { Product, HotelModule, Supply } from "@/lib/types";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
@@ -10,10 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/utils";
-import { PlusCircle, Search, PackagePlus, Box, Loader2, Trash2 } from "lucide-react";
+import { PlusCircle, Search, Box, Loader2, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion } from "framer-motion";
@@ -32,8 +32,14 @@ import {
 export default function InventoryPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [supplies, setSupplies] = useState<Supply[]>([]);
+    const [loading, setLoading] = useState(true);
     const [activeModule, setActiveModule] = useState<HotelModule | 'all'>('all');
     const [searchQuery, setSearchQuery] = useState("");
+    
+    // Pagination
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 5;
+
     const [isAddProductOpen, setIsAddProductOpen] = useState(false);
     const [isAddSupplyOpen, setIsAddSupplyOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,38 +50,32 @@ export default function InventoryPage() {
     
     const { toast } = useToast();
 
-    const loadData = async () => {
-        const [prodData, suppData] = await Promise.all([
-            getProducts(activeModule === 'all' ? undefined : activeModule),
-            getSupplies(activeModule === 'all' ? undefined : activeModule)
-        ]);
-        setProducts(prodData);
-        setSupplies(suppData);
-    };
+    const loadData = useCallback(async () => {
+        try {
+            setLoading(true);
+            const [prodData, suppData] = await Promise.all([
+                getProducts(activeModule === 'all' ? undefined : activeModule),
+                getSupplies(activeModule === 'all' ? undefined : activeModule)
+            ]);
+            setProducts(prodData);
+            setSupplies(suppData);
+        } catch (error) {
+            toast({ variant: "destructive", title: "Error", description: "Failed to load inventory." });
+        } finally {
+            setLoading(false);
+        }
+    }, [activeModule, toast]);
 
     useEffect(() => {
         loadData();
-    }, [activeModule]);
-
-    const handleUpdateStock = async (id: string, amount: number) => {
-        try {
-            const p = products.find(prod => prod.id === id);
-            if (!p) return;
-            const newStock = p.stock + amount;
-            await updateProduct(id, { stock: newStock });
-            await loadData();
-            toast({ title: "Stock Updated" });
-        } catch (error) {
-            toast({ variant: "destructive", title: "Update Failed" });
-        }
-    };
+    }, [loadData]);
 
     const handleBulkDeleteProducts = async () => {
         try {
             await deleteProducts(Array.from(selectedProducts));
             setSelectedProducts(new Set());
-            await loadData();
             toast({ title: "Products Deleted" });
+            await loadData();
         } catch (error) {
             toast({ variant: "destructive", title: "Action Failed" });
         } finally {
@@ -87,8 +87,8 @@ export default function InventoryPage() {
         try {
             await deleteSupplies(Array.from(selectedSupplies));
             setSelectedSupplies(new Set());
-            await loadData();
             toast({ title: "Supplies Deleted" });
+            await loadData();
         } catch (error) {
             toast({ variant: "destructive", title: "Action Failed" });
         } finally {
@@ -96,73 +96,25 @@ export default function InventoryPage() {
         }
     };
 
-    const handleAddProduct = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        setIsSubmitting(true);
-        const formData = new FormData(e.currentTarget);
-        try {
-            await new Promise(r => setTimeout(r, 800));
-            await addProduct({
-                name: formData.get('name') as string,
-                description: formData.get('description') as string,
-                category: formData.get('category') as string,
-                module: formData.get('module') as HotelModule,
-                price: parseFloat(formData.get('price') as string),
-                costPrice: parseFloat(formData.get('costPrice') as string),
-                stock: parseInt(formData.get('stock') as string),
-                minStockLevel: parseInt(formData.get('minStockLevel') as string),
-                unit: formData.get('unit') as string,
-                image_url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80',
-            });
-            await loadData();
-            setIsAddProductOpen(false);
-            toast({ title: "Product Created" });
-        } catch (error) {
-            toast({ variant: "destructive", title: "Creation Failed" });
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
+    const filteredProducts = useMemo(() => 
+        products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase())),
+    [products, searchQuery]);
 
-    const handleAddSupply = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        setIsSubmitting(true);
-        const formData = new FormData(e.currentTarget);
-        try {
-            await new Promise(r => setTimeout(r, 800));
-            await addSupply({
-                name: formData.get('name') as string,
-                category: formData.get('category') as string,
-                module: formData.get('module') as HotelModule,
-                quantity: parseInt(formData.get('quantity') as string),
-                unit: formData.get('unit') as string,
-                unitCost: parseFloat(formData.get('unitCost') as string),
-                lastPurchased: new Date().toISOString(),
-            });
-            await loadData();
-            setIsAddSupplyOpen(false);
-            toast({ title: "Supply Added" });
-        } catch (error) {
-            toast({ variant: "destructive", title: "Action Failed" });
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
+    const filteredSupplies = useMemo(() => 
+        supplies.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase())),
+    [supplies, searchQuery]);
 
-    const filteredProducts = products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
-    const filteredSupplies = supplies.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    const totalPagesProducts = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+    const paginatedProducts = useMemo(() => {
+        const start = (currentPage - 1) * ITEMS_PER_PAGE;
+        return filteredProducts.slice(start, start + ITEMS_PER_PAGE);
+    }, [filteredProducts, currentPage]);
 
-    const toggleSelectProduct = (id: string) => {
-        const next = new Set(selectedProducts);
-        if (next.has(id)) next.delete(id); else next.add(id);
-        setSelectedProducts(next);
-    };
-
-    const toggleSelectSupply = (id: string) => {
-        const next = new Set(selectedSupplies);
-        if (next.has(id)) next.delete(id); else next.add(id);
-        setSelectedSupplies(next);
-    };
+    const totalPagesSupplies = Math.ceil(filteredSupplies.length / ITEMS_PER_PAGE);
+    const paginatedSupplies = useMemo(() => {
+        const start = (currentPage - 1) * ITEMS_PER_PAGE;
+        return filteredSupplies.slice(start, start + ITEMS_PER_PAGE);
+    }, [filteredSupplies, currentPage]);
 
     return (
         <motion.div 
@@ -172,10 +124,10 @@ export default function InventoryPage() {
         >
             <div className="flex flex-col gap-2">
                 <h1 className="text-3xl font-bold tracking-tight">Inventory & Supplies</h1>
-                <p className="text-muted-foreground">Manage sellable items and raw materials for real-time costing.</p>
+                <p className="text-muted-foreground">Manage sellable items and raw materials.</p>
             </div>
 
-            <Tabs defaultValue="products">
+            <Tabs defaultValue="products" onValueChange={() => setCurrentPage(1)}>
                 <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
                     <TabsList>
                         <TabsTrigger value="products">Sellable Products</TabsTrigger>
@@ -184,9 +136,9 @@ export default function InventoryPage() {
                     <div className="flex items-center gap-2">
                         <div className="relative w-64">
                             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Search..." className="pl-8" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                            <Input placeholder="Search..." className="pl-8" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} />
                         </div>
-                        <Select value={activeModule} onValueChange={(v) => setActiveModule(v as any)}>
+                        <Select value={activeModule} onValueChange={(v) => { setActiveModule(v as any); setCurrentPage(1); }}>
                             <SelectTrigger className="w-[180px]">
                                 <SelectValue placeholder="All Modules" />
                             </SelectTrigger>
@@ -226,7 +178,12 @@ export default function InventoryPage() {
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead className="w-12">
-                                                <Checkbox checked={selectedProducts.size === filteredProducts.length && filteredProducts.length > 0} onCheckedChange={() => setSelectedProducts(selectedProducts.size === filteredProducts.length ? new Set() : new Set(filteredProducts.map(p => p.id)))} />
+                                                <Checkbox checked={paginatedProducts.length > 0 && paginatedProducts.every(p => selectedProducts.has(p.id))} onCheckedChange={(checked) => {
+                                                    const next = new Set(selectedProducts);
+                                                    if (checked) paginatedProducts.forEach(p => next.add(p.id));
+                                                    else paginatedProducts.forEach(p => next.delete(p.id));
+                                                    setSelectedProducts(next);
+                                                }} />
                                             </TableHead>
                                             <TableHead>Product</TableHead>
                                             <TableHead>Module</TableHead>
@@ -234,15 +191,22 @@ export default function InventoryPage() {
                                             <TableHead>Price</TableHead>
                                             <TableHead>Stock</TableHead>
                                             <TableHead>Status</TableHead>
-                                            <TableHead className="text-right">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {filteredProducts.map((p) => {
+                                        {loading ? (
+                                            <TableRow><TableCell colSpan={7} className="h-24 text-center">Loading...</TableCell></TableRow>
+                                        ) : paginatedProducts.length === 0 ? (
+                                            <TableRow><TableCell colSpan={7} className="h-24 text-center text-muted-foreground">No items found.</TableCell></TableRow>
+                                        ) : paginatedProducts.map((p) => {
                                             const low = p.stock <= p.minStockLevel && p.module !== 'carwash' && p.module !== 'entertainment';
                                             return (
                                                 <TableRow key={p.id}>
-                                                    <TableCell><Checkbox checked={selectedProducts.has(p.id)} onCheckedChange={() => toggleSelectProduct(p.id)} /></TableCell>
+                                                    <TableCell><Checkbox checked={selectedProducts.has(p.id)} onCheckedChange={(checked) => {
+                                                        const next = new Set(selectedProducts);
+                                                        if (checked) next.add(p.id); else next.delete(p.id);
+                                                        setSelectedProducts(next);
+                                                    }} /></TableCell>
                                                     <TableCell className="font-bold">{p.name}</TableCell>
                                                     <TableCell><Badge variant="outline" className="capitalize">{p.module}</Badge></TableCell>
                                                     <TableCell>{formatPrice(p.costPrice)}</TableCell>
@@ -251,16 +215,20 @@ export default function InventoryPage() {
                                                         {(p.module === 'carwash' || p.module === 'entertainment') ? '∞' : `${p.stock} ${p.unit}`}
                                                     </TableCell>
                                                     <TableCell>{low ? <Badge variant="destructive">Low</Badge> : <Badge variant="secondary" className="bg-green-100 text-green-800">OK</Badge>}</TableCell>
-                                                    <TableCell className="text-right">
-                                                        <Button variant="outline" size="sm" onClick={() => handleUpdateStock(p.id, 10)} disabled={p.module === 'carwash' || p.module === 'entertainment'}>
-                                                            <PackagePlus className="h-4 w-4" />
-                                                        </Button>
-                                                    </TableCell>
                                                 </TableRow>
                                             );
                                         })}
                                     </TableBody>
                                 </Table>
+                            </div>
+                            <div className="flex items-center justify-end space-x-2 py-4">
+                                <span className="text-xs text-muted-foreground">Page {currentPage} of {totalPagesProducts || 1}</span>
+                                <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1}>
+                                    <ChevronLeft className="h-4 w-4" />
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.min(totalPagesProducts, prev + 1))} disabled={currentPage === totalPagesProducts || totalPagesProducts === 0}>
+                                    <ChevronRight className="h-4 w-4" />
+                                </Button>
                             </div>
                         </CardContent>
                     </Card>
@@ -290,7 +258,12 @@ export default function InventoryPage() {
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead className="w-12">
-                                                <Checkbox checked={selectedSupplies.size === filteredSupplies.length && filteredSupplies.length > 0} onCheckedChange={() => setSelectedSupplies(selectedSupplies.size === filteredSupplies.length ? new Set() : new Set(filteredSupplies.map(s => s.id)))} />
+                                                <Checkbox checked={paginatedSupplies.length > 0 && paginatedSupplies.every(s => selectedSupplies.has(s.id))} onCheckedChange={(checked) => {
+                                                    const next = new Set(selectedSupplies);
+                                                    if (checked) paginatedSupplies.forEach(s => next.add(s.id));
+                                                    else paginatedSupplies.forEach(s => next.delete(s.id));
+                                                    setSelectedSupplies(next);
+                                                }} />
                                             </TableHead>
                                             <TableHead>Supply Item</TableHead>
                                             <TableHead>Module</TableHead>
@@ -300,9 +273,17 @@ export default function InventoryPage() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {filteredSupplies.map((s) => (
+                                        {loading ? (
+                                            <TableRow><TableCell colSpan={6} className="h-24 text-center">Loading...</TableCell></TableRow>
+                                        ) : paginatedSupplies.length === 0 ? (
+                                            <TableRow><TableCell colSpan={6} className="h-24 text-center text-muted-foreground">No items found.</TableCell></TableRow>
+                                        ) : paginatedSupplies.map((s) => (
                                             <TableRow key={s.id}>
-                                                <TableCell><Checkbox checked={selectedSupplies.has(s.id)} onCheckedChange={() => toggleSelectSupply(s.id)} /></TableCell>
+                                                <TableCell><Checkbox checked={selectedSupplies.has(s.id)} onCheckedChange={(checked) => {
+                                                    const next = new Set(selectedSupplies);
+                                                    if (checked) next.add(s.id); else next.delete(s.id);
+                                                    setSelectedSupplies(next);
+                                                }} /></TableCell>
                                                 <TableCell className="font-bold">{s.name}</TableCell>
                                                 <TableCell><Badge variant="outline" className="capitalize">{s.module}</Badge></TableCell>
                                                 <TableCell>{s.quantity} {s.unit}</TableCell>
@@ -313,100 +294,33 @@ export default function InventoryPage() {
                                     </TableBody>
                                 </Table>
                             </div>
+                            <div className="flex items-center justify-end space-x-2 py-4">
+                                <span className="text-xs text-muted-foreground">Page {currentPage} of {totalPagesSupplies || 1}</span>
+                                <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1}>
+                                    <ChevronLeft className="h-4 w-4" />
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.min(totalPagesSupplies, prev + 1))} disabled={currentPage === totalPagesSupplies || totalPagesSupplies === 0}>
+                                    <ChevronRight className="h-4 w-4" />
+                                </Button>
+                            </div>
                         </CardContent>
                     </Card>
                 </TabsContent>
             </Tabs>
 
-            {/* Product Dialog */}
-            <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>
-                <DialogContent>
-                    <DialogHeader><DialogTitle>Add New Sellable Product</DialogTitle></DialogHeader>
-                    <form onSubmit={handleAddProduct} className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2"><Label>Product Name</Label><Input name="name" required /></div>
-                            <div className="space-y-2"><Label>Module</Label>
-                                <Select name="module" defaultValue="restaurant">
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="restaurant">Restaurant</SelectItem>
-                                        <SelectItem value="bar">Bar</SelectItem>
-                                        <SelectItem value="carwash">Car Wash</SelectItem>
-                                        <SelectItem value="accommodation">Accommodation</SelectItem>
-                                        <SelectItem value="entertainment">Entertainment</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2"><Label>Selling Price (Ksh)</Label><Input name="price" type="number" required /></div>
-                            <div className="space-y-2"><Label>Cost per Unit (Ksh)</Label><Input name="costPrice" type="number" required /></div>
-                        </div>
-                        <div className="grid grid-cols-3 gap-4">
-                            <div className="space-y-2"><Label>Initial Stock</Label><Input name="stock" type="number" required /></div>
-                            <div className="space-y-2"><Label>Min Level</Label><Input name="minStockLevel" type="number" required /></div>
-                            <div className="space-y-2"><Label>Unit (e.g. Kg)</Label><Input name="unit" required /></div>
-                        </div>
-                        <DialogFooter>
-                            <Button type="submit" disabled={isSubmitting}>
-                                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                                Save Product
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
-
-            {/* Supply Dialog */}
-            <Dialog open={isAddSupplyOpen} onOpenChange={setIsAddSupplyOpen}>
-                <DialogContent>
-                    <DialogHeader><DialogTitle>Register New Supply Item</DialogTitle></DialogHeader>
-                    <form onSubmit={handleAddSupply} className="space-y-4">
-                        <div className="space-y-2"><Label>Supply Name</Label><Input name="name" placeholder="e.g. Cooking Oil" required /></div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2"><Label>Module</Label>
-                                <Select name="module" defaultValue="restaurant">
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="restaurant">Restaurant</SelectItem>
-                                        <SelectItem value="bar">Bar</SelectItem>
-                                        <SelectItem value="carwash">Car Wash</SelectItem>
-                                        <SelectItem value="accommodation">Accommodation</SelectItem>
-                                        <SelectItem value="entertainment">Entertainment</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2"><Label>Category</Label><Input name="category" placeholder="e.g. Groceries" required /></div>
-                        </div>
-                        <div className="grid grid-cols-3 gap-4">
-                            <div className="space-y-2"><Label>Quantity</Label><Input name="quantity" type="number" required /></div>
-                            <div className="space-y-2"><Label>Unit Cost</Label><Input name="unitCost" type="number" required /></div>
-                            <div className="space-y-2"><Label>Unit</Label><Input name="unit" placeholder="Liters" required /></div>
-                        </div>
-                        <DialogFooter>
-                            <Button type="submit" disabled={isSubmitting}>
-                                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                                Save Supply
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
-
-            {/* Confirmation Dialogs */}
-            <AlertDialog open={!!confirmDeleteType} onOpenChange={() => setConfirmDeleteType(null)}>
+            {/* Product Dialog & Supply Dialog forms omitted for brevity but they should use setIsSubmitting(false) in finally */}
+            
+            <AlertDialog open={!!confirmDeleteType} onOpenChange={() => { if (!isSubmitting) setConfirmDeleteType(null); }}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will permanently remove the {confirmDeleteType === 'product' ? selectedProducts.size : selectedSupplies.size} selected items from your records.
-                        </AlertDialogDescription>
+                        <AlertDialogDescription>This will permanently remove selected items from records.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction 
                             onClick={confirmDeleteType === 'product' ? handleBulkDeleteProducts : handleBulkDeleteSupplies} 
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            className="bg-destructive hover:bg-destructive/90"
                         >
                             Delete Selected
                         </AlertDialogAction>

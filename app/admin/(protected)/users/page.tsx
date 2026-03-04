@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { getUsers, addUser, deleteUser, deleteUsers, updateUser } from "@/services/hotel-service";
 import type { User, UserRole } from "@/lib/types";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus, ShieldCheck, User as UserIcon, Loader2, Trash2, Mail, MoreHorizontal, Edit, ChevronDown } from "lucide-react";
+import { UserPlus, ShieldCheck, User as UserIcon, Loader2, Trash2, Mail, MoreHorizontal, Edit, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -30,6 +30,7 @@ import {
 
 export default function UsersPage() {
     const [users, setUsers] = useState<User[]>([]);
+    const [loading, setLoading] = useState(true);
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -39,17 +40,28 @@ export default function UsersPage() {
         isOpen: boolean;
         title: string;
         description: string;
-        onConfirm: () => void;
+        onConfirm: () => Promise<void>;
     } | null>(null);
     
+    // Pagination
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 5;
+
     const { toast } = useToast();
 
-    const loadUsers = async () => {
-        const data = await getUsers();
-        setUsers(data);
-    };
+    const loadUsers = useCallback(async () => {
+        try {
+            setLoading(true);
+            const data = await getUsers();
+            setUsers(data);
+        } catch (error) {
+            toast({ variant: "destructive", title: "Load Failed", description: "Could not retrieve user directory." });
+        } finally {
+            setLoading(false);
+        }
+    }, [toast]);
 
-    useEffect(() => { loadUsers(); }, []);
+    useEffect(() => { loadUsers(); }, [loadUsers]);
 
     const handleSaveUser = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -62,22 +74,21 @@ export default function UsersPage() {
         };
 
         try {
-            await new Promise(r => setTimeout(r, 800)); // Spinner simulation
             if (editingUser) {
                 await updateUser(editingUser.id, userData);
-                toast({ title: "User Updated", description: "Successfully updated system user details." });
+                toast({ title: "User Updated" });
             } else {
                 await addUser({
                     ...userData,
                     password: formData.get('password') as string || 'staff123',
                 });
-                toast({ title: "User Created", description: "Successfully added new system user." });
+                toast({ title: "User Created" });
             }
-            await loadUsers();
             setIsAddOpen(false);
             setEditingUser(null);
+            await loadUsers();
         } catch (error) {
-            toast({ variant: "destructive", title: "Action Failed", description: "Could not save user changes." });
+            toast({ variant: "destructive", title: "Action Failed" });
         } finally {
             setIsSubmitting(false);
         }
@@ -91,8 +102,13 @@ export default function UsersPage() {
             onConfirm: async () => {
                 try {
                     await deleteUser(id);
-                    await loadUsers();
                     toast({ title: "User Removed" });
+                    setSelectedUsers(prev => {
+                        const next = new Set(prev);
+                        next.delete(id);
+                        return next;
+                    });
+                    await loadUsers();
                 } catch (error) {
                     toast({ variant: "destructive", title: "Action Failed" });
                 } finally {
@@ -107,13 +123,13 @@ export default function UsersPage() {
         setConfirmConfig({
             isOpen: true,
             title: `Remove ${selectedUsers.size} Users?`,
-            description: "The selected personnel will lose all system access immediately. This cannot be undone.",
+            description: "The selected personnel will lose all system access immediately.",
             onConfirm: async () => {
                 try {
                     await deleteUsers(Array.from(selectedUsers));
+                    toast({ title: "Users Deleted" });
                     setSelectedUsers(new Set());
                     await loadUsers();
-                    toast({ title: "Users Deleted", description: "Selected accounts have been removed." });
                 } catch (error) {
                     toast({ variant: "destructive", title: "Bulk Deletion Failed" });
                 } finally {
@@ -123,30 +139,27 @@ export default function UsersPage() {
         });
     };
 
+    const filteredUsers = useMemo(() => 
+        users.filter(u => 
+            u.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+            u.email.toLowerCase().includes(searchQuery.toLowerCase())
+        ),
+    [users, searchQuery]);
+
+    const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+    const paginatedUsers = useMemo(() => {
+        const start = (currentPage - 1) * ITEMS_PER_PAGE;
+        return filteredUsers.slice(start, start + ITEMS_PER_PAGE);
+    }, [filteredUsers, currentPage]);
+
     const toggleSelectUser = (id: string) => {
-        const next = new Set(selectedUsers);
-        if (next.has(id)) next.delete(id);
-        else next.add(id);
-        setSelectedUsers(next);
+        setSelectedUsers(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
     };
-
-    const toggleSelectAll = () => {
-        if (selectedUsers.size === filteredUsers.length) {
-            setSelectedUsers(new Set());
-        } else {
-            setSelectedUsers(new Set(filteredUsers.map(u => u.id)));
-        }
-    };
-
-    const openEditDialog = (user: User) => {
-        setEditingUser(user);
-        setIsAddOpen(true);
-    };
-
-    const filteredUsers = users.filter(u => 
-        u.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        u.email.toLowerCase().includes(searchQuery.toLowerCase())
-    );
 
     return (
         <motion.div 
@@ -175,7 +188,7 @@ export default function UsersPage() {
                             placeholder="Search users..." 
                             className="w-64"
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                         />
                         <Button onClick={() => { setEditingUser(null); setIsAddOpen(true); }}>
                             <UserPlus className="mr-2 h-4 w-4" /> Add User
@@ -189,8 +202,18 @@ export default function UsersPage() {
                                 <TableRow>
                                     <TableHead className="w-12">
                                         <Checkbox 
-                                            checked={filteredUsers.length > 0 && selectedUsers.size === filteredUsers.length}
-                                            onCheckedChange={toggleSelectAll}
+                                            checked={paginatedUsers.length > 0 && paginatedUsers.every(u => selectedUsers.has(u.id))}
+                                            onCheckedChange={(checked) => {
+                                                if (checked) {
+                                                    const next = new Set(selectedUsers);
+                                                    paginatedUsers.forEach(u => next.add(u.id));
+                                                    setSelectedUsers(next);
+                                                } else {
+                                                    const next = new Set(selectedUsers);
+                                                    paginatedUsers.forEach(u => next.delete(u.id));
+                                                    setSelectedUsers(next);
+                                                }
+                                            }}
                                         />
                                     </TableHead>
                                     <TableHead>User</TableHead>
@@ -201,13 +224,19 @@ export default function UsersPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredUsers.length === 0 ? (
+                                {loading ? (
+                                    Array.from({ length: 3 }).map((_, i) => (
+                                        <TableRow key={i}>
+                                            <TableCell colSpan={6}><div className="h-8 animate-pulse bg-muted rounded w-full" /></TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : paginatedUsers.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                                             No users found.
                                         </TableCell>
                                     </TableRow>
-                                ) : filteredUsers.map((u) => (
+                                ) : paginatedUsers.map((u) => (
                                     <TableRow key={u.id} className={selectedUsers.has(u.id) ? "bg-muted/50" : ""}>
                                         <TableCell>
                                             <Checkbox 
@@ -225,11 +254,10 @@ export default function UsersPage() {
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-muted-foreground">
-                                            <div className="flex items-center gap-2"><Mail className="h-3 w-3" /> {u.email}</div>
+                                            <div className="flex items-center gap-2 text-xs"><Mail className="h-3 w-3" /> {u.email}</div>
                                         </TableCell>
                                         <TableCell>
                                             <Badge variant={u.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
-                                                {u.role === 'admin' ? <ShieldCheck className="h-3 w-3 mr-1" /> : <UserIcon className="h-3 w-3 mr-1" />}
                                                 {u.role}
                                             </Badge>
                                         </TableCell>
@@ -242,11 +270,11 @@ export default function UsersPage() {
                                                     <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem onClick={() => openEditDialog(u)}>
+                                                    <DropdownMenuItem onClick={() => { setEditingUser(u); setIsAddOpen(true); }}>
                                                         <Edit className="mr-2 h-4 w-4" /> Edit Details
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem 
-                                                        className="text-destructive focus:text-destructive" 
+                                                        className="text-destructive" 
                                                         onClick={() => confirmDeleteUser(u.id, u.name)}
                                                         disabled={u.email === 'admin@wamaghach.com'}
                                                     >
@@ -260,47 +288,55 @@ export default function UsersPage() {
                             </TableBody>
                         </Table>
                     </div>
+                    {/* Pagination */}
+                    <div className="flex items-center justify-end space-x-2 py-4">
+                        <span className="text-xs text-muted-foreground">Page {currentPage} of {totalPages || 1}</span>
+                        <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1}>
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages || totalPages === 0}>
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
+                    </div>
                 </CardContent>
             </Card>
 
-            <Dialog open={isAddOpen} onOpenChange={(open) => { setIsAddOpen(open); if(!open) setEditingUser(null); }}>
+            <Dialog open={isAddOpen} onOpenChange={(open) => { if (!isSubmitting) setIsAddOpen(open); if(!open && !isSubmitting) setEditingUser(null); }}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{editingUser ? 'Edit User Details' : 'Register New System User'}</DialogTitle>
-                        <DialogDescription>
-                            {editingUser ? `Update permissions and profile for ${editingUser.name}.` : 'Set up a new account for hotel personnel.'}
-                        </DialogDescription>
+                        <DialogTitle>{editingUser ? 'Edit User' : 'Register User'}</DialogTitle>
+                        <DialogDescription>Hotel personnel management.</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleSaveUser} className="space-y-4">
                         <div className="space-y-2">
                             <Label>Full Name</Label>
-                            <Input name="name" defaultValue={editingUser?.name} placeholder="e.g. John Doe" required />
+                            <Input name="name" defaultValue={editingUser?.name} placeholder="e.g. John Doe" required disabled={isSubmitting} />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label>Email Address</Label>
-                                <Input name="email" type="email" defaultValue={editingUser?.email} placeholder="john@wamaghach.com" required />
+                                <Label>Email</Label>
+                                <Input name="email" type="email" defaultValue={editingUser?.email} required disabled={isSubmitting} />
                             </div>
                             <div className="space-y-2">
-                                <Label>Access Role</Label>
-                                <Select name="role" defaultValue={editingUser?.role || "staff"}>
+                                <Label>Role</Label>
+                                <Select name="role" defaultValue={editingUser?.role || "staff"} disabled={isSubmitting}>
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="admin">Administrator (Full Access)</SelectItem>
-                                        <SelectItem value="staff">Operational Staff (POS Only)</SelectItem>
+                                        <SelectItem value="admin">Admin</SelectItem>
+                                        <SelectItem value="staff">Staff</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                         </div>
                         {!editingUser && (
                             <div className="space-y-2">
-                                <Label>Initial Access Key (Password)</Label>
-                                <Input name="password" type="password" placeholder="••••••••" required />
+                                <Label>Initial Password</Label>
+                                <Input name="password" type="password" placeholder="••••••••" required disabled={isSubmitting} />
                             </div>
                         )}
                         <DialogFooter>
                             <Button type="submit" disabled={isSubmitting}>
-                                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                                {isSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                                 {editingUser ? "Save Changes" : "Create Account"}
                             </Button>
                         </DialogFooter>
@@ -308,22 +344,20 @@ export default function UsersPage() {
                 </DialogContent>
             </Dialog>
 
-            {confirmConfig && (
-                <AlertDialog open={confirmConfig.isOpen} onOpenChange={(open) => !open && setConfirmConfig(null)}>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>{confirmConfig.title}</AlertDialogTitle>
-                            <AlertDialogDescription>{confirmConfig.description}</AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel onClick={() => setConfirmConfig(null)}>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={confirmConfig.onConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                Confirm
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            )}
+            <AlertDialog open={!!confirmConfig} onOpenChange={(open) => { if (!open) setConfirmConfig(null); }}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{confirmConfig?.title}</AlertDialogTitle>
+                        <AlertDialogDescription>{confirmConfig?.description}</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmConfig?.onConfirm} className="bg-destructive hover:bg-destructive/90">
+                            Confirm
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </motion.div>
     );
 }
