@@ -1,93 +1,130 @@
 
 'use client';
 
-import React from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Hotel, Utensils, Beer, Car, Bed, ArrowRight } from 'lucide-react';
-import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
+import { Hotel, Loader2, Lock } from 'lucide-react';
 
-export default function Home() {
+export default function LoginPage() {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    const isLoggedIn = localStorage.getItem('isAdminLoggedIn');
+    if (isLoggedIn) {
+      router.replace('/admin/pos');
+    } else {
+      setIsCheckingAuth(false);
+    }
+  }, [router]);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoggingIn(true);
+    
+    // Simulate auth for prototype
+    setTimeout(() => {
+        if (email === 'admin@wamaghach.com' && password === 'admin123') {
+            localStorage.setItem('isAdminLoggedIn', 'true');
+            localStorage.setItem('adminUser', JSON.stringify({ name: 'Admin User', email }));
+            
+            toast({
+                title: 'Login Successful',
+                description: `Welcome to Wamaghach Management System.`,
+            });
+            
+            router.push('/admin/pos');
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Access Denied',
+                description: 'Invalid credentials. Please use admin@wamaghach.com / admin123',
+            });
+            setIsLoggingIn(false);
+        }
+    }, 1000);
+  };
+
+  if (isCheckingAuth) {
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-stone-950">
+           <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Hero Section */}
-      <header className="relative h-[70vh] flex items-center justify-center overflow-hidden bg-stone-900 text-white">
-        <div className="absolute inset-0 opacity-40">
-          <img 
-            src="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80&w=2000" 
-            alt="Hotel Interior" 
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="relative z-10 text-center px-4 max-w-4xl">
-          <div className="flex justify-center mb-6">
-            <div className="p-4 bg-primary/20 rounded-full backdrop-blur-md">
-              <Hotel className="h-12 w-12 text-primary" />
-            </div>
-          </div>
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 font-headline tracking-tight">
-            Wamaghach Kahua-ini Hotel
-          </h1>
-          <p className="text-lg md:text-xl mb-8 text-stone-300 max-w-2xl mx-auto">
-            Experience premium hospitality across our Restaurant, Bar, Accommodation, and Car Wash services.
-          </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Link href="/admin/pos">
-              <Button size="lg" className="px-8 text-lg">
-                Enter Terminal <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-            <Link href="/admin/dashboard">
-              <Button size="lg" variant="outline" className="px-8 text-lg border-white text-white hover:bg-white/10">
-                Admin View
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      {/* Services Section */}
-      <main className="container mx-auto py-20 px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          <ServiceCard 
-            icon={<Utensils className="h-8 w-8" />} 
-            title="Restaurant" 
-            desc="Authentic local and international cuisine prepared by master chefs."
-          />
-          <ServiceCard 
-            icon={<Beer className="h-8 w-8" />} 
-            title="Executive Bar" 
-            desc="A sophisticated selection of fine spirits and premium local lagers."
-          />
-          <ServiceCard 
-            icon={<Bed className="h-8 w-8" />} 
-            title="Accommodation" 
-            desc="Luxurious rooms designed for your ultimate comfort and relaxation."
-          />
-          <ServiceCard 
-            icon={<Car className="h-8 w-8" />} 
-            title="Pro Car Wash" 
-            desc="High-quality cleaning services while you enjoy our hospitality."
-          />
-        </div>
-      </main>
-
-      <footer className="mt-auto py-8 bg-card border-t">
-        <div className="container mx-auto px-4 text-center text-muted-foreground">
-          <p>© {new Date().getFullYear()} Wamaghach Kahua-ini Hotel. All Rights Reserved.</p>
-        </div>
-      </footer>
-    </div>
-  );
-}
-
-function ServiceCard({ icon, title, desc }: { icon: React.ReactNode, title: string, desc: string }) {
-  return (
-    <div className="p-8 bg-card rounded-2xl border hover:border-primary/50 transition-all hover:shadow-xl group">
-      <div className="mb-6 p-3 bg-primary/10 rounded-lg w-fit group-hover:bg-primary group-hover:text-white transition-colors">
-        {icon}
+    <div className="min-h-screen flex items-center justify-center bg-stone-950 relative overflow-hidden">
+      {/* Background Decorative Element */}
+      <div className="absolute inset-0 opacity-20">
+        <img 
+          src="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80&w=2000" 
+          alt="Hotel Interior" 
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-stone-950 via-transparent to-stone-950"></div>
       </div>
-      <h3 className="text-xl font-bold mb-3">{title}</h3>
-      <p className="text-muted-foreground text-sm leading-relaxed">{desc}</p>
+
+      <Card className="w-full max-w-md relative z-10 border-white/10 bg-black/60 backdrop-blur-xl shadow-2xl">
+        <form onSubmit={handleLogin}>
+          <CardHeader className="text-center space-y-4">
+             <div className="flex items-center gap-3 justify-center text-primary mb-2">
+                <div className="p-3 bg-primary/10 rounded-full border border-primary/20">
+                    <Hotel className="h-8 w-8" />
+                </div>
+             </div>
+            <div className="space-y-1">
+                <CardTitle className="text-3xl font-black tracking-tight text-white font-headline">Wamaghach</CardTitle>
+                <CardDescription className="text-stone-400 font-medium uppercase tracking-widest text-[10px]">Kahua-ini Hotel Management</CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-stone-300">Staff Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="admin@wamaghach.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={isLoggingIn}
+                className="bg-white/5 border-white/10 text-white placeholder:text-stone-600 focus:border-primary focus:ring-primary"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-stone-300">Access Key</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={isLoggingIn}
+                className="bg-white/5 border-white/10 text-white placeholder:text-stone-600 focus:border-primary focus:ring-primary"
+              />
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col gap-4">
+            <Button type="submit" className="w-full h-12 text-lg font-bold shadow-lg shadow-primary/20" disabled={isLoggingIn}>
+              {isLoggingIn ? <><Loader2 className="animate-spin mr-2 h-5 w-5" /> Authenticating...</> : <><Lock className="mr-2 h-4 w-4" /> Secure Login</>}
+            </Button>
+            <p className="text-center text-[10px] text-stone-500 italic">
+                Authorized Personnel Only. All access is logged.
+            </p>
+          </CardFooter>
+        </form>
+      </Card>
     </div>
   );
 }

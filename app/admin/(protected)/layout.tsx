@@ -19,15 +19,22 @@ export default function AdminProtectedLayout({
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
-    setIsCheckingAuth(false);
-  }, []);
+    const isLoggedIn = localStorage.getItem('isAdminLoggedIn');
+    if (!isLoggedIn) {
+      router.replace('/');
+    } else {
+      setIsCheckingAuth(false);
+    }
+  }, [router]);
 
   const handleLogout = () => {
-    router.push('/admin/login');
+    localStorage.removeItem('isAdminLoggedIn');
+    localStorage.removeItem('adminUser');
+    router.push('/');
   };
 
   if (isCheckingAuth) {
-    return <div className="flex min-h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
+    return <div className="flex min-h-screen items-center justify-center bg-stone-950"><Loader2 className="animate-spin text-primary" /></div>;
   }
 
   const navItems = [
@@ -41,9 +48,9 @@ export default function AdminProtectedLayout({
     <div className="flex min-h-screen bg-muted/40 w-full flex-col">
       {/* Horizontal Header Navigation */}
       <header className="flex h-16 items-center gap-4 border-b bg-background px-6 sticky top-0 z-50">
-        <Link href="/" className="flex items-center gap-2 font-bold text-lg text-primary mr-8">
+        <Link href="/admin/pos" className="flex items-center gap-2 font-bold text-lg text-primary mr-8">
           <Hotel className="h-6 w-6" />
-          <span className="hidden md:inline">Wamaghach</span>
+          <span className="hidden md:inline font-headline tracking-tight">Wamaghach</span>
         </Link>
 
         <nav className="flex-1 flex items-center gap-1 md:gap-2">
