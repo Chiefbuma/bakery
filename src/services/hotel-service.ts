@@ -28,7 +28,16 @@ let products: Product[] = [
 let supplies: Supply[] = [
   { id: 's1', name: 'Charcoal (Bags)', category: 'Energy', module: 'restaurant', quantity: 20, unit: 'bags', unitCost: 1500, lastPurchased: new Date().toISOString() },
   { id: 's2', name: 'Car Shampoo', category: 'Cleaning', module: 'carwash', quantity: 15, unit: 'liters', unitCost: 400, lastPurchased: new Date().toISOString() },
+  { id: 's3', name: 'Cooking Oil', category: 'Ingredients', module: 'restaurant', quantity: 50, unit: 'liters', unitCost: 200, lastPurchased: new Date().toISOString() },
 ];
+
+// Production Recipes: Maps Products to the Supplies they consume
+const SUPPLY_CONSUMPTION_RECIPES: Record<string, { supplyId: string, amount: number }[]> = {
+  'r1': [{ supplyId: 's1', amount: 0.05 }], // Nyama Choma uses 0.05 bags of charcoal per kg
+  'r2': [{ supplyId: 's3', amount: 0.1 }],  // Pilau uses 0.1L oil
+  'r3': [{ supplyId: 's3', amount: 0.15 }], // Tilapia uses 0.15L oil
+  'c1': [{ supplyId: 's2', amount: 0.2 }],  // Body wash uses 0.2L shampoo
+};
 
 // Operational Expenses
 let expenses: Expense[] = [
@@ -66,11 +75,6 @@ export async function updateUser(id: string, updates: Partial<User>): Promise<vo
 export async function deleteUser(id: string): Promise<void> {
   await delay(200);
   users = users.filter(u => u.id !== id);
-}
-
-export async function deleteUsers(ids: string[]): Promise<void> {
-  await delay(200);
-  users = users.filter(u => !ids.includes(u.id));
 }
 
 // --- Product/Inventory Services ---
@@ -150,8 +154,22 @@ export async function placeOrder(transaction: Omit<Transaction, 'id' | 'timestam
   
   if (newTransaction.status === 'paid') {
     newTransaction.items.forEach(item => {
+      // 1. Update Sellable Product Stock
       const p = products.find(prod => prod.id === item.productId);
-      if (p && p.module !== 'carwash' && p.module !== 'entertainment') p.stock -= item.quantity;
+      if (p && p.module !== 'carwash' && p.module !== 'entertainment') {
+        p.stock -= item.quantity;
+      }
+
+      // 2. Update Linked Raw Supplies (linked ingredients/consumables)
+      const ingredients = SUPPLY_CONSUMPTION_RECIPES[item.productId];
+      if (ingredients) {
+        ingredients.forEach(mapping => {
+          const s = supplies.find(supp => supp.id === mapping.supplyId);
+          if (s) {
+            s.quantity = Math.max(0, s.quantity - (mapping.amount * item.quantity));
+          }
+        });
+      }
     });
   }
   
