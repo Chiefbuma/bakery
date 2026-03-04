@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Hotel, Loader2, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { getUsers } from '@/services/hotel-service';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -32,15 +33,22 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoggingIn(true);
     
-    // Simulate auth for prototype
-    setTimeout(() => {
-        if (email === 'admin@wamaghach.com' && password === 'admin123') {
+    // Check against mock users
+    setTimeout(async () => {
+        const users = await getUsers();
+        const user = users.find(u => u.email === email && u.password === password);
+
+        if (user) {
             localStorage.setItem('isAdminLoggedIn', 'true');
-            localStorage.setItem('adminUser', JSON.stringify({ name: 'Admin User', email }));
+            localStorage.setItem('adminUser', JSON.stringify({ 
+              name: user.name, 
+              email: user.email,
+              role: user.role 
+            }));
             
             toast({
                 title: 'Login Successful',
-                description: `Welcome to Wamaghach Management System.`,
+                description: `Welcome to Wamaghach Management System, ${user.name}.`,
             });
             
             router.push('/admin/pos');
@@ -48,7 +56,7 @@ export default function LoginPage() {
             toast({
                 variant: 'destructive',
                 title: 'Access Denied',
-                description: 'Invalid credentials. Please use admin@wamaghach.com / admin123',
+                description: 'Invalid credentials. Please contact your administrator.',
             });
             setIsLoggingIn(false);
         }

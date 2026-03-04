@@ -1,6 +1,17 @@
 
 export type HotelModule = 'restaurant' | 'bar' | 'carwash' | 'accommodation' | 'entertainment' | 'general';
 
+export type UserRole = 'admin' | 'staff';
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  password?: string; // Only for mock/storage purposes in this prototype
+  createdAt: string;
+}
+
 export interface Product {
   id: string;
   name: string;

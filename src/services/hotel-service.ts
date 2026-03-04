@@ -1,10 +1,16 @@
 
 'use client';
 
-import type { Product, Transaction, HotelModule, DashboardData, SaleItem, Supply, Expense } from '@/lib/types';
+import type { Product, Transaction, HotelModule, DashboardData, SaleItem, Supply, Expense, User, UserRole } from '@/lib/types';
 import { startOfMonth, subMonths, format, isWithinInterval } from 'date-fns';
 
-// Expanded Product List (10 per module)
+// Mock Users
+let users: User[] = [
+  { id: 'u1', name: 'Executive Admin', email: 'admin@wamaghach.com', role: 'admin', password: 'admin123', createdAt: new Date().toISOString() },
+  { id: 'u2', name: 'POS Staff One', email: 'staff@wamaghach.com', role: 'staff', password: 'staff123', createdAt: new Date().toISOString() },
+];
+
+// Expanded Product List
 let products: Product[] = [
   // Restaurant (10 items)
   { id: 'r1', name: 'Nyama Choma (1kg)', description: 'Prime goat meat grilled to perfection over charcoal.', category: 'Food', module: 'restaurant', price: 1200, costPrice: 700, stock: 50, minStockLevel: 10, unit: 'kg', image_url: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=800&q=80' },
@@ -85,6 +91,30 @@ let expenses: Expense[] = [
 
 let transactions: Transaction[] = [];
 
+// --- User Services ---
+export async function getUsers(): Promise<User[]> {
+  return users;
+}
+
+export async function addUser(user: Omit<User, 'id' | 'createdAt'>): Promise<User> {
+  const newUser: User = {
+    ...user,
+    id: `U-${Date.now()}`,
+    createdAt: new Date().toISOString(),
+  };
+  users.push(newUser);
+  return newUser;
+}
+
+export async function deleteUser(id: string): Promise<void> {
+  users = users.filter(u => u.id !== id);
+}
+
+export async function updateUser(id: string, updates: Partial<User>): Promise<void> {
+  users = users.map(u => u.id === id ? { ...u, ...updates } : u);
+}
+
+// --- Product/Inventory Services ---
 export async function getProducts(module?: HotelModule): Promise<Product[]> {
   return module ? products.filter(p => p.module === module) : products;
 }
@@ -142,7 +172,7 @@ export async function getPendingOrders(): Promise<Transaction[]> {
 }
 
 function calculateChange(current: number, previous: number) {
-  if (previous === 0) return 0;
+  if (previous === 0) return current > 0 ? 100 : 0;
   return ((current - previous) / previous) * 100;
 }
 
