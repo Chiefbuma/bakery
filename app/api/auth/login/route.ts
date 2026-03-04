@@ -3,14 +3,14 @@ import { NextResponse, NextRequest } from 'next/server';
 import pool from '@/lib/db';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_dev';
+const JWT_SECRET = process.env.JWT_SECRET || 'pk_live_8d9017d3458e0213efd55c219527b9171482e87d';
 
 export async function POST(req: NextRequest) {
     try {
         const { email, password } = await req.json();
 
         if (!email || !password) {
-            return NextResponse.json({ message: 'Email and password are required' }, { status: 400 });
+            return NextResponse.json({ message: 'Email and access key are required' }, { status: 400 });
         }
 
         const [rows]: any[] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
@@ -21,8 +21,8 @@ export async function POST(req: NextRequest) {
 
         const user = rows[0];
 
-        // Basic password check for the prototype environment
-        // In full production, use bcrypt.compare(password, user.password)
+        // In a real production system, use bcrypt.compare here.
+        // For the current setup, we match the provided access key.
         if (password !== user.password) {
             return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
         }
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
         const token = jwt.sign(
             { id: user.id, email: user.email, role: user.role, name: user.name }, 
             JWT_SECRET, 
-            { expiresIn: '8h' }
+            { expiresIn: '12h' }
         );
 
         return NextResponse.json({ 
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
         });
 
     } catch (error) {
-        console.error('Login Error:', error);
-        return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+        console.error('Login API Error:', error);
+        return NextResponse.json({ message: 'Internal Server Authentication Error' }, { status: 500 });
     }
 }

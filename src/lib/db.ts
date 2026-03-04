@@ -3,7 +3,7 @@ import mysql from 'mysql2/promise';
 
 /**
  * Database connection pool for MySQL.
- * Configured for shared hosting environments.
+ * Configured for Wamaghach Kahua-ini Hotel production environment.
  */
 const pool = mysql.createPool({
   host: process.env.DB_HOST || '127.0.0.1',
@@ -15,7 +15,19 @@ const pool = mysql.createPool({
   connectionLimit: 10,
   queueLimit: 0,
   enableKeepAlive: true,
-  keepAliveInitialDelay: 10000
+  keepAliveInitialDelay: 10000,
+  // Add timezone setting if needed for specific reporting
+  timezone: '+03:00' 
 });
+
+// Resiliency test on startup
+pool.getConnection()
+  .then(conn => {
+    console.log('✅ MySQL Database Connected Successfully');
+    conn.release();
+  })
+  .catch(err => {
+    console.error('❌ Database Connection Failed:', err.message);
+  });
 
 export default pool;

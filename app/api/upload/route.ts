@@ -1,8 +1,7 @@
 
 import { NextResponse } from 'next/server';
-import { writeFile } from 'fs/promises';
+import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
-import { mkdir } from 'fs/promises';
 
 export async function POST(req: Request) {
   try {
@@ -10,29 +9,28 @@ export async function POST(req: Request) {
     const file = formData.get('file') as File;
 
     if (!file) {
-      return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+      return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Create uploads directory if it doesn't exist
+    // Ensure upload directory exists
     const uploadDir = join(process.cwd(), 'public', 'uploads');
-    try {
-      await mkdir(uploadDir, { recursive: true });
-    } catch (e) {}
+    await mkdir(uploadDir, { recursive: true });
 
-    const filename = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
+    // Sanitize filename
+    const filename = `${Date.now()}-${file.name.replace(/[^a-z0-9.]/gi, '_').toLowerCase()}`;
     const path = join(uploadDir, filename);
     
     await writeFile(path, buffer);
     
-    // Return the relative URL for public access
+    // Return path for database storage
     const url = `/uploads/${filename}`;
     
     return NextResponse.json({ url });
   } catch (error) {
-    console.error('Upload error:', error);
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+    console.error('Media Upload Error:', error);
+    return NextResponse.json({ error: "Storage write failed" }, { status: 500 });
   }
 }
