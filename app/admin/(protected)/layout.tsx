@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
-// Force dynamic rendering to prevent build-time DB connection errors
+// CRITICAL: Force dynamic rendering to prevent build-time DB connection attempts
 export const dynamic = 'force-dynamic';
 
 export default function AdminProtectedLayout({

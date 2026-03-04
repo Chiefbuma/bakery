@@ -105,7 +105,7 @@ export default function InventoryPage() {
                 stock: 0,
                 minStockLevel: 5,
                 unit: 'units',
-                image_url: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80'
+                image_url: ''
             });
         }
         setIsProductDialogOpen(true);
@@ -477,7 +477,6 @@ export default function InventoryPage() {
                 </DialogContent>
             </Dialog>
 
-            {/* Supply & Recipe Dialogs truncated for space but follow same pattern */}
             <Dialog open={isRecipeDialogOpen} onOpenChange={setIsRecipeDialogOpen}>
                 <DialogContent className="max-w-xl">
                     <DialogHeader>
@@ -491,8 +490,8 @@ export default function InventoryPage() {
                                 <div key={c.supplyId} className="flex items-center justify-between bg-muted/30 p-2 rounded-md">
                                     <span className="font-bold text-sm">{s?.name}</span>
                                     <div className="flex items-center gap-2">
-                                        <Input type="number" step="0.001" value={c.amount} onChange={(e) => updateTempConsumptionAmount(c.supplyId, parseFloat(e.target.value) || 0)} className="w-20 h-8" />
-                                        <span className="text-xs">{s?.unit}</span>
+                                        <Input type="number" step="0.0001" value={c.amount} onChange={(e) => updateTempConsumptionAmount(c.supplyId, parseFloat(e.target.value) || 0)} className="w-24 h-8" />
+                                        <span className="text-xs w-12">{s?.unit}</span>
                                         <Button variant="ghost" size="icon" onClick={() => setTempConsumptions(prev => prev.filter((_, idx) => idx !== i))}><X className="h-4 w-4" /></Button>
                                     </div>
                                 </div>

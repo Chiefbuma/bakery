@@ -1,132 +1,116 @@
 
 -- Wamaghach Kahua-ini Hotel | Production Schema
--- Optimized with Indexes for High-Performance Analytics and POS Operations
+-- Import this into your phpMyAdmin 'gledcapi_hotel' database.
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
-START TRANSACTION;
-SET time_zone = "+00:00";
+SET time_zone = "+03:00";
 
--- --------------------------------------------------------
+-- 1. Users & Personnel
+CREATE TABLE IF NOT EXISTS `users` (
+  `id` VARCHAR(50) PRIMARY KEY,
+  `name` VARCHAR(255) NOT NULL,
+  `email` VARCHAR(255) NOT NULL UNIQUE,
+  `role` ENUM('admin', 'staff') DEFAULT 'staff',
+  `password` VARCHAR(255) NOT NULL,
+  `createdAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Table structure for `users`
-CREATE TABLE `users` (
-  `id` varchar(255) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `email` varchar(255) NOT NULL,
-  `role` enum('admin','staff') NOT NULL DEFAULT 'staff',
-  `password` varchar(255) NOT NULL,
-  `createdAt` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- 2. Master Stock (Products)
+CREATE TABLE IF NOT EXISTS `products` (
+  `id` VARCHAR(50) PRIMARY KEY,
+  `name` VARCHAR(255) NOT NULL,
+  `description` TEXT,
+  `category` VARCHAR(100),
+  `module` ENUM('restaurant', 'bar', 'carwash', 'accommodation', 'entertainment') NOT NULL,
+  `price` DECIMAL(10, 2) NOT NULL,
+  `costPrice` DECIMAL(10, 2) DEFAULT 0,
+  `stock` DECIMAL(10, 2) DEFAULT 0,
+  `minStockLevel` DECIMAL(10, 2) DEFAULT 5,
+  `unit` VARCHAR(50) DEFAULT 'units',
+  `image_url` TEXT,
+  INDEX idx_module (module),
+  INDEX idx_category (category)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Table structure for `products` (Master Stock)
-CREATE TABLE `products` (
-  `id` varchar(255) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `description` text DEFAULT NULL,
-  `category` varchar(255) NOT NULL,
-  `module` enum('restaurant','bar','carwash','accommodation','entertainment') NOT NULL,
-  `price` decimal(10,2) NOT NULL,
-  `costPrice` decimal(10,2) NOT NULL,
-  `stock` int(11) NOT NULL DEFAULT 0,
-  `minStockLevel` int(11) NOT NULL DEFAULT 5,
-  `unit` varchar(50) NOT NULL DEFAULT 'units',
-  `image_url` varchar(500) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `idx_product_module` (`module`),
-  KEY `idx_product_category` (`category`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- 3. Raw Supplies (Ingredients)
+CREATE TABLE IF NOT EXISTS `supplies` (
+  `id` VARCHAR(50) PRIMARY KEY,
+  `name` VARCHAR(255) NOT NULL,
+  `category` VARCHAR(100),
+  `module` VARCHAR(100),
+  `quantity` DECIMAL(10, 4) DEFAULT 0,
+  `unit` VARCHAR(50) NOT NULL,
+  `unitCost` DECIMAL(10, 2) DEFAULT 0,
+  `lastPurchased` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_supp_module (module)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Table structure for `supplies` (Raw Materials)
-CREATE TABLE `supplies` (
-  `id` varchar(255) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `category` varchar(255) DEFAULT 'General',
-  `module` varchar(255) DEFAULT 'restaurant',
-  `quantity` decimal(10,3) NOT NULL DEFAULT 0.000,
-  `unit` varchar(50) NOT NULL,
-  `unitCost` decimal(10,2) NOT NULL,
-  `lastPurchased` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- 4. Production Recipes (Consumption Mapping)
+CREATE TABLE IF NOT EXISTS `recipes` (
+  `productId` VARCHAR(50) NOT NULL,
+  `supplyId` VARCHAR(50) NOT NULL,
+  `amount` DECIMAL(10, 4) NOT NULL,
+  PRIMARY KEY (`productId`, `supplyId`),
+  FOREIGN KEY (`productId`) REFERENCES `products`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`supplyId`) REFERENCES `supplies`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Table structure for `recipes` (Production Mapping)
-CREATE TABLE `recipes` (
-  `productId` varchar(255) NOT NULL,
-  `supplyId` varchar(255) NOT NULL,
-  `amount` decimal(10,4) NOT NULL,
-  PRIMARY KEY (`productId`,`supplyId`),
-  KEY `supplyId` (`supplyId`),
-  CONSTRAINT `recipes_ibfk_1` FOREIGN KEY (`productId`) REFERENCES `products` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `recipes_ibfk_2` FOREIGN KEY (`supplyId`) REFERENCES `supplies` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- 5. Operating Expenses
+CREATE TABLE IF NOT EXISTS `expenses` (
+  `id` VARCHAR(50) PRIMARY KEY,
+  `category` ENUM('salary', 'utility', 'maintenance', 'rent', 'miscellaneous', 'garbage') NOT NULL,
+  `amount` DECIMAL(10, 2) NOT NULL,
+  `description` TEXT,
+  `date` DATE NOT NULL,
+  `module` VARCHAR(100),
+  INDEX idx_date (date),
+  INDEX idx_exp_cat (category)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Table structure for `expenses`
-CREATE TABLE `expenses` (
-  `id` varchar(255) NOT NULL,
-  `category` enum('salary','utility','maintenance','rent','miscellaneous','garbage') NOT NULL,
-  `amount` decimal(10,2) NOT NULL,
-  `description` varchar(255) NOT NULL,
-  `date` date NOT NULL,
-  `module` varchar(255) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `idx_expense_date` (`date`),
-  KEY `idx_expense_module` (`module`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- 6. Sales Transactions
+CREATE TABLE IF NOT EXISTS `transactions` (
+  `id` VARCHAR(50) PRIMARY KEY,
+  `orderNumber` VARCHAR(100) NOT NULL UNIQUE,
+  `module` ENUM('restaurant', 'bar', 'carwash', 'accommodation', 'entertainment') NOT NULL,
+  `totalAmount` DECIMAL(10, 2) NOT NULL,
+  `totalCost` DECIMAL(10, 2) DEFAULT 0,
+  `paymentMethod` ENUM('cash', 'mpesa', 'card', 'none') DEFAULT 'cash',
+  `status` ENUM('paid', 'pending') DEFAULT 'pending',
+  `customerName` VARCHAR(255),
+  `amountReceived` DECIMAL(10, 2),
+  `balance` DECIMAL(10, 2),
+  `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_timestamp (timestamp),
+  INDEX idx_trans_module (module),
+  INDEX idx_trans_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Table structure for `transactions` (Sales)
-CREATE TABLE `transactions` (
-  `id` varchar(255) NOT NULL,
-  `orderNumber` varchar(255) NOT NULL,
-  `module` varchar(50) NOT NULL,
-  `totalAmount` decimal(10,2) NOT NULL,
-  `totalCost` decimal(10,2) NOT NULL,
-  `timestamp` timestamp NOT NULL DEFAULT current_timestamp(),
-  `paymentMethod` enum('cash','mpesa','card','none') NOT NULL,
-  `status` enum('paid','pending') NOT NULL,
-  `customerName` varchar(255) DEFAULT NULL,
-  `amountReceived` decimal(10,2) DEFAULT NULL,
-  `balance` decimal(10,2) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `orderNumber` (`orderNumber`),
-  KEY `idx_transaction_timestamp` (`timestamp`),
-  KEY `idx_transaction_status_module` (`status`,`module`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- 7. Transaction Line Items
+CREATE TABLE IF NOT EXISTS `transaction_items` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `transactionId` VARCHAR(50) NOT NULL,
+  `productId` VARCHAR(50),
+  `name` VARCHAR(255) NOT NULL,
+  `quantity` DECIMAL(10, 2) NOT NULL,
+  `price` DECIMAL(10, 2) NOT NULL,
+  `costPrice` DECIMAL(10, 2) DEFAULT 0,
+  `total` DECIMAL(10, 2) NOT NULL,
+  FOREIGN KEY (`transactionId`) REFERENCES `transactions`(`id`) ON DELETE CASCADE,
+  INDEX idx_item_prod (productId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Table structure for `transaction_items`
-CREATE TABLE `transaction_items` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `transactionId` varchar(255) NOT NULL,
-  `productId` varchar(255) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `quantity` int(11) NOT NULL,
-  `price` decimal(10,2) NOT NULL,
-  `costPrice` decimal(10,2) NOT NULL,
-  `total` decimal(10,2) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `transactionId` (`transactionId`),
-  CONSTRAINT `transaction_items_ibfk_1` FOREIGN KEY (`transactionId`) REFERENCES `transactions` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Initial Seed Data
+INSERT INTO `users` (id, name, email, role, password) VALUES 
+('U-1', 'Admin Manager', 'admin@wamaghach.com', 'admin', 'admin123');
 
--- Seed Data
-INSERT INTO `users` (`id`, `name`, `email`, `role`, `password`) VALUES
-('U-ADMIN', 'Admin Manager', 'admin@wamaghach.com', 'admin', 'admin123'),
-('U-STAFF', 'Service Staff', 'staff@wamaghach.com', 'staff', 'staff123');
+INSERT INTO `products` (id, name, description, category, module, price, costPrice, stock, minStockLevel, unit, image_url) VALUES 
+('PROD-1', 'Swahili Pilau', 'Spiced rice with tender beef', 'Main Meals', 'restaurant', 450.00, 200.00, 50, 10, 'plates', 'https://images.unsplash.com/photo-1589302168068-964664d93dc0?q=80&w=600'),
+('PROD-2', 'Wet Fry Tilapia', 'Fresh lake fish in spicy tomato gravy', 'Fish', 'restaurant', 800.00, 400.00, 20, 5, 'fish', 'https://images.unsplash.com/photo-1580476262798-bddd9f4b7369?q=80&w=600');
 
-INSERT INTO `products` (`id`, `name`, `description`, `category`, `module`, `price`, `costPrice`, `stock`, `unit`, `image_url`) VALUES
-('P-PILAU', 'Swahili Pilau', 'Traditional beef pilau served with kachumbari.', 'Main Course', 'restaurant', 450.00, 180.00, 50, 'plates', 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800'),
-('P-TILAPIA', 'Wet Fry Tilapia', 'Fresh Lake Victoria tilapia in rich tomato gravy.', 'Fish', 'restaurant', 850.00, 320.00, 20, 'units', 'https://images.unsplash.com/photo-1580476262798-bddd9f4b7369?w=800'),
-('P-ROOM-STD', 'Standard Single Room', 'Cozy room with Wi-Fi and breakfast.', 'Rooms', 'accommodation', 3500.00, 500.00, 10, 'nights', 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800');
+INSERT INTO `supplies` (id, name, category, module, quantity, unit, unitCost) VALUES 
+('SUP-1', 'Cooking Oil', 'Kitchen', 'restaurant', 50.00, 'liters', 200.00),
+('SUP-2', 'Charcoal', 'Fuel', 'restaurant', 10.00, 'bags', 1500.00);
 
-INSERT INTO `supplies` (`id`, `name`, `category`, `module`, `quantity`, `unit`, `unitCost`) VALUES
-('S-OIL', 'Cooking Oil', 'Kitchen', 'restaurant', 20.000, 'liters', 200.00),
-('S-RICE', 'Biryani Rice', 'Kitchen', 'restaurant', 50.000, 'kg', 150.00),
-('S-CHAR', 'Charcoal', 'Fuel', 'restaurant', 10.000, 'bags', 1200.00);
-
-INSERT INTO `recipes` (`productId`, `supplyId`, `amount`) VALUES
-('P-PILAU', 'S-RICE', 0.2500), -- 250g per plate
-('P-PILAU', 'S-OIL', 0.0500),  -- 50ml per plate
-('P-TILAPIA', 'S-OIL', 0.1000); -- 100ml per fish
-
-COMMIT;
+INSERT INTO `recipes` (productId, supplyId, amount) VALUES 
+('PROD-1', 'SUP-1', 0.05),
+('PROD-2', 'SUP-1', 0.1);

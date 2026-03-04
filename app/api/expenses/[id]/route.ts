@@ -13,10 +13,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       [category, amount, description, date, module, id]
     );
     
-    return NextResponse.json({ message: 'Expense updated' });
+    return NextResponse.json({ message: 'Expense record updated' });
   } catch (error) {
     console.error('Update Expense Error:', error);
-    return NextResponse.json({ error: "Update failed" }, { status: 500 });
+    return NextResponse.json({ error: "Database error" }, { status: 500 });
   }
 }
 
@@ -24,9 +24,9 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   try {
     const { id } = await params;
     await pool.query('DELETE FROM expenses WHERE id = ?', [id]);
-    return NextResponse.json({ message: 'Expense deleted' });
+    return NextResponse.json({ message: 'Record cleared' });
   } catch (error) {
     console.error('Delete Expense Error:', error);
-    return NextResponse.json({ error: "Delete failed" }, { status: 500 });
+    return NextResponse.json({ error: "Database error" }, { status: 500 });
   }
 }

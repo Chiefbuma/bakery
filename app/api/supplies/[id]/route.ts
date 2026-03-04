@@ -2,6 +2,9 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
+/**
+ * Next.js 15 dynamic route parameter handling.
+ */
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
@@ -16,7 +19,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     return NextResponse.json({ message: 'Supply updated' });
   } catch (error) {
     console.error('Update Supply Error:', error);
-    return NextResponse.json({ error: "Update failed" }, { status: 500 });
+    return NextResponse.json({ error: "Database update failed" }, { status: 500 });
   }
 }
 
@@ -27,6 +30,6 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     return NextResponse.json({ message: 'Supply deleted' });
   } catch (error) {
     console.error('Delete Supply Error:', error);
-    return NextResponse.json({ error: "Delete failed" }, { status: 500 });
+    return NextResponse.json({ error: "Database removal failed" }, { status: 500 });
   }
 }

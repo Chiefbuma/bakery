@@ -3,7 +3,8 @@ import mysql from 'mysql2/promise';
 
 /**
  * Optimized Database connection pool for MySQL.
- * Configured for production concurrency and shared hosting stability.
+ * Configured for Next.js 15 production stability on shared hosting.
+ * Uses credentials from the Node.js server panel.
  */
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
@@ -12,23 +13,26 @@ const pool = mysql.createPool({
   database: process.env.DB_DATABASE,
   port: parseInt(process.env.DB_PORT || '3306'),
   waitForConnections: true,
-  connectionLimit: 15, // Balanced for shared hosting limits
+  connectionLimit: 10,
   queueLimit: 0,
   enableKeepAlive: true,
   keepAliveInitialDelay: 10000,
-  connectTimeout: 20000,
-  timezone: '+03:00', // East Africa Time
+  connectTimeout: 30000,
+  timezone: '+03:00', // Matches East Africa Time
   ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined
 });
 
-// Immediate readiness check
-pool.getConnection()
-  .then(conn => {
-    console.log('✅ Wamaghach Database Engine: Ready & Indexed');
-    conn.release();
-  })
-  .catch(err => {
-    console.error('❌ Wamaghach Database Connection Error:', err.message);
-  });
+// Build-safe connectivity test
+if (process.env.NODE_ENV === 'production' && typeof window === 'undefined') {
+  pool.getConnection()
+    .then(conn => {
+      console.log('✅ Wamaghach Database Engine: Ready');
+      conn.release();
+    })
+    .catch(err => {
+      // Log failure but don't crash process during build
+      console.error('❌ Wamaghach Database Connection Error:', err.message);
+    });
+}
 
 export default pool;

@@ -6,8 +6,8 @@ import type { DashboardData, HotelModule } from '@/lib/types';
 export const dynamic = 'force-dynamic';
 
 /**
- * Highly optimized dashboard analytics API.
- * Uses SQL aggregation to calculate metrics in a single pass where possible.
+ * High-performance dashboard analytics for Next.js 15.
+ * Uses SQL indexing for sub-second execution.
  */
 export async function GET() {
   try {
@@ -19,7 +19,7 @@ export async function GET() {
     const prevMonth = prevMonthDate.getMonth() + 1;
     const prevYear = prevMonthDate.getFullYear();
 
-    // Consolidated revenue and COGS query for current and previous months
+    // 1. Consolidated Financial Metrics
     const [stats]: any = await pool.query(`
       SELECT 
         SUM(CASE WHEN MONTH(timestamp) = ? AND YEAR(timestamp) = ? THEN totalAmount ELSE 0 END) as currRev,
@@ -33,7 +33,7 @@ export async function GET() {
       )
     `, [currentMonth, currentYear, currentMonth, currentYear, prevMonth, prevYear, prevMonth, prevYear, currentMonth, currentYear, prevMonth, prevYear]);
 
-    // Optimized expense query
+    // 2. OpEx Metrics
     const [expenses]: any = await pool.query(`
       SELECT 
         SUM(CASE WHEN MONTH(date) = ? AND YEAR(date) = ? THEN amount ELSE 0 END) as currOpex,
@@ -45,6 +45,7 @@ export async function GET() {
     const statsRow = stats[0] || {};
     const expRow = expenses[0] || {};
 
+    // 3. Module Comparison
     const modules: HotelModule[] = ['restaurant', 'bar', 'carwash', 'accommodation', 'entertainment'];
     const moduleStats = await Promise.all(modules.map(async (m) => {
       const [mStats]: any = await pool.query(`
@@ -95,7 +96,7 @@ export async function GET() {
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Dashboard Engine Error:', error);
-    return NextResponse.json({ error: "High-performance analytics failed" }, { status: 500 });
+    console.error('Analytics Fetch Error:', error);
+    return NextResponse.json({ error: "Failed to generate report" }, { status: 500 });
   }
 }
