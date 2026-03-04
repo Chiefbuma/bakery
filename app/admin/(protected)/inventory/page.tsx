@@ -121,7 +121,7 @@ export default function InventoryPage() {
                 category: 'Supplies',
                 module: 'restaurant',
                 quantity: 0,
-                unit: 'units',
+                unit: 'kg',
                 unitCost: 0,
                 lastPurchased: new Date().toISOString()
             });
@@ -133,6 +133,12 @@ export default function InventoryPage() {
         setSelectedProductForRecipe(product);
         setTempConsumptions(recipes[product.id] || []);
         setIsRecipeDialogOpen(true);
+    };
+
+    const updateTempConsumptionAmount = (supplyId: string, amount: number) => {
+        setTempConsumptions(prev => prev.map(c => 
+            c.supplyId === supplyId ? { ...c, amount } : c
+        ));
     };
 
     const onProductSubmit = async (data: any) => {
@@ -233,13 +239,13 @@ export default function InventoryPage() {
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
             <div className="flex flex-col gap-2">
-                <h1 className="text-3xl font-bold tracking-tight">Inventory Control</h1>
+                <h1 className="text-3xl font-bold tracking-tight font-headline">Inventory Control</h1>
                 <p className="text-muted-foreground">Manage products, stock levels and raw supplies.</p>
             </div>
 
             <Tabs defaultValue="products" value={activeTab} onValueChange={(v) => { setActiveTab(v); setCurrentPage(1); }}>
                 <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
-                    <TabsList>
+                    <TabsList className="bg-muted/50 p-1">
                         <TabsTrigger value="products">Master Stock</TabsTrigger>
                         <TabsTrigger value="supplies">Raw Supplies</TabsTrigger>
                         <TabsTrigger value="recipes">Production Recipes</TabsTrigger>
@@ -302,7 +308,7 @@ export default function InventoryPage() {
                                                     <TableCell>{formatPrice(p.price)}</TableCell>
                                                     <TableCell>
                                                         {(p.module === 'carwash' || p.module === 'entertainment') ? '∞' : `${p.stock} ${p.unit}`}
-                                                        {isLow && <Badge variant="destructive" className="ml-2">Low</Badge>}
+                                                        {isLow && <Badge variant="destructive" className="ml-2 text-[10px]">Low</Badge>}
                                                     </TableCell>
                                                     <TableCell className="text-right">
                                                         <div className="flex justify-end gap-2">
@@ -392,10 +398,10 @@ export default function InventoryPage() {
                                                     <TableCell>
                                                         <div className="flex flex-wrap gap-1">
                                                             {recipe.length > 0 ? recipe.map(c => {
-                                                                const s = supplies.find(sup => sup.id === c.supplyId);
+                                                                const sup = supplies.find(s => s.id === c.supplyId);
                                                                 return (
-                                                                    <Badge key={c.supplyId} variant="outline" className="text-[10px]">
-                                                                        {s?.name || 'Unknown'}: {c.amount} {s?.unit}
+                                                                    <Badge key={c.supplyId} variant="outline" className="text-[10px] bg-primary/5">
+                                                                        {sup?.name || 'Unknown'}: {c.amount} {sup?.unit}
                                                                     </Badge>
                                                                 );
                                                             }) : <span className="text-xs text-muted-foreground italic">No linked supplies</span>}
@@ -417,8 +423,9 @@ export default function InventoryPage() {
                 </TabsContent>
             </Tabs>
 
+            {/* Global Pagination Controls */}
             <div className="flex items-center justify-end space-x-2 py-4">
-                <span className="text-xs text-muted-foreground">Page {currentPage} of {totalPages}</span>
+                <span className="text-xs text-muted-foreground font-medium">Page {currentPage} of {totalPages || 1}</span>
                 <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
                     <ChevronLeft className="h-4 w-4" />
                 </Button>
@@ -467,14 +474,18 @@ export default function InventoryPage() {
                     <form onSubmit={supplyForm.handleSubmit(onSupplySubmit)} className="space-y-4 pt-4">
                         <div className="space-y-2">
                             <Label>Supply Name</Label>
-                            <input {...supplyForm.register('name', { required: true })} disabled={isSubmitting} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
+                            <input {...supplyForm.register('name', { required: true })} disabled={isSubmitting} placeholder="e.g. Cooking Oil" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label>Quantity</Label>
+                                <Label>Current Quantity</Label>
                                 <input type="number" {...supplyForm.register('quantity', { required: true, valueAsNumber: true })} disabled={isSubmitting} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
                             </div>
                             <div className="space-y-2">
+                                <Label>Measurement Unit</Label>
+                                <input {...supplyForm.register('unit', { required: true })} disabled={isSubmitting} placeholder="e.g. liters, kg, grams" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
+                            </div>
+                            <div className="space-y-2 col-span-2">
                                 <Label>Unit Cost (Ksh)</Label>
                                 <input type="number" {...supplyForm.register('unitCost', { required: true, valueAsNumber: true })} disabled={isSubmitting} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
                             </div>
@@ -495,31 +506,39 @@ export default function InventoryPage() {
                             <Sparkles className="h-5 w-5 text-primary" />
                             <DialogTitle>Production Recipe</DialogTitle>
                         </div>
-                        <DialogDescription>Define what 1 unit of <strong>{selectedProductForRecipe?.name}</strong> consumes. Select from your Raw Supplies.</DialogDescription>
+                        <DialogDescription>Define exactly what 1 unit of <strong>{selectedProductForRecipe?.name}</strong> consumes.</DialogDescription>
                     </DialogHeader>
                     
                     <div className="space-y-6 py-4">
                         <div className="space-y-4">
-                            <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Linked Supplies</h4>
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Ingredients & Quantities</h4>
                             <div className="space-y-2">
                                 {tempConsumptions.length === 0 ? (
                                     <div className="p-8 text-center border-2 border-dashed rounded-lg text-muted-foreground italic text-sm">
-                                        No supplies linked yet. Pick an ingredient below.
+                                        No supplies linked yet. Select an ingredient below to begin.
                                     </div>
                                 ) : tempConsumptions.map((c, i) => {
                                     const s = supplies.find(sup => sup.id === c.supplyId);
                                     return (
-                                        <div key={`temp-${c.supplyId}`} className="flex items-center justify-between bg-muted/50 p-3 rounded-lg border">
+                                        <div key={`temp-${c.supplyId}`} className="flex items-center justify-between bg-muted/30 p-3 rounded-lg border border-primary/10">
                                             <div className="flex flex-col">
                                                 <span className="font-bold text-sm">{s?.name || 'Unknown Supply'}</span>
-                                                <span className="text-[10px] text-muted-foreground">Category: {s?.category}</span>
+                                                <span className="text-[10px] text-muted-foreground">Mapped from Raw Supplies</span>
                                             </div>
-                                            <div className="flex items-center gap-4">
-                                                <div className="flex items-center gap-2 bg-background border px-3 py-1 rounded-md">
-                                                    <span className="text-xs font-bold">{c.amount}</span>
-                                                    <span className="text-[10px] text-muted-foreground">{s?.unit}</span>
+                                            <div className="flex items-center gap-3">
+                                                <div className="relative">
+                                                    <Input 
+                                                        type="number" 
+                                                        step="0.001"
+                                                        value={c.amount}
+                                                        onChange={(e) => updateTempConsumptionAmount(c.supplyId, parseFloat(e.target.value) || 0)}
+                                                        className="w-24 h-9 pr-8 text-sm font-bold text-primary"
+                                                    />
+                                                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-medium text-muted-foreground">
+                                                        {s?.unit}
+                                                    </span>
                                                 </div>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setTempConsumptions(prev => prev.filter((_, idx) => idx !== i))}>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => setTempConsumptions(prev => prev.filter((_, idx) => idx !== i))}>
                                                     <X className="h-4 w-4" />
                                                 </Button>
                                             </div>
@@ -530,15 +549,15 @@ export default function InventoryPage() {
                         </div>
 
                         <div className="pt-4 border-t space-y-4">
-                            <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Add Ingredient (from Raw Supplies)</h4>
-                            <div className="grid grid-cols-3 gap-2">
-                                <div className="col-span-2">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Add New Ingredient</h4>
+                            <div className="flex gap-2">
+                                <div className="flex-1">
                                     <Select onValueChange={(val) => {
                                         if (tempConsumptions.some(c => c.supplyId === val)) return;
                                         setTempConsumptions(prev => [...prev, { supplyId: val, amount: 1 }]);
                                     }}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select raw supply..." />
+                                        <SelectTrigger className="h-10">
+                                            <SelectValue placeholder="Pick a supply to add..." />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {supplies.map(s => (
@@ -547,32 +566,30 @@ export default function InventoryPage() {
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <div className="text-xs text-muted-foreground flex items-center italic">
-                                    Pick a supply to add
-                                </div>
                             </div>
                         </div>
                     </div>
 
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsRecipeDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
-                        <Button onClick={onRecipeSave} disabled={isSubmitting}>
+                        <Button onClick={onRecipeSave} disabled={isSubmitting} className="min-w-[140px]">
                             {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Settings2 className="mr-2 h-4 w-4" />}
-                            Save Mapping
+                            Update Recipe
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
+            {/* Delete Confirmation */}
             <AlertDialog open={!!targetItem} onOpenChange={(open) => !open && setTargetItem(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Delete {targetItem?.name}?</AlertDialogTitle>
-                        <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+                        <AlertDialogDescription>This action will permanently remove this record from your hotel database.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteItem} className="bg-destructive text-white">Delete Record</AlertDialogAction>
+                        <AlertDialogAction onClick={handleDeleteItem} className="bg-destructive text-white hover:bg-destructive/90">Confirm Delete</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

@@ -29,13 +29,14 @@ let supplies: Supply[] = [
   { id: 's1', name: 'Charcoal (Bags)', category: 'Energy', module: 'restaurant', quantity: 20, unit: 'bags', unitCost: 1500, lastPurchased: new Date().toISOString() },
   { id: 's2', name: 'Car Shampoo', category: 'Cleaning', module: 'carwash', quantity: 15, unit: 'liters', unitCost: 400, lastPurchased: new Date().toISOString() },
   { id: 's3', name: 'Cooking Oil', category: 'Ingredients', module: 'restaurant', quantity: 50, unit: 'liters', unitCost: 200, lastPurchased: new Date().toISOString() },
+  { id: 's4', name: 'Salt', category: 'Ingredients', module: 'restaurant', quantity: 23, unit: 'kg', unitCost: 150, lastPurchased: new Date().toISOString() },
 ];
 
 // Production Recipes (Mutable state - Maps Product ID to consumed Supplies)
 let productRecipes: Record<string, SupplyConsumption[]> = {
   'r1': [{ supplyId: 's1', amount: 0.05 }], // Nyama Choma uses 0.05 bags of charcoal per kg
-  'r2': [{ supplyId: 's3', amount: 0.1 }],  // Pilau uses 0.1L oil
-  'r3': [{ supplyId: 's3', amount: 0.15 }], // Tilapia uses 0.15L oil
+  'r2': [{ supplyId: 's3', amount: 0.1 }, { supplyId: 's4', amount: 0.005 }],  // Pilau uses 0.1L oil, 0.005kg salt
+  'r3': [{ supplyId: 's3', amount: 0.15 }, { supplyId: 's4', amount: 0.002 }], // Tilapia uses 0.15L oil, 0.002kg salt
   'c1': [{ supplyId: 's2', amount: 0.2 }],  // Body wash uses 0.2L shampoo
 };
 
@@ -177,6 +178,7 @@ export async function placeOrder(transaction: Omit<Transaction, 'id' | 'timestam
         recipe.forEach(mapping => {
           const s = supplies.find(supp => supp.id === mapping.supplyId);
           if (s) {
+            // Deduct precise decimal amount
             s.quantity = Math.max(0, s.quantity - (mapping.amount * item.quantity));
           }
         });
