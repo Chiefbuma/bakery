@@ -6,7 +6,7 @@ import mysql from 'mysql2/promise';
  * Configured for Wamaghach Kahua-ini Hotel production environment.
  */
 const pool = mysql.createPool({
-  host: process.env.DB_HOST || '127.0.0.1',
+  host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
@@ -16,18 +16,19 @@ const pool = mysql.createPool({
   queueLimit: 0,
   enableKeepAlive: true,
   keepAliveInitialDelay: 10000,
-  // Add timezone setting if needed for specific reporting
   timezone: '+03:00' 
 });
 
-// Resiliency test on startup
-pool.getConnection()
-  .then(conn => {
-    console.log('✅ MySQL Database Connected Successfully');
-    conn.release();
-  })
-  .catch(err => {
-    console.error('❌ Database Connection Failed:', err.message);
-  });
+// Resiliency test on startup (Logging only, doesn't crash the build)
+if (process.env.NODE_ENV === 'production') {
+  pool.getConnection()
+    .then(conn => {
+      console.log('✅ MySQL Database Connected Successfully');
+      conn.release();
+    })
+    .catch(err => {
+      console.error('❌ Database Connection Failed:', err.message);
+    });
+}
 
 export default pool;

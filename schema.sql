@@ -1,68 +1,69 @@
 
--- Wamaghach Kahua-ini Hotel Management System - Production Schema
+-- WAMAGHACH KAHUA-INI HOTEL MANAGEMENT SYSTEM
+-- PRODUCTION DATABASE SCHEMA
 
--- Users Table (Staff & Admins)
+-- 1. Users Table (Authentication)
 CREATE TABLE IF NOT EXISTS `users` (
-  `id` VARCHAR(255) PRIMARY KEY,
+  `id` VARCHAR(50) PRIMARY KEY,
   `name` VARCHAR(255) NOT NULL,
-  `email` VARCHAR(255) NOT NULL UNIQUE,
+  `email` VARCHAR(255) UNIQUE NOT NULL,
   `role` ENUM('admin', 'staff') DEFAULT 'staff',
   `password` VARCHAR(255) NOT NULL,
-  `createdAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  `createdAt` TIMESTAMP DEFAULT CURRENT_DATE
 );
 
--- Master Stock Table (Sellable Products)
+-- 2. Products Table (Master Stock)
 CREATE TABLE IF NOT EXISTS `products` (
-  `id` VARCHAR(255) PRIMARY KEY,
+  `id` VARCHAR(50) PRIMARY KEY,
   `name` VARCHAR(255) NOT NULL,
   `description` TEXT,
-  `category` VARCHAR(100) NOT NULL,
-  `module` ENUM('restaurant', 'bar', 'carwash', 'accommodation', 'entertainment') NOT NULL,
-  `price` DECIMAL(10, 2) NOT NULL,
-  `costPrice` DECIMAL(10, 2) NOT NULL,
-  `stock` INT DEFAULT 0,
-  `minStockLevel` INT DEFAULT 5,
-  `unit` VARCHAR(50) DEFAULT 'units',
-  `image_url` TEXT
+  `category` VARCHAR(100),
+  `module` ENUM('restaurant', 'bar', 'carwash', 'accommodation', 'entertainment', 'general') DEFAULT 'restaurant',
+  `price` DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+  `costPrice` DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+  `stock` DECIMAL(10, 2) DEFAULT 0.00,
+  `minStockLevel` DECIMAL(10, 2) DEFAULT 5.00,
+  `unit` VARCHAR(20) DEFAULT 'units',
+  `image_url` VARCHAR(255)
 );
 
--- Raw Supplies Table (Ingredients/Consumables)
+-- 3. Supplies Table (Raw Materials)
 CREATE TABLE IF NOT EXISTS `supplies` (
-  `id` VARCHAR(255) PRIMARY KEY,
+  `id` VARCHAR(50) PRIMARY KEY,
   `name` VARCHAR(255) NOT NULL,
   `category` VARCHAR(100),
-  `module` VARCHAR(100),
-  `quantity` DECIMAL(10, 3) DEFAULT 0,
-  `unit` VARCHAR(50) NOT NULL,
-  `unitCost` DECIMAL(10, 2) NOT NULL,
+  `module` VARCHAR(50),
+  `quantity` DECIMAL(10, 3) DEFAULT 0.000,
+  `unit` VARCHAR(20) NOT NULL,
+  `unitCost` DECIMAL(10, 2) DEFAULT 0.00,
   `lastPurchased` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Production Recipes (Links Products to Supplies)
+-- 4. Production Recipes
 CREATE TABLE IF NOT EXISTS `recipes` (
-  `productId` VARCHAR(255) NOT NULL,
-  `supplyId` VARCHAR(255) NOT NULL,
+  `productId` VARCHAR(50),
+  `supplyId` VARCHAR(50),
   `amount` DECIMAL(10, 4) NOT NULL,
   PRIMARY KEY (`productId`, `supplyId`),
   FOREIGN KEY (`productId`) REFERENCES `products`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`supplyId`) REFERENCES `supplies`(`id`) ON DELETE CASCADE
 );
 
--- Operating Expenses Table
+-- 5. Expenses Table
 CREATE TABLE IF NOT EXISTS `expenses` (
-  `id` VARCHAR(255) PRIMARY KEY,
-  `category` ENUM('salary', 'utility', 'maintenance', 'rent', 'garbage', 'miscellaneous') NOT NULL,
+  `id` VARCHAR(50) PRIMARY KEY,
+  `category` ENUM('salary', 'utility', 'maintenance', 'rent', 'miscellaneous', 'garbage') DEFAULT 'miscellaneous',
   `amount` DECIMAL(10, 2) NOT NULL,
-  `description` TEXT,
+  `description` VARCHAR(255) NOT NULL,
   `date` DATE NOT NULL,
-  `module` VARCHAR(100) DEFAULT 'general'
+  `module` VARCHAR(50)
 );
 
--- Sales Transactions Table
+-- 6. Transactions Table (POS Sales)
 CREATE TABLE IF NOT EXISTS `transactions` (
-  `id` VARCHAR(255) PRIMARY KEY,
-  `orderNumber` VARCHAR(255) NOT NULL UNIQUE,
-  `module` VARCHAR(100) NOT NULL,
+  `id` VARCHAR(50) PRIMARY KEY,
+  `orderNumber` VARCHAR(100) UNIQUE NOT NULL,
+  `module` VARCHAR(50) NOT NULL,
   `totalAmount` DECIMAL(10, 2) NOT NULL,
   `totalCost` DECIMAL(10, 2) NOT NULL,
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -73,32 +74,33 @@ CREATE TABLE IF NOT EXISTS `transactions` (
   `balance` DECIMAL(10, 2)
 );
 
--- Transaction Items Table
+-- 7. Transaction Items
 CREATE TABLE IF NOT EXISTS `transaction_items` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `transactionId` VARCHAR(255) NOT NULL,
-  `productId` VARCHAR(255) NOT NULL,
-  `name` VARCHAR(255) NOT NULL,
+  `transactionId` VARCHAR(50),
+  `productId` VARCHAR(50),
+  `name` VARCHAR(255),
   `quantity` INT NOT NULL,
-  `price` DECIMAL(10, 2) NOT NULL,
-  `costPrice` DECIMAL(10, 2) NOT NULL,
-  `total` DECIMAL(10, 2) NOT NULL,
+  `price` DECIMAL(10, 2),
+  `costPrice` DECIMAL(10, 2),
+  `total` DECIMAL(10, 2),
   FOREIGN KEY (`transactionId`) REFERENCES `transactions`(`id`) ON DELETE CASCADE
 );
 
--- SEED DATA
+-- INITIAL SEED DATA
 INSERT INTO `users` (`id`, `name`, `email`, `role`, `password`) VALUES 
-('U-ADMIN', 'Administrator', 'admin@wamaghach.com', 'admin', 'pk_live_8d9017d3458e0213efd55c219527b9171482e87d');
+('U-ADMIN', 'Admin User', 'admin@wamaghach.com', 'admin', 'admin123');
 
-INSERT INTO `products` (`id`, `name`, `description`, `category`, `module`, `price`, `costPrice`, `stock`, `image_url`) VALUES 
-('P-PILAU', 'Swahili Pilau', 'Traditional aromatic rice with beef', 'Main Course', 'restaurant', 650.00, 320.00, 40, 'https://images.unsplash.com/photo-1512058560366-cd2427ffbb62?w=800'),
-('P-TILAPIA', 'Wet Fry Tilapia', 'Fresh lake tilapia served with greens', 'Main Course', 'restaurant', 950.00, 450.00, 25, 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=800');
+INSERT INTO `supplies` (`id`, `name`, `category`, `module`, `quantity`, `unit`, `unitCost`) VALUES
+('SUP-OIL', 'Cooking Oil', 'Kitchen', 'restaurant', 50.000, 'liters', 200.00),
+('SUP-COAL', 'Charcoal', 'Fuel', 'restaurant', 20.000, 'bags', 1500.00),
+('SUP-SALT', 'Salt', 'Kitchen', 'restaurant', 10.000, 'kg', 50.00);
 
-INSERT INTO `supplies` (`id`, `name`, `category`, `module`, `quantity`, `unit`, `unitCost`) VALUES 
-('S-OIL', 'Cooking Oil', 'Kitchen', 'restaurant', 50.00, 'liters', 200.00),
-('S-SALT', 'Table Salt', 'Kitchen', 'restaurant', 10.00, 'kg', 50.00),
-('S-CHARCOAL', 'Charcoal', 'Fuel', 'restaurant', 20.00, 'bags', 1500.00);
+INSERT INTO `products` (`id`, `name`, `description`, `category`, `module`, `price`, `costPrice`, `stock`, `unit`, `image_url`) VALUES
+('PROD-PILAU', 'Swahili Pilau', 'Spiced rice with beef', 'Main Course', 'restaurant', 650.00, 300.00, 40, 'plates', 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'),
+('PROD-TILAPIA', 'Wet Fry Tilapia', 'Fresh lake fish in tomato sauce', 'Seafood', 'restaurant', 950.00, 450.00, 25, 'fish', 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2');
 
-INSERT INTO `recipes` (`productId`, `supplyId`, `amount`) VALUES 
-('P-PILAU', 'S-OIL', 0.05),
-('P-PILAU', 'S-SALT', 0.002);
+INSERT INTO `recipes` (`productId`, `supplyId`, `amount`) VALUES
+('PROD-PILAU', 'SUP-OIL', 0.0500),
+('PROD-PILAU', 'SUP-SALT', 0.0020),
+('PROD-TILAPIA', 'SUP-OIL', 0.1000);

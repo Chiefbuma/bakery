@@ -6,14 +6,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ product
   const connection = await pool.getConnection();
   try {
     const { productId } = await params;
-    const consumptions = await req.json(); // Array of { supplyId, amount }
+    const consumptions = await req.json(); 
     
     await connection.beginTransaction();
     
-    // Clear existing recipe
     await connection.query('DELETE FROM recipes WHERE productId = ?', [productId]);
     
-    // Insert new components
     for (const c of consumptions) {
       await connection.query(
         'INSERT INTO recipes (productId, supplyId, amount) VALUES (?, ?, ?)',

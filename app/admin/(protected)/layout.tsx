@@ -9,6 +9,8 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
+export const dynamic = 'force-dynamic';
+
 export default function AdminProtectedLayout({
   children,
 }: {
@@ -31,7 +33,6 @@ export default function AdminProtectedLayout({
       setUserRole(user.role);
       setUserName(user.name);
       
-      // Strict redirect for non-admins trying to access admin pages
       const adminOnlyRoutes = ['/admin/dashboard', '/admin/inventory', '/admin/expenses', '/admin/users'];
       if (user.role !== 'admin' && adminOnlyRoutes.some(route => pathname.startsWith(route))) {
         router.replace('/admin/pos');
@@ -51,7 +52,6 @@ export default function AdminProtectedLayout({
     return <div className="flex min-h-screen items-center justify-center bg-stone-950"><Loader2 className="animate-spin text-primary" /></div>;
   }
 
-  // Define navigation items
   const allNavItems = [
     { label: 'POS Terminal', href: '/admin/pos', icon: CreditCard, roles: ['admin', 'staff'] },
     { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, roles: ['admin'] },
@@ -60,12 +60,10 @@ export default function AdminProtectedLayout({
     { label: 'User Management', href: '/admin/users', icon: Users, roles: ['admin'] },
   ];
 
-  // Filter based on role
   const visibleNavItems = allNavItems.filter(item => userRole && item.roles.includes(userRole));
 
   return (
     <div className="flex min-h-screen bg-muted/40 w-full flex-col">
-      {/* Horizontal Header Navigation */}
       <header className="flex h-16 items-center gap-4 border-b bg-background px-6 sticky top-0 z-50">
         <Link href="/admin/pos" className="flex items-center gap-2 font-bold text-lg text-primary mr-8">
           <Hotel className="h-6 w-6" />
