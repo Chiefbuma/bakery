@@ -24,14 +24,14 @@ let products: Product[] = [
   { id: 'e1', name: 'Live Band Setup', description: 'Full audio setup for events.', category: 'Sound', module: 'entertainment', price: 15000, costPrice: 2000, stock: 5, minStockLevel: 1, unit: 'setup', image_url: 'https://images.unsplash.com/photo-1514525253361-bee8a4874093?w=800&q=80' }
 ];
 
-// Raw Supplies
+// Raw Supplies (Ingredients for recipes)
 let supplies: Supply[] = [
   { id: 's1', name: 'Charcoal (Bags)', category: 'Energy', module: 'restaurant', quantity: 20, unit: 'bags', unitCost: 1500, lastPurchased: new Date().toISOString() },
   { id: 's2', name: 'Car Shampoo', category: 'Cleaning', module: 'carwash', quantity: 15, unit: 'liters', unitCost: 400, lastPurchased: new Date().toISOString() },
   { id: 's3', name: 'Cooking Oil', category: 'Ingredients', module: 'restaurant', quantity: 50, unit: 'liters', unitCost: 200, lastPurchased: new Date().toISOString() },
 ];
 
-// Production Recipes (Mutable state)
+// Production Recipes (Mutable state - Maps Product ID to consumed Supplies)
 let productRecipes: Record<string, SupplyConsumption[]> = {
   'r1': [{ supplyId: 's1', amount: 0.05 }], // Nyama Choma uses 0.05 bags of charcoal per kg
   'r2': [{ supplyId: 's3', amount: 0.1 }],  // Pilau uses 0.1L oil

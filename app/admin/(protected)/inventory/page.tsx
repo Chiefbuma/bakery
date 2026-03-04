@@ -58,7 +58,7 @@ export default function InventoryPage() {
     
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [editingSupply, setEditingSupply] = useState<Supply | null>(null);
-    const [selectedProductForRecipe, setSelectedProductForProductRecipe] = useState<Product | null>(null);
+    const [selectedProductForRecipe, setSelectedProductForRecipe] = useState<Product | null>(null);
     const [tempConsumptions, setTempConsumptions] = useState<SupplyConsumption[]>([]);
     
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -130,7 +130,7 @@ export default function InventoryPage() {
     };
 
     const handleOpenRecipeDialog = (product: Product) => {
-        setSelectedProductForProductRecipe(product);
+        setSelectedProductForRecipe(product);
         setTempConsumptions(recipes[product.id] || []);
         setIsRecipeDialogOpen(true);
     };
@@ -188,7 +188,7 @@ export default function InventoryPage() {
         } finally {
             setIsSubmitting(false);
         }
-    }
+    };
 
     const handleDeleteItem = async () => {
         if (!targetItem) return;
@@ -217,7 +217,7 @@ export default function InventoryPage() {
 
     const totalPages = useMemo(() => {
         const count = activeTab === 'supplies' ? filteredSupplies.length : filteredProducts.length;
-        return Math.ceil(count / ITEMS_PER_PAGE);
+        return Math.max(1, Math.ceil(count / ITEMS_PER_PAGE));
     }, [activeTab, filteredProducts.length, filteredSupplies.length]);
 
     const paginatedProducts = useMemo(() => {
@@ -325,7 +325,7 @@ export default function InventoryPage() {
                         <CardHeader className="flex flex-row items-center justify-between border-b pb-6">
                             <div className="space-y-1">
                                 <CardTitle>Raw Supplies Ledger</CardTitle>
-                                <CardDescription>Consumables used in production.</CardDescription>
+                                <CardDescription>Consumables used in production. These are the ingredients for your recipes.</CardDescription>
                             </div>
                             <Button onClick={() => handleOpenSupplyDialog()}>
                                 <PlusCircle className="mr-2 h-4 w-4" /> Add Supply
@@ -371,7 +371,7 @@ export default function InventoryPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Production Mapping</CardTitle>
-                            <CardDescription>Link products to the raw materials they consume.</CardDescription>
+                            <CardDescription>Link Master Stock products to the Raw Supplies they consume during a sale.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="rounded-md border overflow-hidden">
@@ -418,7 +418,7 @@ export default function InventoryPage() {
             </Tabs>
 
             <div className="flex items-center justify-end space-x-2 py-4">
-                <span className="text-xs text-muted-foreground">Page {currentPage} of {totalPages || 1}</span>
+                <span className="text-xs text-muted-foreground">Page {currentPage} of {totalPages}</span>
                 <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
                     <ChevronLeft className="h-4 w-4" />
                 </Button>
@@ -462,7 +462,7 @@ export default function InventoryPage() {
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle>{editingSupply ? 'Edit Supply' : 'Add Raw Supply'}</DialogTitle>
-                        <DialogDescription>Track production inputs.</DialogDescription>
+                        <DialogDescription>Track production inputs. These will be ingredients for your recipes.</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={supplyForm.handleSubmit(onSupplySubmit)} className="space-y-4 pt-4">
                         <div className="space-y-2">
@@ -495,7 +495,7 @@ export default function InventoryPage() {
                             <Sparkles className="h-5 w-5 text-primary" />
                             <DialogTitle>Production Recipe</DialogTitle>
                         </div>
-                        <DialogDescription>Define what 1 unit of <strong>{selectedProductForRecipe?.name}</strong> consumes.</DialogDescription>
+                        <DialogDescription>Define what 1 unit of <strong>{selectedProductForRecipe?.name}</strong> consumes. Select from your Raw Supplies.</DialogDescription>
                     </DialogHeader>
                     
                     <div className="space-y-6 py-4">
@@ -504,7 +504,7 @@ export default function InventoryPage() {
                             <div className="space-y-2">
                                 {tempConsumptions.length === 0 ? (
                                     <div className="p-8 text-center border-2 border-dashed rounded-lg text-muted-foreground italic text-sm">
-                                        No supplies linked yet. Add one below.
+                                        No supplies linked yet. Pick an ingredient below.
                                     </div>
                                 ) : tempConsumptions.map((c, i) => {
                                     const s = supplies.find(sup => sup.id === c.supplyId);
@@ -530,7 +530,7 @@ export default function InventoryPage() {
                         </div>
 
                         <div className="pt-4 border-t space-y-4">
-                            <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Add Ingredient</h4>
+                            <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Add Ingredient (from Raw Supplies)</h4>
                             <div className="grid grid-cols-3 gap-2">
                                 <div className="col-span-2">
                                     <Select onValueChange={(val) => {
