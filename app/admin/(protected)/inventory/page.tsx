@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -24,7 +23,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion } from "framer-motion";
-import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -51,17 +49,15 @@ export default function InventoryPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 8;
 
-    // Selection & Actions
-    const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
-    const [selectedSupplies, setSelectedSupplies] = useState<Set<string>>(new Set());
-    const [confirmDeleteType, setConfirmDeleteType] = useState<'product' | 'supply' | null>(null);
-    
     // Dialog States
     const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
     const [isSupplyDialogOpen, setIsSupplyDialogOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [editingSupply, setEditingSupply] = useState<Supply | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    // Deletion states
+    const [targetItem, setTargetItem] = useState<{id: string, type: 'product' | 'supply' } | null>(null);
 
     const { toast } = useToast();
     
@@ -184,24 +180,20 @@ export default function InventoryPage() {
         }
     };
 
-    const handleBulkDelete = async () => {
-        const type = confirmDeleteType;
-        if (!type) return;
-        
+    const handleDeleteItem = async () => {
+        if (!targetItem) return;
         try {
-            if (type === 'product') {
-                await deleteProducts(Array.from(selectedProducts));
-                setSelectedProducts(new Set());
+            if (targetItem.type === 'product') {
+                await deleteProducts([targetItem.id]);
             } else {
-                await deleteSupplies(Array.from(selectedSupplies));
-                setSelectedSupplies(new Set());
+                await deleteSupplies([targetItem.id]);
             }
-            toast({ title: `${type === 'product' ? 'Products' : 'Supplies'} Deleted` });
+            toast({ title: "Item Removed" });
             await loadData();
         } catch (error) {
             toast({ variant: "destructive", title: "Action Failed" });
         } finally {
-            setConfirmDeleteType(null);
+            setTargetItem(null);
         }
     };
 
@@ -230,7 +222,7 @@ export default function InventoryPage() {
                 <p className="text-muted-foreground">Manage products, stock levels and raw supplies.</p>
             </div>
 
-            <Tabs defaultValue="products" onValueChange={() => { setCurrentPage(1); setSelectedProducts(new Set()); setSelectedSupplies(new Set()); }}>
+            <Tabs defaultValue="products" onValueChange={() => { setCurrentPage(1); }}>
                 <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
                     <TabsList>
                         <TabsTrigger value="products">Master Stock</TabsTrigger>
@@ -264,33 +256,15 @@ export default function InventoryPage() {
                                 <CardTitle>Sellable Products</CardTitle>
                                 <CardDescription>Retail items and hotel services.</CardDescription>
                             </div>
-                            <div className="flex gap-2">
-                                {selectedProducts.size > 0 && (
-                                    <Button variant="destructive" size="sm" onClick={() => setConfirmDeleteType('product')}>
-                                        <Trash2 className="mr-2 h-4 w-4" /> Delete ({selectedProducts.size})
-                                    </Button>
-                                )}
-                                <Button onClick={() => handleOpenProductDialog()}>
-                                    <PlusCircle className="mr-2 h-4 w-4" /> Add Product
-                                </Button>
-                            </div>
+                            <Button onClick={() => handleOpenProductDialog()}>
+                                <PlusCircle className="mr-2 h-4 w-4" /> Add Product
+                            </Button>
                         </CardHeader>
                         <CardContent className="pt-6">
                             <div className="rounded-md border overflow-hidden">
                                 <Table>
                                     <TableHeader>
                                         <TableRow className="bg-muted/50">
-                                            <TableHead className="w-12">
-                                                <Checkbox 
-                                                    checked={paginatedProducts.length > 0 && paginatedProducts.every(p => selectedProducts.has(p.id))} 
-                                                    onCheckedChange={(checked) => {
-                                                        const next = new Set(selectedProducts);
-                                                        if (checked) paginatedProducts.forEach(p => next.add(p.id));
-                                                        else paginatedProducts.forEach(p => next.delete(p.id));
-                                                        setSelectedProducts(next);
-                                                    }} 
-                                                />
-                                            </TableHead>
                                             <TableHead>Product</TableHead>
                                             <TableHead>Module</TableHead>
                                             <TableHead>Price</TableHead>
@@ -301,23 +275,13 @@ export default function InventoryPage() {
                                     </TableHeader>
                                     <TableBody>
                                         {loading ? (
-                                            <TableRow><TableCell colSpan={7} className="h-24 text-center"><Loader2 className="animate-spin inline-block mr-2" /> Loading...</TableCell></TableRow>
+                                            <TableRow><TableCell colSpan={6} className="h-24 text-center"><Loader2 className="animate-spin inline-block mr-2" /> Loading...</TableCell></TableRow>
                                         ) : paginatedProducts.length === 0 ? (
-                                            <TableRow><TableCell colSpan={7} className="h-24 text-center text-muted-foreground">No products found.</TableCell></TableRow>
+                                            <TableRow><TableCell colSpan={6} className="h-24 text-center text-muted-foreground">No products found.</TableCell></TableRow>
                                         ) : paginatedProducts.map((p) => {
                                             const isLow = p.stock <= p.minStockLevel && p.module !== 'carwash' && p.module !== 'entertainment';
                                             return (
-                                                <TableRow key={p.id} className={selectedProducts.has(p.id) ? "bg-primary/5" : ""}>
-                                                    <TableCell>
-                                                        <Checkbox 
-                                                            checked={selectedProducts.has(p.id)} 
-                                                            onCheckedChange={(checked) => {
-                                                                const next = new Set(selectedProducts);
-                                                                if (checked) next.add(p.id); else next.delete(p.id);
-                                                                setSelectedProducts(next);
-                                                            }} 
-                                                        />
-                                                    </TableCell>
+                                                <TableRow key={p.id}>
                                                     <TableCell className="font-bold">{p.name}</TableCell>
                                                     <TableCell className="capitalize text-xs text-muted-foreground">{p.module}</TableCell>
                                                     <TableCell>{formatPrice(p.price)}</TableCell>
@@ -334,7 +298,7 @@ export default function InventoryPage() {
                                                                 <DropdownMenuItem onClick={() => handleOpenProductDialog(p)}>
                                                                     <Edit className="mr-2 h-4 w-4" /> Edit
                                                                 </DropdownMenuItem>
-                                                                <DropdownMenuItem className="text-destructive" onClick={() => { setSelectedProducts(new Set([p.id])); setConfirmDeleteType('product'); }}>
+                                                                <DropdownMenuItem className="text-destructive" onClick={() => setTargetItem({id: p.id, type: 'product'})}>
                                                                     <Trash2 className="mr-2 h-4 w-4" /> Delete
                                                                 </DropdownMenuItem>
                                                             </DropdownMenuContent>
@@ -357,33 +321,15 @@ export default function InventoryPage() {
                                 <CardTitle>Raw Supplies Ledger</CardTitle>
                                 <CardDescription>Consumables used in production.</CardDescription>
                             </div>
-                            <div className="flex gap-2">
-                                {selectedSupplies.size > 0 && (
-                                    <Button variant="destructive" size="sm" onClick={() => setConfirmDeleteType('supply')}>
-                                        <Trash2 className="mr-2 h-4 w-4" /> Delete ({selectedSupplies.size})
-                                    </Button>
-                                )}
-                                <Button onClick={() => handleOpenSupplyDialog()}>
-                                    <PlusCircle className="mr-2 h-4 w-4" /> Add Supply
-                                </Button>
-                            </div>
+                            <Button onClick={() => handleOpenSupplyDialog()}>
+                                <PlusCircle className="mr-2 h-4 w-4" /> Add Supply
+                            </Button>
                         </CardHeader>
                         <CardContent className="pt-6">
                             <div className="rounded-md border overflow-hidden">
                                 <Table>
                                     <TableHeader>
                                         <TableRow className="bg-muted/50">
-                                            <TableHead className="w-12">
-                                                <Checkbox 
-                                                    checked={paginatedSupplies.length > 0 && paginatedSupplies.every(s => selectedSupplies.has(s.id))} 
-                                                    onCheckedChange={(checked) => {
-                                                        const next = new Set(selectedSupplies);
-                                                        if (checked) paginatedSupplies.forEach(s => next.add(s.id));
-                                                        else paginatedSupplies.forEach(s => next.delete(s.id));
-                                                        setSelectedSupplies(next);
-                                                    }} 
-                                                />
-                                            </TableHead>
                                             <TableHead>Supply</TableHead>
                                             <TableHead>Quantity</TableHead>
                                             <TableHead>Unit Cost</TableHead>
@@ -393,18 +339,11 @@ export default function InventoryPage() {
                                     </TableHeader>
                                     <TableBody>
                                         {loading ? (
-                                            <TableRow><TableCell colSpan={6} className="h-24 text-center">Loading...</TableCell></TableRow>
+                                            <TableRow><TableCell colSpan={5} className="h-24 text-center">Loading...</TableCell></TableRow>
                                         ) : paginatedSupplies.length === 0 ? (
-                                            <TableRow><TableCell colSpan={6} className="h-24 text-center text-muted-foreground">No supplies found.</TableCell></TableRow>
+                                            <TableRow><TableCell colSpan={5} className="h-24 text-center text-muted-foreground">No supplies found.</TableCell></TableRow>
                                         ) : paginatedSupplies.map((s) => (
-                                            <TableRow key={s.id} className={selectedSupplies.has(s.id) ? "bg-primary/5" : ""}>
-                                                <TableCell>
-                                                    <Checkbox checked={selectedSupplies.has(s.id)} onCheckedChange={(checked) => {
-                                                        const next = new Set(selectedSupplies);
-                                                        if (checked) next.add(s.id); else next.delete(s.id);
-                                                        setSelectedSupplies(next);
-                                                    }} />
-                                                </TableCell>
+                                            <TableRow key={s.id}>
                                                 <TableCell className="font-bold">{s.name}</TableCell>
                                                 <TableCell>{s.quantity} {s.unit}</TableCell>
                                                 <TableCell>{formatPrice(s.unitCost)}</TableCell>
@@ -420,7 +359,7 @@ export default function InventoryPage() {
                                                             <DropdownMenuItem onClick={() => handleOpenSupplyDialog(s)}>
                                                                 <Edit className="mr-2 h-4 w-4" /> Edit
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem className="text-destructive" onClick={() => { setSelectedSupplies(new Set([s.id])); setConfirmDeleteType('supply'); }}>
+                                                            <DropdownMenuItem className="text-destructive" onClick={() => setTargetItem({id: s.id, type: 'supply'})}>
                                                                 <Trash2 className="mr-2 h-4 w-4" /> Delete
                                                             </DropdownMenuItem>
                                                         </DropdownMenuContent>
@@ -438,11 +377,11 @@ export default function InventoryPage() {
 
             {/* Pagination Controls */}
             <div className="flex items-center justify-end space-x-2 py-4">
-                <span className="text-xs text-muted-foreground">Page {currentPage}</span>
+                <span className="text-xs text-muted-foreground">Page {currentPage} of {totalPages || 1}</span>
                 <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
                     <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(p => p + 1)} disabled={false}>
+                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0}>
                     <ChevronRight className="h-4 w-4" />
                 </Button>
             </div>
@@ -526,15 +465,15 @@ export default function InventoryPage() {
                 </DialogContent>
             </Dialog>
 
-            <AlertDialog open={!!confirmDeleteType} onOpenChange={() => setConfirmDeleteType(null)}>
+            <AlertDialog open={!!targetItem} onOpenChange={(open) => !open && setTargetItem(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Confirm deletion?</AlertDialogTitle>
-                        <AlertDialogDescription>This will remove selected inventory records permanently.</AlertDialogDescription>
+                        <AlertDialogDescription>This will remove the selected inventory record permanently.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-white hover:bg-destructive/90">Delete Selected</AlertDialogAction>
+                        <AlertDialogAction onClick={handleDeleteItem} className="bg-destructive text-white hover:bg-destructive/90">Delete Record</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -15,7 +14,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useForm } from "react-hook-form";
 import {
@@ -34,9 +32,8 @@ export default function ExpensesPage() {
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [selectedExpenses, setSelectedExpenses] = useState<Set<string>>(new Set());
-    const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
-    const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+    const [editingExpense, setEditingUser] = useState<Expense | null>(null);
+    const [targetExpense, setTargetExpense] = useState<string | null>(null);
     
     // Pagination
     const [currentPage, setCurrentPage] = useState(1);
@@ -61,7 +58,7 @@ export default function ExpensesPage() {
 
     const handleOpenDialog = (expense?: Expense) => {
         if (expense) {
-            setEditingExpense(expense);
+            setEditingUser(expense);
             reset({
                 category: expense.category,
                 amount: expense.amount,
@@ -70,7 +67,7 @@ export default function ExpensesPage() {
                 module: expense.module
             });
         } else {
-            setEditingExpense(null);
+            setEditingUser(null);
             reset({
                 category: 'miscellaneous',
                 amount: 0,
@@ -101,15 +98,16 @@ export default function ExpensesPage() {
         }
     };
 
-    const handleBulkDelete = async () => {
-        setConfirmDeleteOpen(false);
+    const handleDeleteExpense = async () => {
+        if (!targetExpense) return;
         try {
-            await deleteExpenses(Array.from(selectedExpenses));
-            setSelectedExpenses(new Set());
+            await deleteExpenses([targetExpense]);
             await load();
-            toast({ title: "Expenses Cleared" });
+            toast({ title: "Expense Cleared" });
         } catch (error) {
             toast({ variant: "destructive", title: "Action Failed" });
+        } finally {
+            setTargetExpense(null);
         }
     };
 
@@ -132,30 +130,15 @@ export default function ExpensesPage() {
                         <CardTitle>Overhead Ledger</CardTitle>
                         <CardDescription>Daily and recurring operational costs.</CardDescription>
                     </div>
-                    <div className="flex gap-2">
-                        {selectedExpenses.size > 0 && (
-                            <Button variant="destructive" size="sm" onClick={() => setConfirmDeleteOpen(true)}>
-                                <Trash2 className="mr-2 h-4 w-4" /> Delete ({selectedExpenses.size})
-                            </Button>
-                        )}
-                        <Button onClick={() => handleOpenDialog()}>
-                            <PlusCircle className="mr-2 h-4 w-4" /> Record Expense
-                        </Button>
-                    </div>
+                    <Button onClick={() => handleOpenDialog()}>
+                        <PlusCircle className="mr-2 h-4 w-4" /> Record Expense
+                    </Button>
                 </CardHeader>
                 <CardContent className="pt-6">
                     <div className="rounded-md border overflow-hidden">
                         <Table>
                             <TableHeader>
                                 <TableRow className="bg-muted/50">
-                                    <TableHead className="w-12">
-                                        <Checkbox checked={paginatedExpenses.length > 0 && paginatedExpenses.every(e => selectedExpenses.has(e.id))} onCheckedChange={(checked) => {
-                                            const next = new Set(selectedExpenses);
-                                            if (checked) paginatedExpenses.forEach(e => next.add(e.id));
-                                            else paginatedExpenses.forEach(e => next.delete(e.id));
-                                            setSelectedExpenses(next);
-                                        }} />
-                                    </TableHead>
                                     <TableHead>Date</TableHead>
                                     <TableHead>Category</TableHead>
                                     <TableHead>Description</TableHead>
@@ -166,16 +149,11 @@ export default function ExpensesPage() {
                             </TableHeader>
                             <TableBody>
                                 {loading ? (
-                                    <TableRow><TableCell colSpan={7} className="h-24 text-center">Loading...</TableCell></TableRow>
+                                    <TableRow><TableCell colSpan={6} className="h-24 text-center">Loading...</TableCell></TableRow>
                                 ) : paginatedExpenses.length === 0 ? (
-                                    <TableRow><TableCell colSpan={7} className="h-24 text-center text-muted-foreground">No records found.</TableCell></TableRow>
+                                    <TableRow><TableCell colSpan={6} className="h-24 text-center text-muted-foreground">No records found.</TableCell></TableRow>
                                 ) : paginatedExpenses.map((e) => (
-                                    <TableRow key={e.id} className={selectedExpenses.has(e.id) ? "bg-primary/5" : ""}>
-                                        <TableCell><Checkbox checked={selectedExpenses.has(e.id)} onCheckedChange={(checked) => {
-                                            const next = new Set(selectedExpenses);
-                                            if (checked) next.add(e.id); else next.delete(e.id);
-                                            setSelectedExpenses(next);
-                                        }} /></TableCell>
+                                    <TableRow key={e.id}>
                                         <TableCell className="text-xs">{new Date(e.date).toLocaleDateString()}</TableCell>
                                         <TableCell><Badge variant="outline" className="capitalize">{e.category}</Badge></TableCell>
                                         <TableCell className="font-medium">{e.description}</TableCell>
@@ -192,7 +170,7 @@ export default function ExpensesPage() {
                                                     <DropdownMenuItem onClick={() => handleOpenDialog(e)}>
                                                         <Edit className="mr-2 h-4 w-4" /> Edit Record
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem className="text-destructive" onClick={() => { setSelectedExpenses(new Set([e.id])); setConfirmDeleteOpen(true); }}>
+                                                    <DropdownMenuItem className="text-destructive" onClick={() => setTargetExpense(e.id)}>
                                                         <Trash2 className="mr-2 h-4 w-4" /> Remove
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
@@ -256,15 +234,15 @@ export default function ExpensesPage() {
                 </DialogContent>
             </Dialog>
 
-            <AlertDialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+            <AlertDialog open={!!targetExpense} onOpenChange={(open) => !open && setTargetExpense(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Delete entries?</AlertDialogTitle>
-                        <AlertDialogDescription>This will remove selected records from the ledger. This cannot be undone.</AlertDialogDescription>
+                        <AlertDialogTitle>Delete entry?</AlertDialogTitle>
+                        <AlertDialogDescription>This will remove the record from the ledger. This cannot be undone.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive hover:bg-destructive/90 text-white">Confirm Removal</AlertDialogAction>
+                        <AlertDialogAction onClick={handleDeleteExpense} className="bg-destructive hover:bg-destructive/90 text-white">Confirm Removal</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

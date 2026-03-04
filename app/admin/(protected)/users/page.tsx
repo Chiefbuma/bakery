@@ -1,8 +1,7 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { getUsers, addUser, deleteUser, deleteUsers, updateUser } from "@/services/hotel-service";
+import { getUsers, addUser, deleteUser, updateUser } from "@/services/hotel-service";
 import type { User, UserRole } from "@/lib/types";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -14,7 +13,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
     AlertDialog,
@@ -34,11 +32,9 @@ export default function UsersPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
-    const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
     const [editingUser, setEditingUser] = useState<User | null>(null);
     
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-    const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false);
     const [targetUser, setTargetUser] = useState<{id: string, name: string} | null>(null);
     
     const [currentPage, setCurrentPage] = useState(1);
@@ -66,7 +62,6 @@ export default function UsersPage() {
 
     useEffect(() => { loadUsers(); }, [loadUsers]);
 
-    // Handle Modal Open/Close and Form Reset
     const handleOpenDialog = (user?: User) => {
         if (user) {
             setEditingUser(user);
@@ -74,7 +69,7 @@ export default function UsersPage() {
                 name: user.name,
                 email: user.email,
                 role: user.role,
-                password: '' // Don't show password on edit
+                password: ''
             });
         } else {
             setEditingUser(null);
@@ -102,7 +97,6 @@ export default function UsersPage() {
                 toast({ title: "User Created", description: "Account is ready for use." });
             }
             
-            // Critical: Release dialog first, then refresh data to prevent state locking
             setIsDialogOpen(false);
             setEditingUser(null);
             await loadUsers();
@@ -118,30 +112,12 @@ export default function UsersPage() {
         try {
             await deleteUser(targetUser.id);
             toast({ title: "User Removed" });
-            setSelectedUsers(prev => {
-                const next = new Set(prev);
-                next.delete(targetUser.id);
-                return next;
-            });
             await loadUsers();
         } catch (error) {
             toast({ variant: "destructive", title: "Action Failed" });
         } finally {
             setDeleteConfirmOpen(false);
             setTargetUser(null);
-        }
-    };
-
-    const handleBulkDelete = async () => {
-        try {
-            await deleteUsers(Array.from(selectedUsers));
-            toast({ title: "Users Deleted", description: `${selectedUsers.size} accounts removed.` });
-            setSelectedUsers(new Set());
-            await loadUsers();
-        } catch (error) {
-            toast({ variant: "destructive", title: "Bulk Deletion Failed" });
-        } finally {
-            setBulkDeleteConfirmOpen(false);
         }
     };
 
@@ -191,17 +167,6 @@ export default function UsersPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow className="bg-muted/50">
-                                    <TableHead className="w-12">
-                                        <Checkbox 
-                                            checked={paginatedUsers.length > 0 && paginatedUsers.every(u => selectedUsers.has(u.id))}
-                                            onCheckedChange={(checked) => {
-                                                const next = new Set(selectedUsers);
-                                                if (checked) paginatedUsers.forEach(u => next.add(u.id));
-                                                else paginatedUsers.forEach(u => next.delete(u.id));
-                                                setSelectedUsers(next);
-                                            }}
-                                        />
-                                    </TableHead>
                                     <TableHead>User Profile</TableHead>
                                     <TableHead>Role</TableHead>
                                     <TableHead>Created Date</TableHead>
@@ -212,28 +177,17 @@ export default function UsersPage() {
                                 {loading ? (
                                     Array.from({ length: 5 }).map((_, i) => (
                                         <TableRow key={`skeleton-${i}`}>
-                                            <TableCell colSpan={5} className="h-16 animate-pulse bg-muted/10" />
+                                            <TableCell colSpan={4} className="h-16 animate-pulse bg-muted/10" />
                                         </TableRow>
                                     ))
                                 ) : paginatedUsers.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
+                                        <TableCell colSpan={4} className="h-32 text-center text-muted-foreground">
                                             No personnel found matching your search.
                                         </TableCell>
                                     </TableRow>
                                 ) : paginatedUsers.map((u) => (
-                                    <TableRow key={u.id} className={selectedUsers.has(u.id) ? "bg-primary/5" : ""}>
-                                        <TableCell>
-                                            <Checkbox 
-                                                checked={selectedUsers.has(u.id)}
-                                                onCheckedChange={(checked) => {
-                                                    const next = new Set(selectedUsers);
-                                                    if (checked) next.add(u.id); else next.delete(u.id);
-                                                    setSelectedUsers(next);
-                                                }}
-                                                disabled={u.email === 'admin@wamaghach.com'}
-                                            />
-                                        </TableCell>
+                                    <TableRow key={u.id}>
                                         <TableCell>
                                             <div className="flex flex-col">
                                                 <span className="font-bold text-sm">{u.name}</span>
@@ -275,14 +229,7 @@ export default function UsersPage() {
                         </Table>
                     </div>
                     
-                    <div className="flex items-center justify-between py-4">
-                        <div className="flex-1">
-                            {selectedUsers.size > 0 && (
-                                <Button variant="destructive" size="sm" onClick={() => setBulkDeleteConfirmOpen(true)}>
-                                    Delete Selected ({selectedUsers.size})
-                                </Button>
-                            )}
-                        </div>
+                    <div className="flex items-center justify-end py-4">
                         <div className="flex items-center gap-2">
                             <span className="text-xs text-muted-foreground">Page {currentPage} of {totalPages || 1}</span>
                             <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
@@ -353,21 +300,6 @@ export default function UsersPage() {
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90 text-white">
                             Delete Account
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
-            <AlertDialog open={bulkDeleteConfirmOpen} onOpenChange={setBulkDeleteConfirmOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Delete {selectedUsers.size} users?</AlertDialogTitle>
-                        <AlertDialogDescription>The selected personnel will lose system access immediately.</AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive hover:bg-destructive/90 text-white">
-                            Confirm Removal
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
