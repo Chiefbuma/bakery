@@ -2,27 +2,31 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const body = await req.json();
     const { name, category, module, quantity, unit, unitCost } = body;
     
     await pool.query(
       'UPDATE supplies SET name = ?, category = ?, module = ?, quantity = ?, unit = ?, unitCost = ? WHERE id = ?',
-      [name, category, module, quantity, unit, unitCost, params.id]
+      [name, category, module, quantity, unit, unitCost, id]
     );
     
     return NextResponse.json({ message: 'Supply updated' });
   } catch (error) {
+    console.error('Update Supply Error:', error);
     return NextResponse.json({ error: "Update failed" }, { status: 500 });
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await pool.query('DELETE FROM supplies WHERE id = ?', [params.id]);
+    const { id } = await params;
+    await pool.query('DELETE FROM supplies WHERE id = ?', [id]);
     return NextResponse.json({ message: 'Supply deleted' });
   } catch (error) {
+    console.error('Delete Supply Error:', error);
     return NextResponse.json({ error: "Delete failed" }, { status: 500 });
   }
 }

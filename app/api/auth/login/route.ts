@@ -1,9 +1,9 @@
+
 import { NextResponse, NextRequest } from 'next/server';
 import pool from '@/lib/db';
-import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET!;
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_dev';
 
 export async function POST(req: NextRequest) {
     try {
@@ -13,35 +13,34 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: 'Email and password are required' }, { status: 400 });
         }
 
-        const connection = await pool.getConnection();
-        const [rows]: any[] = await connection.query('SELECT * FROM admins WHERE email = ?', [email]);
-        connection.release();
+        const [rows]: any[] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
 
         if (rows.length === 0) {
             return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
         }
 
-        const admin = rows[0];
+        const user = rows[0];
 
-        // IMPORTANT: The seeded password is a placeholder. 
-        // For a real app, generate a hash for 'admin' (e.g., using an online bcrypt generator) and replace it in the seed script.
-        // For this prototype, we'll compare against the plain text 'admin' if the stored hash is still the placeholder.
-        let isValid = false;
-        if (admin.password_hash.startsWith('$2b$10$your_bcrypt_hash')) {
-            if (password === 'admin') {
-                isValid = true;
-            }
-        } else {
-             isValid = await bcrypt.compare(password, admin.password_hash);
-        }
-
-        if (!isValid) {
+        // Basic password check for the prototype environment
+        // In full production, use bcrypt.compare(password, user.password)
+        if (password !== user.password) {
             return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
         }
 
-        const token = jwt.sign({ id: admin.id, email: admin.email }, JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign(
+            { id: user.id, email: user.email, role: user.role, name: user.name }, 
+            JWT_SECRET, 
+            { expiresIn: '8h' }
+        );
 
-        return NextResponse.json({ token });
+        return NextResponse.json({ 
+            token,
+            user: {
+                name: user.name,
+                email: user.email,
+                role: user.role
+            }
+        });
 
     } catch (error) {
         console.error('Login Error:', error);

@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Hotel, Loader2, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { getUsers } from '@/services/hotel-service';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -33,22 +32,23 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoggingIn(true);
     
-    // Check against mock users
-    setTimeout(async () => {
-        const users = await getUsers();
-        const user = users.find(u => u.email === email && u.password === password);
+    try {
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
 
-        if (user) {
+        const data = await response.json();
+
+        if (response.ok) {
             localStorage.setItem('isAdminLoggedIn', 'true');
-            localStorage.setItem('adminUser', JSON.stringify({ 
-              name: user.name, 
-              email: user.email,
-              role: user.role 
-            }));
+            localStorage.setItem('authToken', data.token);
+            localStorage.setItem('adminUser', JSON.stringify(data.user));
             
             toast({
                 title: 'Login Successful',
-                description: `Welcome to Wamaghach Management System, ${user.name}.`,
+                description: `Welcome back, ${data.user.name}.`,
             });
             
             router.push('/admin/pos');
@@ -56,11 +56,18 @@ export default function LoginPage() {
             toast({
                 variant: 'destructive',
                 title: 'Access Denied',
-                description: 'Invalid credentials. Please contact your administrator.',
+                description: data.message || 'Invalid credentials.',
             });
             setIsLoggingIn(false);
         }
-    }, 1500);
+    } catch (error) {
+        toast({
+            variant: 'destructive',
+            title: 'Connection Error',
+            description: 'Could not connect to the authentication server.',
+        });
+        setIsLoggingIn(false);
+    }
   };
 
   if (isCheckingAuth) {
@@ -73,7 +80,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-stone-950 relative overflow-hidden">
-      {/* Background Decorative Element */}
       <div className="absolute inset-0 opacity-20">
         <img 
           src="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80&w=2000" 
@@ -86,7 +92,6 @@ export default function LoginPage() {
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5 }}
         className="w-full max-w-md relative z-10"
       >
         <Card className="border-white/10 bg-black/60 backdrop-blur-xl shadow-2xl">
@@ -113,7 +118,7 @@ export default function LoginPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     disabled={isLoggingIn}
-                    className="bg-white/5 border-white/10 text-white placeholder:text-stone-600 focus:border-primary focus:ring-primary"
+                    className="bg-white/5 border-white/10 text-white placeholder:text-stone-600"
                 />
                 </div>
                 <div className="space-y-2">
@@ -126,16 +131,16 @@ export default function LoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     disabled={isLoggingIn}
-                    className="bg-white/5 border-white/10 text-white placeholder:text-stone-600 focus:border-primary focus:ring-primary"
+                    className="bg-white/5 border-white/10 text-white placeholder:text-stone-600"
                 />
                 </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
-                <Button type="submit" className="w-full h-12 text-lg font-bold shadow-lg shadow-primary/20" disabled={isLoggingIn}>
+                <Button type="submit" className="w-full h-12 text-lg font-bold" disabled={isLoggingIn}>
                 {isLoggingIn ? <><Loader2 className="animate-spin mr-2 h-5 w-5" /> Authenticating...</> : <><Lock className="mr-2 h-4 w-4" /> Secure Login</>}
                 </Button>
                 <p className="text-center text-[10px] text-stone-500 italic">
-                    Authorized Personnel Only. All access is logged.
+                    Authorized Personnel Only.
                 </p>
             </CardFooter>
             </form>

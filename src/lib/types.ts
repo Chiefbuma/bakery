@@ -8,7 +8,7 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
-  password?: string; // Only for mock/storage purposes in this prototype
+  password?: string;
   createdAt: string;
 }
 
@@ -19,7 +19,7 @@ export interface Product {
   category: string;
   module: HotelModule;
   price: number;
-  costPrice: number; // Unit cost to produce/provide
+  costPrice: number;
   stock: number;
   minStockLevel: number;
   unit: string;
@@ -30,7 +30,7 @@ export interface Supply {
   id: string;
   name: string;
   category: string;
-  module: HotelModule;
+  module: string;
   quantity: number;
   unit: string;
   unitCost: number;
@@ -42,18 +42,13 @@ export interface SupplyConsumption {
   amount: number;
 }
 
-export interface ProductRecipe {
-  productId: string;
-  consumptions: SupplyConsumption[];
-}
-
 export interface Expense {
   id: string;
   category: 'salary' | 'utility' | 'maintenance' | 'rent' | 'miscellaneous' | 'garbage';
   amount: number;
   description: string;
   date: string;
-  module: HotelModule;
+  module: string;
 }
 
 export interface SaleItem {
@@ -61,7 +56,7 @@ export interface SaleItem {
   name: string;
   quantity: number;
   price: number;
-  costPrice: number; // Captured at time of sale for P&L accuracy
+  costPrice: number;
   total: number;
 }
 
