@@ -108,6 +108,11 @@ export async function addSupply(supply: Omit<Supply, 'id'>): Promise<Supply> {
   return newSupply;
 }
 
+export async function updateSupply(id: string, updates: Partial<Supply>): Promise<void> {
+  await delay(200);
+  supplies = supplies.map(s => s.id === id ? { ...s, ...updates } : s);
+}
+
 export async function deleteSupplies(ids: string[]): Promise<void> {
   await delay(200);
   supplies = supplies.filter(s => !ids.includes(s.id));
@@ -123,6 +128,11 @@ export async function addExpense(expense: Omit<Expense, 'id'>): Promise<Expense>
   const newExpense = { ...expense, id: `EXP-${Date.now()}` };
   expenses = [newExpense, ...expenses];
   return newExpense;
+}
+
+export async function updateExpense(id: string, updates: Partial<Expense>): Promise<void> {
+  await delay(200);
+  expenses = expenses.map(e => e.id === id ? { ...e, ...updates } : e);
 }
 
 export async function deleteExpenses(ids: string[]): Promise<void> {
