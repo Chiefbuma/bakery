@@ -44,6 +44,7 @@ export default function InventoryPage() {
     const [loading, setLoading] = useState(true);
     const [activeModule, setActiveModule] = useState<HotelModule | 'all'>('all');
     const [searchQuery, setSearchQuery] = useState("");
+    const [activeTab, setActiveTab] = useState<string>("products");
     
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 8;
@@ -185,6 +186,11 @@ export default function InventoryPage() {
         supplies.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase())),
     [supplies, searchQuery]);
 
+    const totalPages = useMemo(() => {
+        const count = activeTab === 'products' ? filteredProducts.length : filteredSupplies.length;
+        return Math.ceil(count / ITEMS_PER_PAGE);
+    }, [activeTab, filteredProducts.length, filteredSupplies.length]);
+
     const paginatedProducts = useMemo(() => {
         const start = (currentPage - 1) * ITEMS_PER_PAGE;
         return filteredProducts.slice(start, start + ITEMS_PER_PAGE);
@@ -202,7 +208,7 @@ export default function InventoryPage() {
                 <p className="text-muted-foreground">Manage products, stock levels and raw supplies.</p>
             </div>
 
-            <Tabs defaultValue="products" onValueChange={() => { setCurrentPage(1); }}>
+            <Tabs defaultValue="products" value={activeTab} onValueChange={(v) => { setActiveTab(v); setCurrentPage(1); }}>
                 <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
                     <TabsList>
                         <TabsTrigger value="products">Master Stock</TabsTrigger>
