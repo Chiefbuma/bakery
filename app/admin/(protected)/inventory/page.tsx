@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -186,6 +185,7 @@ export default function InventoryPage() {
         supplies.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase())),
     [supplies, searchQuery]);
 
+    // Fixed totalPages ReferenceError by moving calculation here
     const totalPages = useMemo(() => {
         const count = activeTab === 'products' ? filteredProducts.length : filteredSupplies.length;
         return Math.ceil(count / ITEMS_PER_PAGE);
@@ -217,7 +217,7 @@ export default function InventoryPage() {
                     <div className="flex items-center gap-2">
                         <div className="relative w-64">
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Search inventory..." className="pl-9" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                            <Input placeholder="Search inventory..." className="pl-9" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} />
                         </div>
                         <Select value={activeModule} onValueChange={(v) => { setActiveModule(v as any); setCurrentPage(1); }}>
                             <SelectTrigger className="w-[180px]">
