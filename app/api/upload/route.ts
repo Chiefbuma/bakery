@@ -16,9 +16,8 @@ export async function POST(req: Request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
+    // Create uploads directory if it doesn't exist
     const uploadDir = join(process.cwd(), 'public', 'uploads');
-    
-    // Ensure directory exists
     try {
       await mkdir(uploadDir, { recursive: true });
     } catch (e) {}
@@ -28,6 +27,7 @@ export async function POST(req: Request) {
     
     await writeFile(path, buffer);
     
+    // Return the relative URL for public access
     const url = `/uploads/${filename}`;
     
     return NextResponse.json({ url });

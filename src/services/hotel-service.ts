@@ -5,6 +5,7 @@ import type { Product, Transaction, HotelModule, DashboardData, SaleItem, Supply
 
 const API_BASE = '/api';
 
+// USER MANAGEMENT
 export async function getUsers(): Promise<User[]> {
   const res = await fetch(`${API_BASE}/users`);
   return res.json();
@@ -31,6 +32,7 @@ export async function deleteUser(id: string): Promise<void> {
   await fetch(`${API_BASE}/users/${id}`, { method: 'DELETE' });
 }
 
+// INVENTORY - PRODUCTS
 export async function getProducts(module?: HotelModule): Promise<Product[]> {
   const url = module ? `${API_BASE}/products?module=${module}` : `${API_BASE}/products`;
   const res = await fetch(url);
@@ -60,8 +62,9 @@ export async function deleteProducts(ids: string[]): Promise<void> {
   }
 }
 
+// INVENTORY - SUPPLIES
 export async function getSupplies(module?: HotelModule): Promise<Supply[]> {
-  const url = module ? `${API_BASE}/supplies?module=${module}` : `${API_BASE}/supplies`;
+  const url = module && module !== 'all' ? `${API_BASE}/supplies?module=${module}` : `${API_BASE}/supplies`;
   const res = await fetch(url);
   return res.json();
 }
@@ -89,9 +92,17 @@ export async function deleteSupplies(ids: string[]): Promise<void> {
   }
 }
 
+// RECIPE MANAGEMENT
 export async function getProductRecipes(): Promise<Record<string, SupplyConsumption[]>> {
   const res = await fetch(`${API_BASE}/recipes`);
-  return res.json();
+  const data = await res.json();
+  // Transform array response to dictionary for UI
+  const recipes: Record<string, SupplyConsumption[]> = {};
+  data.forEach((r: any) => {
+    if (!recipes[r.productId]) recipes[r.productId] = [];
+    recipes[r.productId].push({ supplyId: r.supplyId, amount: parseFloat(r.amount) });
+  });
+  return recipes;
 }
 
 export async function saveProductRecipe(productId: string, consumptions: SupplyConsumption[]): Promise<void> {
@@ -102,6 +113,7 @@ export async function saveProductRecipe(productId: string, consumptions: SupplyC
   });
 }
 
+// EXPENSES
 export async function getExpenses(): Promise<Expense[]> {
   const res = await fetch(`${API_BASE}/expenses`);
   return res.json();
@@ -130,6 +142,7 @@ export async function deleteExpenses(ids: string[]): Promise<void> {
   }
 }
 
+// POS OPERATIONS
 export async function placeOrder(transaction: Omit<Transaction, 'id' | 'timestamp'>): Promise<Transaction> {
   const res = await fetch(`${API_BASE}/pos/order`, {
     method: 'POST',
@@ -144,11 +157,13 @@ export async function getPendingOrders(): Promise<Transaction[]> {
   return res.json();
 }
 
+// DASHBOARD
 export async function getDashboardData(): Promise<DashboardData> {
   const res = await fetch(`${API_BASE}/dashboard`);
   return res.json();
 }
 
+// UTILS
 export async function uploadImage(file: File): Promise<string> {
   const formData = new FormData();
   formData.append('file', file);
@@ -157,5 +172,6 @@ export async function uploadImage(file: File): Promise<string> {
     body: formData,
   });
   const data = await res.json();
+  if (data.error) throw new Error(data.error);
   return data.url;
 }
