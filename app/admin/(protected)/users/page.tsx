@@ -17,6 +17,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { motion } from "framer-motion";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function UsersPage() {
     const [users, setUsers] = useState<User[]>([]);
@@ -25,6 +35,13 @@ export default function UsersPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
     const [editingUser, setEditingUser] = useState<User | null>(null);
+    const [confirmConfig, setConfirmConfig] = useState<{
+        isOpen: boolean;
+        title: string;
+        description: string;
+        onConfirm: () => void;
+    } | null>(null);
+    
     const { toast } = useToast();
 
     const loadUsers = async () => {
@@ -66,29 +83,44 @@ export default function UsersPage() {
         }
     };
 
-    const handleDeleteUser = async (id: string, name: string) => {
-        if (!confirm(`Are you sure you want to delete ${name}?`)) return;
-        try {
-            await deleteUser(id);
-            await loadUsers();
-            toast({ title: "User Removed" });
-        } catch (error) {
-            toast({ variant: "destructive", title: "Action Failed" });
-        }
+    const confirmDeleteUser = (id: string, name: string) => {
+        setConfirmConfig({
+            isOpen: true,
+            title: `Delete Account: ${name}?`,
+            description: "This will permanently remove this user's access to the management system.",
+            onConfirm: async () => {
+                try {
+                    await deleteUser(id);
+                    await loadUsers();
+                    toast({ title: "User Removed" });
+                } catch (error) {
+                    toast({ variant: "destructive", title: "Action Failed" });
+                } finally {
+                    setConfirmConfig(null);
+                }
+            }
+        });
     };
 
-    const handleBulkDelete = async () => {
+    const confirmBulkDelete = () => {
         if (selectedUsers.size === 0) return;
-        if (!confirm(`Are you sure you want to delete ${selectedUsers.size} selected user(s)?`)) return;
-        
-        try {
-            await deleteUsers(Array.from(selectedUsers));
-            setSelectedUsers(new Set());
-            await loadUsers();
-            toast({ title: "Users Deleted", description: "Selected accounts have been removed." });
-        } catch (error) {
-            toast({ variant: "destructive", title: "Bulk Deletion Failed" });
-        }
+        setConfirmConfig({
+            isOpen: true,
+            title: `Remove ${selectedUsers.size} Users?`,
+            description: "The selected personnel will lose all system access immediately. This cannot be undone.",
+            onConfirm: async () => {
+                try {
+                    await deleteUsers(Array.from(selectedUsers));
+                    setSelectedUsers(new Set());
+                    await loadUsers();
+                    toast({ title: "Users Deleted", description: "Selected accounts have been removed." });
+                } catch (error) {
+                    toast({ variant: "destructive", title: "Bulk Deletion Failed" });
+                } finally {
+                    setConfirmConfig(null);
+                }
+            }
+        });
     };
 
     const toggleSelectUser = (id: string) => {
@@ -135,7 +167,7 @@ export default function UsersPage() {
                     </div>
                     <div className="flex items-center gap-4">
                         {selectedUsers.size > 0 && (
-                            <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
+                            <Button variant="destructive" size="sm" onClick={confirmBulkDelete}>
                                 <Trash2 className="mr-2 h-4 w-4" /> Delete Selected ({selectedUsers.size})
                             </Button>
                         )}
@@ -215,7 +247,7 @@ export default function UsersPage() {
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem 
                                                         className="text-destructive focus:text-destructive" 
-                                                        onClick={() => handleDeleteUser(u.id, u.name)}
+                                                        onClick={() => confirmDeleteUser(u.id, u.name)}
                                                         disabled={u.email === 'admin@wamaghach.com'}
                                                     >
                                                         <Trash2 className="mr-2 h-4 w-4" /> Delete Account
@@ -268,12 +300,30 @@ export default function UsersPage() {
                         )}
                         <DialogFooter>
                             <Button type="submit" disabled={isSubmitting}>
-                                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : (editingUser ? "Save Changes" : "Create Account")}
+                                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                                {editingUser ? "Save Changes" : "Create Account"}
                             </Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
             </Dialog>
+
+            {confirmConfig && (
+                <AlertDialog open={confirmConfig.isOpen} onOpenChange={(open) => !open && setConfirmConfig(null)}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>{confirmConfig.title}</AlertDialogTitle>
+                            <AlertDialogDescription>{confirmConfig.description}</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel onClick={() => setConfirmConfig(null)}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={confirmConfig.onConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                Confirm
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            )}
         </motion.div>
     );
 }

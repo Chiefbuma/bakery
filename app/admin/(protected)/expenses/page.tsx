@@ -16,12 +16,23 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function ExpensesPage() {
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedExpenses, setSelectedExpenses] = useState<Set<string>>(new Set());
+    const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
     const { toast } = useToast();
 
     const load = async () => {
@@ -54,7 +65,7 @@ export default function ExpensesPage() {
     };
 
     const handleBulkDelete = async () => {
-        if (!confirm(`Remove ${selectedExpenses.size} expense entries?`)) return;
+        setConfirmDeleteOpen(false);
         try {
             await deleteExpenses(Array.from(selectedExpenses));
             setSelectedExpenses(new Set());
@@ -86,7 +97,7 @@ export default function ExpensesPage() {
                     </div>
                     <div className="flex gap-2">
                         {selectedExpenses.size > 0 && (
-                            <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
+                            <Button variant="destructive" size="sm" onClick={() => setConfirmDeleteOpen(true)}>
                                 <Trash2 className="mr-2 h-4 w-4" /> Delete Selected ({selectedExpenses.size})
                             </Button>
                         )}
@@ -166,11 +177,31 @@ export default function ExpensesPage() {
                             </Select>
                         </div>
                         <DialogFooter>
-                            <Button type="submit" disabled={isSubmitting}>Record Entry</Button>
+                            <Button type="submit" disabled={isSubmitting}>
+                                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                                Record Entry
+                            </Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
             </Dialog>
+
+            <AlertDialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete the {selectedExpenses.size} selected expense entries from the ledger. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            Delete Entries
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

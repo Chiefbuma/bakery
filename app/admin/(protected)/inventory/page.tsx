@@ -18,6 +18,16 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion } from "framer-motion";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function InventoryPage() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -29,6 +39,9 @@ export default function InventoryPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
     const [selectedSupplies, setSelectedSupplies] = useState<Set<string>>(new Set());
+    
+    const [confirmDeleteType, setConfirmDeleteType] = useState<'product' | 'supply' | null>(null);
+    
     const { toast } = useToast();
 
     const loadData = async () => {
@@ -58,7 +71,6 @@ export default function InventoryPage() {
     };
 
     const handleBulkDeleteProducts = async () => {
-        if (!confirm(`Delete ${selectedProducts.size} selected products?`)) return;
         try {
             await deleteProducts(Array.from(selectedProducts));
             setSelectedProducts(new Set());
@@ -66,11 +78,12 @@ export default function InventoryPage() {
             toast({ title: "Products Deleted" });
         } catch (error) {
             toast({ variant: "destructive", title: "Action Failed" });
+        } finally {
+            setConfirmDeleteType(null);
         }
     };
 
     const handleBulkDeleteSupplies = async () => {
-        if (!confirm(`Delete ${selectedSupplies.size} selected supplies?`)) return;
         try {
             await deleteSupplies(Array.from(selectedSupplies));
             setSelectedSupplies(new Set());
@@ -78,6 +91,8 @@ export default function InventoryPage() {
             toast({ title: "Supplies Deleted" });
         } catch (error) {
             toast({ variant: "destructive", title: "Action Failed" });
+        } finally {
+            setConfirmDeleteType(null);
         }
     };
 
@@ -196,7 +211,7 @@ export default function InventoryPage() {
                             </div>
                             <div className="flex gap-2">
                                 {selectedProducts.size > 0 && (
-                                    <Button variant="destructive" size="sm" onClick={handleBulkDeleteProducts}>
+                                    <Button variant="destructive" size="sm" onClick={() => setConfirmDeleteType('product')}>
                                         <Trash2 className="mr-2 h-4 w-4" /> Delete ({selectedProducts.size})
                                     </Button>
                                 )}
@@ -260,7 +275,7 @@ export default function InventoryPage() {
                             </div>
                             <div className="flex gap-2">
                                 {selectedSupplies.size > 0 && (
-                                    <Button variant="destructive" size="sm" onClick={handleBulkDeleteSupplies}>
+                                    <Button variant="destructive" size="sm" onClick={() => setConfirmDeleteType('supply')}>
                                         <Trash2 className="mr-2 h-4 w-4" /> Delete ({selectedSupplies.size})
                                     </Button>
                                 )}
@@ -334,7 +349,8 @@ export default function InventoryPage() {
                         </div>
                         <DialogFooter>
                             <Button type="submit" disabled={isSubmitting}>
-                                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Product"}
+                                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                                Save Product
                             </Button>
                         </DialogFooter>
                     </form>
@@ -369,12 +385,34 @@ export default function InventoryPage() {
                         </div>
                         <DialogFooter>
                             <Button type="submit" disabled={isSubmitting}>
-                                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Supply"}
+                                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                                Save Supply
                             </Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
             </Dialog>
+
+            {/* Confirmation Dialogs */}
+            <AlertDialog open={!!confirmDeleteType} onOpenChange={() => setConfirmDeleteType(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently remove the {confirmDeleteType === 'product' ? selectedProducts.size : selectedSupplies.size} selected items from your records.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                            onClick={confirmDeleteType === 'product' ? handleBulkDeleteProducts : handleBulkDeleteSupplies} 
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            Delete Selected
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </motion.div>
     );
 }
