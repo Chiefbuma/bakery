@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -9,20 +10,22 @@ import {
     addProduct, 
     addSupply, 
     updateProduct, 
-    updateSupply 
+    updateSupply,
+    getProductRecipes,
+    saveProductRecipe
 } from "@/services/hotel-service";
-import type { Product, HotelModule, Supply } from "@/lib/types";
+import type { Product, HotelModule, Supply, SupplyConsumption } from "@/lib/types";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/utils";
-import { PlusCircle, Search, Loader2, Trash2, Edit, ChevronLeft, ChevronRight } from "lucide-react";
+import { PlusCircle, Search, Loader2, Trash2, Edit, ChevronLeft, ChevronRight, Settings2, Sparkles, Plus, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useForm } from "react-hook-form";
@@ -40,6 +43,7 @@ import {
 export default function InventoryPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [supplies, setSupplies] = useState<Supply[]>([]);
+    const [recipes, setRecipes] = useState<Record<string, SupplyConsumption[]>>({});
     const [loading, setLoading] = useState(true);
     const [activeModule, setActiveModule] = useState<HotelModule | 'all'>('all');
     const [searchQuery, setSearchQuery] = useState("");
@@ -50,26 +54,31 @@ export default function InventoryPage() {
 
     const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
     const [isSupplyDialogOpen, setIsSupplyDialogOpen] = useState(false);
+    const [isRecipeDialogOpen, setIsRecipeDialogOpen] = useState(false);
+    
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [editingSupply, setEditingSupply] = useState<Supply | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [selectedProductForRecipe, setSelectedProductForProductRecipe] = useState<Product | null>(null);
+    const [tempConsumptions, setTempConsumptions] = useState<SupplyConsumption[]>([]);
     
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [targetItem, setTargetItem] = useState<{id: string, name: string, type: 'product' | 'supply' } | null>(null);
 
     const { toast } = useToast();
-    
     const productForm = useForm<Omit<Product, 'id'>>();
     const supplyForm = useForm<Omit<Supply, 'id'>>();
 
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
-            const [prodData, suppData] = await Promise.all([
+            const [prodData, suppData, recipeData] = await Promise.all([
                 getProducts(activeModule === 'all' ? undefined : activeModule),
-                getSupplies(activeModule === 'all' ? undefined : activeModule)
+                getSupplies(activeModule === 'all' ? undefined : activeModule),
+                getProductRecipes()
             ]);
             setProducts(prodData);
             setSupplies(suppData);
+            setRecipes(recipeData);
         } catch (error) {
             toast({ variant: "destructive", title: "Error loading inventory" });
         } finally {
@@ -120,6 +129,12 @@ export default function InventoryPage() {
         setIsSupplyDialogOpen(true);
     };
 
+    const handleOpenRecipeDialog = (product: Product) => {
+        setSelectedProductForProductRecipe(product);
+        setTempConsumptions(recipes[product.id] || []);
+        setIsRecipeDialogOpen(true);
+    };
+
     const onProductSubmit = async (data: any) => {
         setIsSubmitting(true);
         try {
@@ -160,6 +175,21 @@ export default function InventoryPage() {
         }
     };
 
+    const onRecipeSave = async () => {
+        if (!selectedProductForRecipe) return;
+        setIsSubmitting(true);
+        try {
+            await saveProductRecipe(selectedProductForRecipe.id, tempConsumptions);
+            toast({ title: "Recipe Saved", description: `Consumption rules for ${selectedProductForRecipe.name} updated.` });
+            setIsRecipeDialogOpen(false);
+            setTimeout(() => loadData(), 100);
+        } catch (error) {
+            toast({ variant: "destructive", title: "Failed to save recipe" });
+        } finally {
+            setIsSubmitting(false);
+        }
+    }
+
     const handleDeleteItem = async () => {
         if (!targetItem) return;
         try {
@@ -185,9 +215,8 @@ export default function InventoryPage() {
         supplies.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase())),
     [supplies, searchQuery]);
 
-    // Fixed totalPages ReferenceError by moving calculation here
     const totalPages = useMemo(() => {
-        const count = activeTab === 'products' ? filteredProducts.length : filteredSupplies.length;
+        const count = activeTab === 'supplies' ? filteredSupplies.length : filteredProducts.length;
         return Math.ceil(count / ITEMS_PER_PAGE);
     }, [activeTab, filteredProducts.length, filteredSupplies.length]);
 
@@ -213,6 +242,7 @@ export default function InventoryPage() {
                     <TabsList>
                         <TabsTrigger value="products">Master Stock</TabsTrigger>
                         <TabsTrigger value="supplies">Raw Supplies</TabsTrigger>
+                        <TabsTrigger value="recipes">Production Recipes</TabsTrigger>
                     </TabsList>
                     <div className="flex items-center gap-2">
                         <div className="relative w-64">
@@ -336,18 +366,70 @@ export default function InventoryPage() {
                         </CardContent>
                     </Card>
                 </TabsContent>
+
+                <TabsContent value="recipes">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Production Mapping</CardTitle>
+                            <CardDescription>Link products to the raw materials they consume.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="rounded-md border overflow-hidden">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow className="bg-muted/50">
+                                            <TableHead>Product</TableHead>
+                                            <TableHead>Linked Supplies</TableHead>
+                                            <TableHead className="text-right">Config</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {paginatedProducts.map(p => {
+                                            const recipe = recipes[p.id] || [];
+                                            return (
+                                                <TableRow key={`recipe-${p.id}`}>
+                                                    <TableCell className="font-bold">{p.name}</TableCell>
+                                                    <TableCell>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {recipe.length > 0 ? recipe.map(c => {
+                                                                const s = supplies.find(sup => supp.id === c.supplyId);
+                                                                return (
+                                                                    <Badge key={c.supplyId} variant="outline" className="text-[10px]">
+                                                                        {s?.name || 'Unknown'}: {c.amount} {s?.unit}
+                                                                    </Badge>
+                                                                );
+                                                            }) : <span className="text-xs text-muted-foreground italic">No linked supplies</span>}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Button variant="outline" size="sm" onClick={() => handleOpenRecipeDialog(p)}>
+                                                            <Settings2 className="mr-2 h-3 w-3" /> Manage Recipe
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
             </Tabs>
 
-            <div className="flex items-center justify-end space-x-2 py-4">
-                <span className="text-xs text-muted-foreground">Page {currentPage} of {totalPages || 1}</span>
-                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
-                    <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0}>
-                    <ChevronRight className="h-4 w-4" />
-                </Button>
-            </div>
+            {activeTab !== 'recipes' && (
+                <div className="flex items-center justify-end space-x-2 py-4">
+                    <span className="text-xs text-muted-foreground">Page {currentPage} of {totalPages || 1}</span>
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
+                        <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0}>
+                        <ChevronRight className="h-4 w-4" />
+                    </Button>
+                </div>
+            )}
 
+            {/* Product Dialog */}
             <Dialog open={isProductDialogOpen} onOpenChange={(open) => { if(!isSubmitting) setIsProductDialogOpen(open); }}>
                 <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
@@ -377,6 +459,7 @@ export default function InventoryPage() {
                 </DialogContent>
             </Dialog>
 
+            {/* Supply Dialog */}
             <Dialog open={isSupplyDialogOpen} onOpenChange={(open) => { if(!isSubmitting) setIsSupplyDialogOpen(open); }}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
@@ -403,6 +486,83 @@ export default function InventoryPage() {
                             <Button type="submit" disabled={isSubmitting}>Save Supply</Button>
                         </DialogFooter>
                     </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Recipe Management Dialog */}
+            <Dialog open={isRecipeDialogOpen} onOpenChange={(open) => { if(!isSubmitting) setIsRecipeDialogOpen(open); }}>
+                <DialogContent className="sm:max-w-xl">
+                    <DialogHeader>
+                        <div className="flex items-center gap-2">
+                            <Sparkles className="h-5 w-5 text-primary" />
+                            <DialogTitle>Production Recipe</DialogTitle>
+                        </div>
+                        <DialogDescription>Define what 1 unit of <strong>{selectedProductForRecipe?.name}</strong> consumes.</DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="space-y-6 py-4">
+                        <div className="space-y-4">
+                            <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Linked Supplies</h4>
+                            <div className="space-y-2">
+                                {tempConsumptions.length === 0 ? (
+                                    <div className="p-8 text-center border-2 border-dashed rounded-lg text-muted-foreground italic text-sm">
+                                        No supplies linked yet. Add one below.
+                                    </div>
+                                ) : tempConsumptions.map((c, i) => {
+                                    const s = supplies.find(sup => sup.id === c.supplyId);
+                                    return (
+                                        <div key={`temp-${c.supplyId}`} className="flex items-center justify-between bg-muted/50 p-3 rounded-lg border">
+                                            <div className="flex flex-col">
+                                                <span className="font-bold text-sm">{s?.name || 'Unknown Supply'}</span>
+                                                <span className="text-[10px] text-muted-foreground">Category: {s?.category}</span>
+                                            </div>
+                                            <div className="flex items-center gap-4">
+                                                <div className="flex items-center gap-2 bg-background border px-3 py-1 rounded-md">
+                                                    <span className="text-xs font-bold">{c.amount}</span>
+                                                    <span className="text-[10px] text-muted-foreground">{s?.unit}</span>
+                                                </div>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setTempConsumptions(prev => prev.filter((_, idx) => idx !== i))}>
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        <div className="pt-4 border-t space-y-4">
+                            <h4 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Add Ingredient</h4>
+                            <div className="grid grid-cols-3 gap-2">
+                                <div className="col-span-2">
+                                    <Select onValueChange={(val) => {
+                                        if (tempConsumptions.some(c => c.supplyId === val)) return;
+                                        setTempConsumptions(prev => [...prev, { supplyId: val, amount: 1 }]);
+                                    }}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select raw supply..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {supplies.map(s => (
+                                                <SelectItem key={`sel-${s.id}`} value={s.id}>{s.name} ({s.unit})</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="text-xs text-muted-foreground flex items-center italic">
+                                    Pick a supply to add
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsRecipeDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
+                        <Button onClick={onRecipeSave} disabled={isSubmitting}>
+                            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Settings2 className="mr-2 h-4 w-4" />}
+                            Save Mapping
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
 

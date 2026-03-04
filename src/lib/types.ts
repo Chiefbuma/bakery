@@ -37,6 +37,16 @@ export interface Supply {
   lastPurchased: string;
 }
 
+export interface SupplyConsumption {
+  supplyId: string;
+  amount: number;
+}
+
+export interface ProductRecipe {
+  productId: string;
+  consumptions: SupplyConsumption[];
+}
+
 export interface Expense {
   id: string;
   category: 'salary' | 'utility' | 'maintenance' | 'rent' | 'miscellaneous' | 'garbage';

@@ -1,7 +1,7 @@
 
 'use client';
 
-import type { Product, Transaction, HotelModule, DashboardData, SaleItem, Supply, Expense, User, UserRole } from '@/lib/types';
+import type { Product, Transaction, HotelModule, DashboardData, SaleItem, Supply, Expense, User, UserRole, SupplyConsumption, ProductRecipe } from '@/lib/types';
 import { startOfMonth, subMonths, format, isWithinInterval } from 'date-fns';
 
 // Mock Users
@@ -31,8 +31,8 @@ let supplies: Supply[] = [
   { id: 's3', name: 'Cooking Oil', category: 'Ingredients', module: 'restaurant', quantity: 50, unit: 'liters', unitCost: 200, lastPurchased: new Date().toISOString() },
 ];
 
-// Production Recipes: Maps Products to the Supplies they consume
-const SUPPLY_CONSUMPTION_RECIPES: Record<string, { supplyId: string, amount: number }[]> = {
+// Production Recipes (Mutable state)
+let productRecipes: Record<string, SupplyConsumption[]> = {
   'r1': [{ supplyId: 's1', amount: 0.05 }], // Nyama Choma uses 0.05 bags of charcoal per kg
   'r2': [{ supplyId: 's3', amount: 0.1 }],  // Pilau uses 0.1L oil
   'r3': [{ supplyId: 's3', amount: 0.15 }], // Tilapia uses 0.15L oil
@@ -122,6 +122,17 @@ export async function deleteSupplies(ids: string[]): Promise<void> {
   supplies = supplies.filter(s => !ids.includes(s.id));
 }
 
+// --- Recipe Services ---
+export async function getProductRecipes(): Promise<Record<string, SupplyConsumption[]>> {
+  await delay(100);
+  return { ...productRecipes };
+}
+
+export async function saveProductRecipe(productId: string, consumptions: SupplyConsumption[]): Promise<void> {
+  await delay(200);
+  productRecipes[productId] = consumptions;
+}
+
 export async function getExpenses(): Promise<Expense[]> {
   await delay(100);
   return [...expenses];
@@ -160,10 +171,10 @@ export async function placeOrder(transaction: Omit<Transaction, 'id' | 'timestam
         p.stock -= item.quantity;
       }
 
-      // 2. Update Linked Raw Supplies (linked ingredients/consumables)
-      const ingredients = SUPPLY_CONSUMPTION_RECIPES[item.productId];
-      if (ingredients) {
-        ingredients.forEach(mapping => {
+      // 2. Update Linked Raw Supplies based on dynamic recipes
+      const recipe = productRecipes[item.productId];
+      if (recipe) {
+        recipe.forEach(mapping => {
           const s = supplies.find(supp => supp.id === mapping.supplyId);
           if (s) {
             s.quantity = Math.max(0, s.quantity - (mapping.amount * item.quantity));
