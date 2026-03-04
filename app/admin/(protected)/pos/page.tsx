@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getProducts, placeOrder, getPendingOrders } from "@/services/hotel-service";
 import type { Product, HotelModule, SaleItem, Transaction } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@ import { Separator } from "@/components/ui/separator";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
+
+const PAYSTACK_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || 'pk_test_placeholder';
 
 export default function POSPage() {
     const [activeModule, setActiveModule] = useState<HotelModule>('restaurant');
@@ -35,6 +37,17 @@ export default function POSPage() {
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
     const { toast } = useToast();
+
+    // Load Paystack Script
+    useEffect(() => {
+        const script = document.createElement('script');
+        script.src = 'https://js.paystack.co/v1/inline.js';
+        script.async = true;
+        document.body.appendChild(script);
+        return () => {
+            document.body.removeChild(script);
+        };
+    }, []);
 
     useEffect(() => {
         const loadProducts = async () => {
@@ -101,72 +114,97 @@ export default function POSPage() {
     const cartTotal = cart.reduce((acc, curr) => acc + curr.total, 0);
     const balance = amountReceived ? parseFloat(amountReceived) - cartTotal : 0;
 
-    const handlePayLater = async () => {
-        if (cart.length === 0) return;
-        setIsProcessing(true);
-        try {
-            await new Promise(resolve => setTimeout(resolve, 800)); // Smooth delay
-            const totalCost = cart.reduce((acc, item) => acc + (item.costPrice * item.quantity), 0);
+    const finalizeOrder = async (method: 'cash' | 'mpesa' | 'none', status: 'paid' | 'pending', received?: number, bal?: number) => {
+        const totalCost = cart.reduce((acc, item) => acc + (item.costPrice * item.quantity), 0);
+        const transaction = await placeOrder({
+            orderNumber: `WD-${Date.now()}`,
+            module: activeModule,
+            items: cart,
+            totalAmount: cartTotal,
+            totalCost,
+            paymentMethod: method,
+            status: status,
+            customerName,
+            amountReceived: received,
+            balance: bal
+        });
 
-            await placeOrder({
-                orderNumber: `WD-${Date.now()}`,
-                module: activeModule,
-                items: cart,
-                totalAmount: cartTotal,
-                totalCost,
-                paymentMethod: 'none',
-                status: 'pending',
-                customerName
-            });
-
-            setCart([]);
-            setCustomerName("");
+        if (status === 'paid') {
+            setReceiptData(transaction);
+            toast({ title: "Payment Successful", description: `Order #${transaction.orderNumber} completed.` });
+        } else {
             const updatedPending = await getPendingOrders();
             setPendingOrders(updatedPending);
             toast({ title: "Order Saved", description: `Order for ${customerName || 'Walk-in'} saved as pending.` });
-        } catch (error) {
-            toast({ variant: "destructive", title: "Action Failed" });
-        } finally {
-            setIsProcessing(false);
         }
+
+        setCart([]);
+        setCustomerName("");
+        setAmountReceived("");
+        setIsPaymentOpen(false);
+        setIsProcessing(false);
+    };
+
+    const handlePayLater = async () => {
+        if (cart.length === 0) return;
+        setIsProcessing(true);
+        setTimeout(() => finalizeOrder('none', 'pending'), 800);
     };
 
     const handleCheckout = async () => {
         if (cart.length === 0) return;
-        if (paymentMethod === 'cash' && (!amountReceived || parseFloat(amountReceived) < cartTotal)) {
-            toast({ variant: "destructive", title: "Invalid Amount", description: "Received amount must cover the total." });
+        
+        if (paymentMethod === 'cash') {
+            if (!amountReceived || parseFloat(amountReceived) < cartTotal) {
+                toast({ variant: "destructive", title: "Invalid Amount", description: "Received amount must cover the total." });
+                return;
+            }
+            setIsProcessing(true);
+            setTimeout(() => finalizeOrder('cash', 'paid', parseFloat(amountReceived), balance), 1000);
+        } else if (paymentMethod === 'mpesa') {
+            handleMpesaPayment();
+        }
+    };
+
+    const handleMpesaPayment = () => {
+        if (!(window as any).PaystackPop) {
+            toast({ variant: "destructive", title: "Payment Error", description: "Paystack SDK not loaded. Please check your internet." });
             return;
         }
 
         setIsProcessing(true);
-        try {
-            await new Promise(resolve => setTimeout(resolve, 1500)); // Realism delay
-            const totalCost = cart.reduce((acc, item) => acc + (item.costPrice * item.quantity), 0);
 
-            const transaction = await placeOrder({
-                orderNumber: `WD-${Date.now()}`,
-                module: activeModule,
-                items: cart,
-                totalAmount: cartTotal,
-                totalCost,
-                paymentMethod: paymentMethod,
-                status: 'paid',
-                customerName,
-                amountReceived: paymentMethod === 'cash' ? parseFloat(amountReceived) : cartTotal,
-                balance: paymentMethod === 'cash' ? balance : 0
-            });
+        const handler = (window as any).PaystackPop.setup({
+            key: PAYSTACK_PUBLIC_KEY,
+            email: 'billing@wamaghach.com',
+            amount: Math.round(cartTotal * 100),
+            currency: 'KES',
+            channels: ['mobile_money'],
+            label: `Order for ${customerName || 'Walk-in'}`,
+            metadata: {
+                custom_fields: [
+                    {
+                        display_name: "Customer Name",
+                        variable_name: "customer_name",
+                        value: customerName || "Walk-in"
+                    },
+                    {
+                        display_name: "Module",
+                        variable_name: "module",
+                        value: activeModule
+                    }
+                ]
+            },
+            callback: (response: any) => {
+                finalizeOrder('mpesa', 'paid', cartTotal, 0);
+            },
+            onClose: () => {
+                setIsProcessing(false);
+                toast({ title: "Payment Cancelled", description: "Transaction was not completed." });
+            }
+        });
 
-            setReceiptData(transaction);
-            setCart([]);
-            setCustomerName("");
-            setAmountReceived("");
-            setIsPaymentOpen(false);
-            toast({ title: "Payment Successful", description: `Order #${transaction.orderNumber} completed.` });
-        } catch (error) {
-            toast({ variant: "destructive", title: "Payment Failed" });
-        } finally {
-            setIsProcessing(false);
-        }
+        handler.openIframe();
     };
 
     const handleCompletePending = async (order: Transaction) => {
@@ -417,12 +455,13 @@ export default function POSPage() {
                                 </div>
                             ) : (
                                 <div className="text-center py-4 space-y-2">
-                                    <p className="text-sm text-muted-foreground">Prompting customer for STK push...</p>
+                                    <p className="text-sm text-muted-foreground font-semibold">Payment via Paystack Secure Modal</p>
                                     <div className="flex justify-center gap-1">
                                         <span className="h-2 w-2 bg-green-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
                                         <span className="h-2 w-2 bg-green-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
                                         <span className="h-2 w-2 bg-green-500 rounded-full animate-bounce"></span>
                                     </div>
+                                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest pt-2">Click Process to launch modal</p>
                                 </div>
                             )}
                         </div>
