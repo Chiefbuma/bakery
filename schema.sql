@@ -1,107 +1,100 @@
+
 -- Wamaghach Kahua-ini Hotel Management System Schema
--- Compatible with MySQL 8.0+
 
--- 1. Users Table
-CREATE TABLE IF NOT EXISTS users (
-    id VARCHAR(50) PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    role ENUM('admin', 'staff') NOT NULL DEFAULT 'staff',
-    password VARCHAR(255) NOT NULL,
-    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE IF NOT EXISTS `users` (
+  `id` VARCHAR(255) PRIMARY KEY,
+  `name` VARCHAR(255) NOT NULL,
+  `email` VARCHAR(255) UNIQUE NOT NULL,
+  `role` ENUM('admin', 'staff') NOT NULL,
+  `password` VARCHAR(255) NOT NULL,
+  `createdAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. Products Table (Master Stock)
-CREATE TABLE IF NOT EXISTS products (
-    id VARCHAR(50) PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    description TEXT,
-    category VARCHAR(50),
-    module ENUM('restaurant', 'bar', 'carwash', 'accommodation', 'entertainment') NOT NULL,
-    price DECIMAL(10, 2) NOT NULL,
-    costPrice DECIMAL(10, 2) NOT NULL,
-    stock DECIMAL(10, 2) NOT NULL DEFAULT 0,
-    minStockLevel DECIMAL(10, 2) NOT NULL DEFAULT 5,
-    unit VARCHAR(20) NOT NULL DEFAULT 'units',
-    image_url TEXT
+CREATE TABLE IF NOT EXISTS `products` (
+  `id` VARCHAR(255) PRIMARY KEY,
+  `name` VARCHAR(255) NOT NULL,
+  `description` TEXT,
+  `category` VARCHAR(255),
+  `module` ENUM('restaurant', 'bar', 'carwash', 'accommodation', 'entertainment', 'general') NOT NULL,
+  `price` DECIMAL(10, 2) NOT NULL,
+  `costPrice` DECIMAL(10, 2) NOT NULL,
+  `stock` DECIMAL(10, 2) DEFAULT 0,
+  `minStockLevel` DECIMAL(10, 2) DEFAULT 5,
+  `unit` VARCHAR(50) DEFAULT 'units',
+  `image_url` TEXT
 );
 
--- 3. Raw Supplies Table
-CREATE TABLE IF NOT EXISTS supplies (
-    id VARCHAR(50) PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    category VARCHAR(50),
-    module ENUM('restaurant', 'bar', 'carwash', 'accommodation', 'entertainment') NOT NULL,
-    quantity DECIMAL(10, 3) NOT NULL DEFAULT 0,
-    unit VARCHAR(20) NOT NULL DEFAULT 'units',
-    unitCost DECIMAL(10, 2) NOT NULL DEFAULT 0,
-    lastPurchased TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+CREATE TABLE IF NOT EXISTS `supplies` (
+  `id` VARCHAR(255) PRIMARY KEY,
+  `name` VARCHAR(255) NOT NULL,
+  `category` VARCHAR(255),
+  `module` ENUM('restaurant', 'bar', 'carwash', 'accommodation', 'entertainment', 'general') NOT NULL,
+  `quantity` DECIMAL(10, 3) NOT NULL,
+  `unit` VARCHAR(50) NOT NULL,
+  `unitCost` DECIMAL(10, 2) NOT NULL,
+  `lastPurchased` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 4. Production Recipes (Consumption Mapping)
-CREATE TABLE IF NOT EXISTS recipes (
-    productId VARCHAR(50),
-    supplyId VARCHAR(50),
-    amount DECIMAL(10, 4) NOT NULL,
-    PRIMARY KEY (productId, supplyId),
-    FOREIGN KEY (productId) REFERENCES products(id) ON DELETE CASCADE,
-    FOREIGN KEY (supplyId) REFERENCES supplies(id) ON DELETE CASCADE
+CREATE TABLE IF NOT EXISTS `recipes` (
+  `productId` VARCHAR(255),
+  `supplyId` VARCHAR(255),
+  `amount` DECIMAL(10, 4) NOT NULL,
+  PRIMARY KEY (`productId`, `supplyId`),
+  FOREIGN KEY (`productId`) REFERENCES `products`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`supplyId`) REFERENCES `supplies`(`id`) ON DELETE CASCADE
 );
 
--- 5. Expenses Table
-CREATE TABLE IF NOT EXISTS expenses (
-    id VARCHAR(50) PRIMARY KEY,
-    category ENUM('salary', 'utility', 'maintenance', 'rent', 'miscellaneous', 'garbage') NOT NULL,
-    amount DECIMAL(10, 2) NOT NULL,
-    description VARCHAR(255),
-    date DATE NOT NULL,
-    module VARCHAR(50) NOT NULL DEFAULT 'general'
+CREATE TABLE IF NOT EXISTS `expenses` (
+  `id` VARCHAR(255) PRIMARY KEY,
+  `category` ENUM('salary', 'utility', 'maintenance', 'rent', 'miscellaneous', 'garbage') NOT NULL,
+  `amount` DECIMAL(10, 2) NOT NULL,
+  `description` TEXT,
+  `date` DATE NOT NULL,
+  `module` ENUM('restaurant', 'bar', 'carwash', 'accommodation', 'entertainment', 'general') NOT NULL
 );
 
--- 6. Transactions (Orders)
-CREATE TABLE IF NOT EXISTS transactions (
-    id VARCHAR(50) PRIMARY KEY,
-    orderNumber VARCHAR(50) UNIQUE NOT NULL,
-    module VARCHAR(50) NOT NULL,
-    totalAmount DECIMAL(10, 2) NOT NULL,
-    totalCost DECIMAL(10, 2) NOT NULL,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    paymentMethod ENUM('cash', 'mpesa', 'card', 'none') NOT NULL,
-    status ENUM('paid', 'pending') NOT NULL,
-    customerName VARCHAR(100),
-    amountReceived DECIMAL(10, 2),
-    balance DECIMAL(10, 2)
+CREATE TABLE IF NOT EXISTS `transactions` (
+  `id` VARCHAR(255) PRIMARY KEY,
+  `orderNumber` VARCHAR(255) UNIQUE NOT NULL,
+  `module` VARCHAR(50) NOT NULL,
+  `totalAmount` DECIMAL(10, 2) NOT NULL,
+  `totalCost` DECIMAL(10, 2) NOT NULL,
+  `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `paymentMethod` ENUM('cash', 'mpesa', 'card', 'none') NOT NULL,
+  `status` ENUM('paid', 'pending') NOT NULL,
+  `customerName` VARCHAR(255),
+  `amountReceived` DECIMAL(10, 2),
+  `balance` DECIMAL(10, 2)
 );
 
--- 7. Transaction Items
-CREATE TABLE IF NOT EXISTS transaction_items (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    transactionId VARCHAR(50),
-    productId VARCHAR(50),
-    name VARCHAR(100),
-    quantity DECIMAL(10, 2),
-    price DECIMAL(10, 2),
-    costPrice DECIMAL(10, 2),
-    total DECIMAL(10, 2),
-    FOREIGN KEY (transactionId) REFERENCES transactions(id) ON DELETE CASCADE
+CREATE TABLE IF NOT EXISTS `transaction_items` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `transactionId` VARCHAR(255),
+  `productId` VARCHAR(255),
+  `name` VARCHAR(255),
+  `quantity` DECIMAL(10, 2),
+  `price` DECIMAL(10, 2),
+  `costPrice` DECIMAL(10, 2),
+  `total` DECIMAL(10, 2),
+  FOREIGN KEY (`transactionId`) REFERENCES `transactions`(`id`) ON DELETE CASCADE
 );
 
--- SEED DATA
-INSERT INTO users (id, name, email, role, password) VALUES 
-('u1', 'Executive Admin', 'admin@wamaghach.com', 'admin', 'admin123'),
-('u2', 'POS Staff One', 'staff@wamaghach.com', 'staff', 'staff123');
+-- Seed Initial Data
+INSERT INTO `users` (`id`, `name`, `email`, `role`, `password`) VALUES 
+('U-1', 'Admin', 'admin@wamaghach.com', 'admin', 'admin123'),
+('U-2', 'Staff Member', 'staff@wamaghach.com', 'staff', 'staff123');
 
-INSERT INTO products (id, name, description, category, module, price, costPrice, stock, minStockLevel, unit, image_url) VALUES
-('r1', 'Nyama Choma (1kg)', 'Prime goat meat grilled to perfection over charcoal.', 'Food', 'restaurant', 1200, 700, 50, 10, 'kg', 'https://images.unsplash.com/photo-1544025162-d76694265947?w=800&q=80'),
-('r2', 'Swahili Pilau', 'Fragrant rice cooked with beef and traditional spices.', 'Food', 'restaurant', 650, 300, 40, 5, 'plates', 'https://images.unsplash.com/photo-1512058560366-cd2427ff5e70?w=800&q=80'),
-('b1', 'Tusker Lager', 'Kenyan favorite since 1922.', 'Beer', 'bar', 350, 220, 240, 48, 'bottles', 'https://images.unsplash.com/photo-1518176258769-f227c798150e?w=800&q=80');
+INSERT INTO `products` (`id`, `name`, `description`, `category`, `module`, `price`, `costPrice`, `stock`, `minStockLevel`, `unit`, `image_url`) VALUES 
+('P-1', 'Swahili Pilau', 'Traditional beef pilau with kachumbari', 'Main Meals', 'restaurant', 650.00, 320.00, 40, 5, 'plates', 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c'),
+('P-2', 'Wet Fry Tilapia', 'Fresh lake tilapia served with ugali', 'Fish', 'restaurant', 950.00, 450.00, 25, 5, 'fish', 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2'),
+('P-3', 'Nyama Choma (1kg)', 'Grilled goat meat', 'Grills', 'restaurant', 1200.00, 600.00, 15, 2, 'kg', 'https://images.unsplash.com/photo-1544025162-d76694265947');
 
-INSERT INTO supplies (id, name, category, module, quantity, unit, unitCost) VALUES
-('s1', 'Charcoal (Bags)', 'Energy', 'restaurant', 20, 'bags', 1500),
-('s3', 'Cooking Oil', 'Ingredients', 'restaurant', 50, 'liters', 200),
-('s4', 'Salt', 'Ingredients', 'restaurant', 23, 'kg', 150);
+INSERT INTO `supplies` (`id`, `name`, `category`, `module`, `quantity`, `unit`, `unitCost`) VALUES 
+('S-1', 'Salt', 'Ingredients', 'restaurant', 5.000, 'kg', 50.00),
+('S-2', 'Cooking Oil', 'Ingredients', 'restaurant', 20.000, 'liters', 200.00),
+('S-3', 'Charcoal', 'Fuel', 'restaurant', 10.000, 'bags', 1500.00);
 
-INSERT INTO recipes (productId, supplyId, amount) VALUES
-('r1', 's1', 0.05),
-('r2', 's3', 0.1),
-('r2', 's4', 0.005);
+INSERT INTO `recipes` (`productId`, `supplyId`, `amount`) VALUES 
+('P-1', 'S-1', 0.005), -- 5g salt per pilau
+('P-1', 'S-2', 0.050), -- 50ml oil per pilau
+('P-3', 'S-3', 0.100); -- 0.1 bag charcoal per kg meat
