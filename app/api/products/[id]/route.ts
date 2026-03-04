@@ -13,10 +13,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       [name, description, category, module, price, costPrice, stock, minStockLevel, unit, image_url, id]
     );
     
-    return NextResponse.json({ message: 'Product updated' });
+    return NextResponse.json({ message: 'Product synchronized' });
   } catch (error) {
-    console.error('Update Product Error:', error);
-    return NextResponse.json({ error: "Update failed" }, { status: 500 });
+    console.error('API Sync Error:', error);
+    return NextResponse.json({ error: "Update rejected by server" }, { status: 500 });
   }
 }
 
@@ -24,9 +24,9 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   try {
     const { id } = await params;
     await pool.query('DELETE FROM products WHERE id = ?', [id]);
-    return NextResponse.json({ message: 'Product deleted' });
+    return NextResponse.json({ message: 'Resource removed' });
   } catch (error) {
-    console.error('Delete Product Error:', error);
-    return NextResponse.json({ error: "Delete failed" }, { status: 500 });
+    console.error('API Sync Error:', error);
+    return NextResponse.json({ error: "Deletion failed (Resource may be linked to sales)" }, { status: 500 });
   }
 }

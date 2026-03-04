@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
+// Force dynamic rendering to prevent build-time DB connection errors
 export const dynamic = 'force-dynamic';
 
 export default function AdminProtectedLayout({
@@ -29,27 +30,38 @@ export default function AdminProtectedLayout({
     if (!isLoggedIn || !userStr) {
       router.replace('/');
     } else {
-      const user = JSON.parse(userStr);
-      setUserRole(user.role);
-      setUserName(user.name);
-      
-      const adminOnlyRoutes = ['/admin/dashboard', '/admin/inventory', '/admin/expenses', '/admin/users'];
-      if (user.role !== 'admin' && adminOnlyRoutes.some(route => pathname.startsWith(route))) {
-        router.replace('/admin/pos');
+      try {
+        const user = JSON.parse(userStr);
+        setUserRole(user.role);
+        setUserName(user.name);
+        
+        const adminOnlyRoutes = ['/admin/dashboard', '/admin/inventory', '/admin/expenses', '/admin/users'];
+        if (user.role !== 'admin' && adminOnlyRoutes.some(route => pathname.startsWith(route))) {
+          router.replace('/admin/pos');
+        }
+        
+        setIsCheckingAuth(false);
+      } catch (e) {
+        localStorage.clear();
+        router.replace('/');
       }
-      
-      setIsCheckingAuth(false);
     }
   }, [router, pathname]);
 
   const handleLogout = () => {
-    localStorage.removeItem('isAdminLoggedIn');
-    localStorage.removeItem('adminUser');
+    localStorage.clear();
     router.push('/');
   };
 
   if (isCheckingAuth) {
-    return <div className="flex min-h-screen items-center justify-center bg-stone-950"><Loader2 className="animate-spin text-primary" /></div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-stone-950">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="animate-spin text-primary h-10 w-10" />
+          <p className="text-stone-400 text-xs font-bold uppercase tracking-widest">Wamaghach Secure Access</p>
+        </div>
+      </div>
+    );
   }
 
   const allNavItems = [
@@ -57,7 +69,7 @@ export default function AdminProtectedLayout({
     { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, roles: ['admin'] },
     { label: 'Inventory', href: '/admin/inventory', icon: Package, roles: ['admin'] },
     { label: 'Expenses', href: '/admin/expenses', icon: Receipt, roles: ['admin'] },
-    { label: 'User Management', href: '/admin/users', icon: Users, roles: ['admin'] },
+    { label: 'Users', href: '/admin/users', icon: Users, roles: ['admin'] },
   ];
 
   const visibleNavItems = allNavItems.filter(item => userRole && item.roles.includes(userRole));
@@ -90,13 +102,13 @@ export default function AdminProtectedLayout({
         <div className="flex items-center gap-4">
           <div className="hidden lg:flex flex-col items-end mr-2">
             <span className="text-xs font-bold text-foreground">{userName}</span>
-            <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">{userRole}</span>
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-black">{userRole}</span>
           </div>
           <Button variant="ghost" size="icon" onClick={handleLogout} title="Logout" className="text-muted-foreground hover:text-destructive">
             <LogOut className="h-5 w-5" />
           </Button>
           <Avatar className="h-9 w-9 border-2 border-primary/20">
-            <AvatarImage src={`https://i.pravatar.cc/150?u=${userName}`} />
+            <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${userName}`} />
             <AvatarFallback>{userName.charAt(0)}</AvatarFallback>
           </Avatar>
         </div>

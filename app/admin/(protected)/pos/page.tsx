@@ -45,25 +45,26 @@ export default function POSPage() {
         script.async = true;
         document.body.appendChild(script);
         return () => {
-            document.body.removeChild(script);
+            if (document.body.contains(script)) {
+                document.body.removeChild(script);
+            }
         };
     }, []);
 
-    useEffect(() => {
-        const loadProducts = async () => {
-            const data = await getProducts(activeModule);
-            setProducts(data);
-        };
-        loadProducts();
+    const loadData = useCallback(async () => {
+        try {
+            const [prodData, pendingData] = await Promise.all([
+                getProducts(activeModule),
+                getPendingOrders()
+            ]);
+            setProducts(prodData);
+            setPendingOrders(pendingData);
+        } catch (err) {
+            console.error("POS Data Load Error", err);
+        }
     }, [activeModule]);
 
-    useEffect(() => {
-        const loadPending = async () => {
-            const data = await getPendingOrders();
-            setPendingOrders(data);
-        };
-        loadPending();
-    }, []);
+    useEffect(() => { loadData(); }, [loadData]);
 
     const addToCart = (product: Product) => {
         setCart(prev => {
@@ -112,43 +113,47 @@ export default function POSPage() {
     };
 
     const cartTotal = cart.reduce((acc, curr) => acc + curr.total, 0);
-    const balance = amountReceived ? parseFloat(amountReceived) - cartTotal : 0;
+    const balanceValue = amountReceived ? parseFloat(amountReceived) - cartTotal : 0;
 
     const finalizeOrder = async (method: 'cash' | 'mpesa' | 'none', status: 'paid' | 'pending', received?: number, bal?: number) => {
         const totalCost = cart.reduce((acc, item) => acc + (item.costPrice * item.quantity), 0);
-        const transaction = await placeOrder({
-            orderNumber: `WD-${Date.now()}`,
-            module: activeModule,
-            items: cart,
-            totalAmount: cartTotal,
-            totalCost,
-            paymentMethod: method,
-            status: status,
-            customerName,
-            amountReceived: received,
-            balance: bal
-        });
+        try {
+            const transaction = await placeOrder({
+                orderNumber: `WK-${Date.now()}`,
+                module: activeModule,
+                items: cart,
+                totalAmount: cartTotal,
+                totalCost,
+                paymentMethod: method,
+                status: status,
+                customerName,
+                amountReceived: received,
+                balance: bal
+            });
 
-        if (status === 'paid') {
-            setReceiptData(transaction);
-            toast({ title: "Payment Successful", description: `Order #${transaction.orderNumber} completed.` });
-        } else {
-            const updatedPending = await getPendingOrders();
-            setPendingOrders(updatedPending);
-            toast({ title: "Order Saved", description: `Order for ${customerName || 'Walk-in'} saved as pending.` });
+            if (status === 'paid') {
+                setReceiptData(transaction);
+                toast({ title: "Payment Successful", description: `Order #${transaction.orderNumber} completed.` });
+            } else {
+                toast({ title: "Order Saved", description: `Order for ${customerName || 'Walk-in'} saved as pending.` });
+            }
+
+            setCart([]);
+            setCustomerName("");
+            setAmountReceived("");
+            setIsPaymentOpen(false);
+            loadData();
+        } catch (err) {
+            toast({ variant: "destructive", title: "Order Failed", description: "The server could not process this transaction." });
+        } finally {
+            setIsProcessing(false);
         }
-
-        setCart([]);
-        setCustomerName("");
-        setAmountReceived("");
-        setIsPaymentOpen(false);
-        setIsProcessing(false);
     };
 
     const handlePayLater = async () => {
         if (cart.length === 0) return;
         setIsProcessing(true);
-        setTimeout(() => finalizeOrder('none', 'pending'), 800);
+        finalizeOrder('none', 'pending');
     };
 
     const handleCheckout = async () => {
@@ -160,7 +165,7 @@ export default function POSPage() {
                 return;
             }
             setIsProcessing(true);
-            setTimeout(() => finalizeOrder('cash', 'paid', parseFloat(amountReceived), balance), 1000);
+            finalizeOrder('cash', 'paid', parseFloat(amountReceived), balanceValue);
         } else if (paymentMethod === 'mpesa') {
             handleMpesaPayment();
         }
@@ -183,16 +188,8 @@ export default function POSPage() {
             label: `Order for ${customerName || 'Walk-in'}`,
             metadata: {
                 custom_fields: [
-                    {
-                        display_name: "Customer Name",
-                        variable_name: "customer_name",
-                        value: customerName || "Walk-in"
-                    },
-                    {
-                        display_name: "Module",
-                        variable_name: "module",
-                        value: activeModule
-                    }
+                    { display_name: "Customer", variable_name: "customer_name", value: customerName || "Walk-in" },
+                    { display_name: "Module", variable_name: "module", value: activeModule }
                 ]
             },
             callback: (response: any) => {
@@ -255,10 +252,7 @@ export default function POSPage() {
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6">
-                    <motion.div 
-                        layout
-                        className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6"
-                    >
+                    <motion.div layout className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                         <AnimatePresence mode="popLayout">
                             {filteredProducts.map(product => (
                                 <motion.button 
@@ -269,7 +263,7 @@ export default function POSPage() {
                                     whileTap={{ scale: 0.95 }}
                                     className="group relative flex flex-col bg-card rounded-xl border hover:border-primary hover:shadow-lg transition-all text-left overflow-hidden h-fit"
                                     onClick={() => addToCart(product)}
-                                    disabled={(product.module !== 'carwash' && product.module !== 'entertainment') && product.stock <= 0}
+                                    disabled={(product.module !== 'carwash' && product.module !== 'entertainment' && product.module !== 'accommodation') && product.stock <= 0}
                                 >
                                     <div className="relative h-40 w-full bg-muted">
                                         <Image 
@@ -278,7 +272,7 @@ export default function POSPage() {
                                             fill 
                                             className="object-cover group-hover:scale-105 transition-transform duration-300"
                                         />
-                                        {(product.module !== 'carwash' && product.module !== 'entertainment') && product.stock <= 0 && (
+                                        {(product.module !== 'carwash' && product.module !== 'entertainment' && product.module !== 'accommodation') && product.stock <= 0 && (
                                             <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
                                                 <Badge variant="destructive">OUT OF STOCK</Badge>
                                             </div>
@@ -288,7 +282,7 @@ export default function POSPage() {
                                         <h3 className="font-bold text-sm line-clamp-1">{product.name}</h3>
                                         <div className="flex justify-between items-center">
                                             <span className="text-primary font-bold">{formatPrice(product.price)}</span>
-                                            {(product.module !== 'carwash' && product.module !== 'entertainment') && (
+                                            {(product.module !== 'carwash' && product.module !== 'entertainment' && product.module !== 'accommodation') && (
                                                 <span className={cn("text-[10px]", product.stock < 10 ? 'text-destructive font-bold' : 'text-muted-foreground')}>
                                                     Stock: {product.stock} {product.unit}
                                                 </span>
@@ -448,8 +442,8 @@ export default function POSPage() {
                                     </div>
                                     <div className="flex justify-between items-center pt-2">
                                         <span className="text-sm font-medium">Balance to Give</span>
-                                        <span className={cn("text-xl font-bold", balance >= 0 ? 'text-green-600' : 'text-destructive')}>
-                                            {formatPrice(Math.abs(balance))}
+                                        <span className={cn("text-xl font-bold", balanceValue >= 0 ? 'text-green-600' : 'text-destructive')}>
+                                            {formatPrice(Math.abs(balanceValue))}
                                         </span>
                                     </div>
                                 </div>
@@ -480,20 +474,15 @@ export default function POSPage() {
                 </DialogContent>
             </Dialog>
 
-            {/* Pending Orders Drawer */}
+            {/* Pending Orders Modal */}
             <Dialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
                 <DialogContent className="max-w-2xl">
                     <DialogHeader>
-                        <DialogTitle>Pending Orders</DialogTitle>
-                        <DialogDescription>Search and retrieve saved bills for payment.</DialogDescription>
+                        <DialogTitle>Saved Bills</DialogTitle>
+                        <DialogDescription>Retrieve pending table bills for payment.</DialogDescription>
                     </DialogHeader>
                     
                     <div className="py-4 space-y-4">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Search by name or order #..." className="pl-9" />
-                        </div>
-                        
                         <div className="border rounded-lg max-h-[400px] overflow-y-auto">
                             {pendingOrders.length === 0 ? (
                                 <div className="p-8 text-center text-muted-foreground italic">No pending bills found.</div>
@@ -541,7 +530,7 @@ export default function POSPage() {
                         <Separator className="my-2 border-dashed" />
                         <div className="flex justify-between text-[10px]">
                             <span>REF: {receiptData?.orderNumber}</span>
-                            <span>{new Date().toLocaleDateString()}</span>
+                            <span>{receiptData ? new Date(receiptData.timestamp).toLocaleDateString() : ''}</span>
                         </div>
                     </div>
                     <div className="space-y-2 py-4 border-b border-dashed">
@@ -564,11 +553,11 @@ export default function POSPage() {
                         {receiptData?.paymentMethod === 'cash' && (
                             <>
                                 <div className="flex justify-between text-[10px] font-normal">
-                                    <span>CASH RECEIVED</span>
+                                    <span>RECEIVED</span>
                                     <span>{formatPrice(receiptData?.amountReceived || 0)}</span>
                                 </div>
                                 <div className="flex justify-between text-[10px] font-normal">
-                                    <span>CHANGE GIVEN</span>
+                                    <span>CHANGE</span>
                                     <span>{formatPrice(receiptData?.balance || 0)}</span>
                                 </div>
                             </>

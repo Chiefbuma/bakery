@@ -2,6 +2,10 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
+/**
+ * Transactional Order Processing API.
+ * Ensures data consistency across sales, stock, and raw supplies.
+ */
 export async function POST(req: Request) {
   const connection = await pool.getConnection();
   try {
@@ -22,31 +26,36 @@ export async function POST(req: Request) {
     
     const transactionId = `TX-${Date.now()}`;
 
-    // 1. Insert Transaction record
+    // 1. Record the base transaction
     await connection.query(
       'INSERT INTO transactions (id, orderNumber, module, totalAmount, totalCost, paymentMethod, status, customerName, amountReceived, balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [transactionId, orderNumber, module, totalAmount, totalCost, paymentMethod, status, customerName, amountReceived, balance]
     );
 
-    // 2. Process Items and update Inventory
+    // 2. Atomic Inventory Updates
     for (const item of items) {
+      // Record item sale
       await connection.query(
         'INSERT INTO transaction_items (transactionId, productId, name, quantity, price, costPrice, total) VALUES (?, ?, ?, ?, ?, ?, ?)',
         [transactionId, item.productId, item.name, item.quantity, item.price, item.costPrice, item.total]
       );
 
-      // Only deduct stock if payment is completed
+      // Inventory deductions (Only if paid)
       if (status === 'paid') {
-        // Update Master Stock (Sellable items)
-        // Note: Accomodation, Carwash and Entertainment often have infinite virtual stock
+        // A. Deduct Master Stock (Locking row for update)
         await connection.query(
           'UPDATE products SET stock = stock - ? WHERE id = ? AND module NOT IN ("carwash", "entertainment", "accommodation")',
           [item.quantity, item.productId]
         );
 
-        // Process Production Recipes (Raw material consumption)
-        const [recipes]: any = await connection.query('SELECT * FROM recipes WHERE productId = ?', [item.productId]);
+        // B. Process Consumption Recipes
+        const [recipes]: any = await connection.query(
+          'SELECT supplyId, amount FROM recipes WHERE productId = ?', 
+          [item.productId]
+        );
+        
         for (const recipe of recipes) {
+          // Precise decimal subtraction for raw supplies
           await connection.query(
             'UPDATE supplies SET quantity = GREATEST(0, quantity - ?) WHERE id = ?',
             [recipe.amount * item.quantity, recipe.supplyId]
@@ -56,11 +65,11 @@ export async function POST(req: Request) {
     }
 
     await connection.commit();
-    return NextResponse.json({ id: transactionId, orderNumber });
+    return NextResponse.json({ id: transactionId, orderNumber, status: 'success' });
   } catch (error) {
     await connection.rollback();
-    console.error('POS Order Error:', error);
-    return NextResponse.json({ error: "Order processing failed" }, { status: 500 });
+    console.error('POS Engine Error:', error);
+    return NextResponse.json({ error: "Atomic transaction failed" }, { status: 500 });
   } finally {
     connection.release();
   }
