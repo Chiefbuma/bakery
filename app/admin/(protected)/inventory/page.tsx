@@ -10,12 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/utils";
-import { PlusCircle, Search, AlertTriangle, PackagePlus, Box, ShoppingCart, Loader2 } from "lucide-react";
+import { PlusCircle, Search, PackagePlus, Box, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { motion } from "framer-motion";
 
 export default function InventoryPage() {
     const [products, setProducts] = useState<Product[]>([]);
@@ -58,6 +59,7 @@ export default function InventoryPage() {
         setIsSubmitting(true);
         const formData = new FormData(e.currentTarget);
         try {
+            await new Promise(r => setTimeout(resolve, 800)); // Artificial delay for spinner
             await addProduct({
                 name: formData.get('name') as string,
                 description: formData.get('description') as string,
@@ -85,6 +87,7 @@ export default function InventoryPage() {
         setIsSubmitting(true);
         const formData = new FormData(e.currentTarget);
         try {
+            await new Promise(r => setTimeout(resolve, 800));
             await addSupply({
                 name: formData.get('name') as string,
                 category: formData.get('category') as string,
@@ -108,7 +111,11 @@ export default function InventoryPage() {
     const filteredSupplies = supplies.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
     return (
-        <div className="space-y-6">
+        <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-6"
+        >
             <div className="flex flex-col gap-2">
                 <h1 className="text-3xl font-bold tracking-tight">Inventory & Supplies</h1>
                 <p className="text-muted-foreground">Manage sellable items and raw materials for real-time costing.</p>
@@ -300,11 +307,13 @@ export default function InventoryPage() {
                             <div className="space-y-2"><Label>Unit</Label><Input name="unit" placeholder="Liters" required /></div>
                         </div>
                         <DialogFooter>
-                            <Button type="submit" disabled={isSubmitting}>Save Supply</Button>
+                            <Button type="submit" disabled={isSubmitting}>
+                                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Supply"}
+                            </Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
             </Dialog>
-        </div>
+        </motion.div>
     );
 }

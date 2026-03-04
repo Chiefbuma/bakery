@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Separator } from "@/components/ui/separator";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function POSPage() {
     const [activeModule, setActiveModule] = useState<HotelModule>('restaurant');
@@ -104,6 +105,7 @@ export default function POSPage() {
         if (cart.length === 0) return;
         setIsProcessing(true);
         try {
+            await new Promise(resolve => setTimeout(resolve, 800)); // Smooth delay
             const totalCost = cart.reduce((acc, item) => acc + (item.costPrice * item.quantity), 0);
 
             await placeOrder({
@@ -138,6 +140,7 @@ export default function POSPage() {
 
         setIsProcessing(true);
         try {
+            await new Promise(resolve => setTimeout(resolve, 1500)); // Realism delay
             const totalCost = cart.reduce((acc, item) => acc + (item.costPrice * item.quantity), 0);
 
             const transaction = await placeOrder({
@@ -214,41 +217,50 @@ export default function POSPage() {
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6">
-                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-                        {filteredProducts.map(product => (
-                            <button 
-                                key={product.id} 
-                                className="group relative flex flex-col bg-card rounded-xl border hover:border-primary hover:shadow-lg transition-all text-left overflow-hidden h-fit"
-                                onClick={() => addToCart(product)}
-                                disabled={(product.module !== 'carwash' && product.module !== 'entertainment') && product.stock <= 0}
-                            >
-                                <div className="relative h-40 w-full bg-muted">
-                                    <Image 
-                                        src={product.image_url} 
-                                        alt={product.name} 
-                                        fill 
-                                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                                    />
-                                    {(product.module !== 'carwash' && product.module !== 'entertainment') && product.stock <= 0 && (
-                                        <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-                                            <Badge variant="destructive">OUT OF STOCK</Badge>
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="p-4 space-y-1">
-                                    <h3 className="font-bold text-sm line-clamp-1">{product.name}</h3>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-primary font-bold">{formatPrice(product.price)}</span>
-                                        {(product.module !== 'carwash' && product.module !== 'entertainment') && (
-                                            <span className={cn("text-[10px]", product.stock < 10 ? 'text-destructive font-bold' : 'text-muted-foreground')}>
-                                                Stock: {product.stock} {product.unit}
-                                            </span>
+                    <motion.div 
+                        layout
+                        className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6"
+                    >
+                        <AnimatePresence mode="popLayout">
+                            {filteredProducts.map(product => (
+                                <motion.button 
+                                    key={product.id}
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.9 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    className="group relative flex flex-col bg-card rounded-xl border hover:border-primary hover:shadow-lg transition-all text-left overflow-hidden h-fit"
+                                    onClick={() => addToCart(product)}
+                                    disabled={(product.module !== 'carwash' && product.module !== 'entertainment') && product.stock <= 0}
+                                >
+                                    <div className="relative h-40 w-full bg-muted">
+                                        <Image 
+                                            src={product.image_url} 
+                                            alt={product.name} 
+                                            fill 
+                                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                        />
+                                        {(product.module !== 'carwash' && product.module !== 'entertainment') && product.stock <= 0 && (
+                                            <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+                                                <Badge variant="destructive">OUT OF STOCK</Badge>
+                                            </div>
                                         )}
                                     </div>
-                                </div>
-                            </button>
-                        ))}
-                    </div>
+                                    <div className="p-4 space-y-1">
+                                        <h3 className="font-bold text-sm line-clamp-1">{product.name}</h3>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-primary font-bold">{formatPrice(product.price)}</span>
+                                            {(product.module !== 'carwash' && product.module !== 'entertainment') && (
+                                                <span className={cn("text-[10px]", product.stock < 10 ? 'text-destructive font-bold' : 'text-muted-foreground')}>
+                                                    Stock: {product.stock} {product.unit}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </motion.button>
+                            ))}
+                        </AnimatePresence>
+                    </motion.div>
                 </div>
             </div>
 
@@ -283,7 +295,12 @@ export default function POSPage() {
                             </div>
                         ) : (
                             cart.map(item => (
-                                <div key={item.productId} className="group bg-muted/30 p-3 rounded-lg border border-transparent hover:border-primary/20 transition-all">
+                                <motion.div 
+                                    key={item.productId}
+                                    initial={{ x: 20, opacity: 0 }}
+                                    animate={{ x: 0, opacity: 1 }}
+                                    className="group bg-muted/30 p-3 rounded-lg border border-transparent hover:border-primary/20 transition-all"
+                                >
                                     <div className="flex justify-between items-start mb-2">
                                         <div className="flex-1">
                                             <p className="text-sm font-bold leading-tight">{item.name}</p>
@@ -312,7 +329,7 @@ export default function POSPage() {
                                         </div>
                                         <span className="text-sm font-bold text-primary">{formatPrice(item.total)}</span>
                                     </div>
-                                </div>
+                                </motion.div>
                             ))
                         )}
                     </div>
@@ -331,7 +348,7 @@ export default function POSPage() {
                             disabled={cart.length === 0 || isProcessing}
                             onClick={handlePayLater}
                         >
-                            <History className="mr-2 h-4 w-4" /> Pay Later
+                            {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <><History className="mr-2 h-4 w-4" /> Pay Later</>}
                         </Button>
                         <Button 
                             className="h-12 font-bold shadow-lg shadow-primary/20" 
