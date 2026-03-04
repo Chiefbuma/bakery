@@ -392,7 +392,7 @@ export default function InventoryPage() {
                                                     <TableCell>
                                                         <div className="flex flex-wrap gap-1">
                                                             {recipe.length > 0 ? recipe.map(c => {
-                                                                const s = supplies.find(sup => supp.id === c.supplyId);
+                                                                const s = supplies.find(sup => sup.id === c.supplyId);
                                                                 return (
                                                                     <Badge key={c.supplyId} variant="outline" className="text-[10px]">
                                                                         {s?.name || 'Unknown'}: {c.amount} {s?.unit}
@@ -417,17 +417,15 @@ export default function InventoryPage() {
                 </TabsContent>
             </Tabs>
 
-            {activeTab !== 'recipes' && (
-                <div className="flex items-center justify-end space-x-2 py-4">
-                    <span className="text-xs text-muted-foreground">Page {currentPage} of {totalPages || 1}</span>
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
-                        <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0}>
-                        <ChevronRight className="h-4 w-4" />
-                    </Button>
-                </div>
-            )}
+            <div className="flex items-center justify-end space-x-2 py-4">
+                <span className="text-xs text-muted-foreground">Page {currentPage} of {totalPages || 1}</span>
+                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
+                    <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0}>
+                    <ChevronRight className="h-4 w-4" />
+                </Button>
+            </div>
 
             {/* Product Dialog */}
             <Dialog open={isProductDialogOpen} onOpenChange={(open) => { if(!isSubmitting) setIsProductDialogOpen(open); }}>
