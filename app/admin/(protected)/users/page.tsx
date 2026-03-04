@@ -9,12 +9,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus, ShieldCheck, User as UserIcon, Loader2, Trash2, Mail, MoreHorizontal, Edit, ChevronLeft, ChevronRight } from "lucide-react";
+import { UserPlus, Loader2, Trash2, Mail, MoreHorizontal, Edit, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
@@ -27,6 +27,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useForm } from "react-hook-form";
 
 export default function UsersPage() {
     const [users, setUsers] = useState<User[]>([]);
@@ -36,26 +37,28 @@ export default function UsersPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
     const [editingUser, setEditingUser] = useState<User | null>(null);
-    const [confirmConfig, setConfirmConfig] = useState<{
-        isOpen: boolean;
-        title: string;
-        description: string;
-        onConfirm: () => Promise<void>;
-    } | null>(null);
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [bulkDeleteConfirmOpen, setBulkDeleteConfirmOpen] = useState(false);
+    const [targetUser, setTargetUser] = useState<{id: string, name: string} | null>(null);
     
-    // Pagination
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 5;
 
     const { toast } = useToast();
+    const { register, handleSubmit, reset, setValue, watch } = useForm<{
+        name: string;
+        email: string;
+        role: UserRole;
+        password?: string;
+    }>();
 
     const loadUsers = useCallback(async () => {
+        setLoading(true);
         try {
-            setLoading(true);
             const data = await getUsers();
             setUsers(data);
         } catch (error) {
-            toast({ variant: "destructive", title: "Load Failed", description: "Could not retrieve user directory." });
+            toast({ variant: "destructive", title: "Load Failed" });
         } finally {
             setLoading(false);
         }
@@ -63,24 +66,26 @@ export default function UsersPage() {
 
     useEffect(() => { loadUsers(); }, [loadUsers]);
 
-    const handleSaveUser = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        setIsSubmitting(true);
-        const formData = new FormData(e.currentTarget);
-        const userData = {
-            name: formData.get('name') as string,
-            email: formData.get('email') as string,
-            role: formData.get('role') as UserRole,
-        };
+    useEffect(() => {
+        if (editingUser) {
+            setValue('name', editingUser.name);
+            setValue('email', editingUser.email);
+            setValue('role', editingUser.role);
+        } else {
+            reset({ name: '', email: '', role: 'staff', password: '' });
+        }
+    }, [editingUser, setValue, reset]);
 
+    const onFormSubmit = async (data: any) => {
+        setIsSubmitting(true);
         try {
             if (editingUser) {
-                await updateUser(editingUser.id, userData);
+                await updateUser(editingUser.id, data);
                 toast({ title: "User Updated" });
             } else {
                 await addUser({
-                    ...userData,
-                    password: formData.get('password') as string || 'staff123',
+                    ...data,
+                    password: data.password || 'staff123',
                 });
                 toast({ title: "User Created" });
             }
@@ -88,55 +93,42 @@ export default function UsersPage() {
             setEditingUser(null);
             await loadUsers();
         } catch (error) {
-            toast({ variant: "destructive", title: "Action Failed" });
+            toast({ variant: "destructive", title: "Operation Failed" });
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    const confirmDeleteUser = (id: string, name: string) => {
-        setConfirmConfig({
-            isOpen: true,
-            title: `Delete Account: ${name}?`,
-            description: "This will permanently remove this user's access to the management system.",
-            onConfirm: async () => {
-                try {
-                    await deleteUser(id);
-                    toast({ title: "User Removed" });
-                    setSelectedUsers(prev => {
-                        const next = new Set(prev);
-                        next.delete(id);
-                        return next;
-                    });
-                    await loadUsers();
-                } catch (error) {
-                    toast({ variant: "destructive", title: "Action Failed" });
-                } finally {
-                    setConfirmConfig(null);
-                }
-            }
-        });
+    const handleConfirmDelete = async () => {
+        if (!targetUser) return;
+        try {
+            await deleteUser(targetUser.id);
+            toast({ title: "User Removed" });
+            setSelectedUsers(prev => {
+                const next = new Set(prev);
+                next.delete(targetUser.id);
+                return next;
+            });
+            await loadUsers();
+        } catch (error) {
+            toast({ variant: "destructive", title: "Action Failed" });
+        } finally {
+            setDeleteConfirmOpen(false);
+            setTargetUser(null);
+        }
     };
 
-    const confirmBulkDelete = () => {
-        if (selectedUsers.size === 0) return;
-        setConfirmConfig({
-            isOpen: true,
-            title: `Remove ${selectedUsers.size} Users?`,
-            description: "The selected personnel will lose all system access immediately.",
-            onConfirm: async () => {
-                try {
-                    await deleteUsers(Array.from(selectedUsers));
-                    toast({ title: "Users Deleted" });
-                    setSelectedUsers(new Set());
-                    await loadUsers();
-                } catch (error) {
-                    toast({ variant: "destructive", title: "Bulk Deletion Failed" });
-                } finally {
-                    setConfirmConfig(null);
-                }
-            }
-        });
+    const handleBulkDelete = async () => {
+        try {
+            await deleteUsers(Array.from(selectedUsers));
+            toast({ title: "Users Deleted" });
+            setSelectedUsers(new Set());
+            await loadUsers();
+        } catch (error) {
+            toast({ variant: "destructive", title: "Bulk Deletion Failed" });
+        } finally {
+            setBulkDeleteConfirmOpen(false);
+        }
     };
 
     const filteredUsers = useMemo(() => 
@@ -152,38 +144,20 @@ export default function UsersPage() {
         return filteredUsers.slice(start, start + ITEMS_PER_PAGE);
     }, [filteredUsers, currentPage]);
 
-    const toggleSelectUser = (id: string) => {
-        setSelectedUsers(prev => {
-            const next = new Set(prev);
-            if (next.has(id)) next.delete(id);
-            else next.add(id);
-            return next;
-        });
-    };
-
     return (
-        <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
-        >
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
             <div className="flex flex-col gap-2">
-                <h1 className="text-3xl font-bold tracking-tight">System User Management</h1>
-                <p className="text-muted-foreground">Manage access roles for administrative and operational staff.</p>
+                <h1 className="text-3xl font-bold tracking-tight">Personnel Directory</h1>
+                <p className="text-muted-foreground">Manage system access roles and credentials.</p>
             </div>
 
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div className="space-y-1">
-                        <CardTitle>User Directory</CardTitle>
-                        <CardDescription>Authorized users with system access.</CardDescription>
+                        <CardTitle>User Management</CardTitle>
+                        <CardDescription>View and manage authorized hotel staff.</CardDescription>
                     </div>
                     <div className="flex items-center gap-4">
-                        {selectedUsers.size > 0 && (
-                            <Button variant="destructive" size="sm" onClick={confirmBulkDelete}>
-                                <Trash2 className="mr-2 h-4 w-4" /> Delete Selected ({selectedUsers.size})
-                            </Button>
-                        )}
                         <Input 
                             placeholder="Search users..." 
                             className="w-64"
@@ -196,130 +170,117 @@ export default function UsersPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <div className="rounded-md border">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-12">
-                                        <Checkbox 
-                                            checked={paginatedUsers.length > 0 && paginatedUsers.every(u => selectedUsers.has(u.id))}
-                                            onCheckedChange={(checked) => {
-                                                if (checked) {
-                                                    const next = new Set(selectedUsers);
-                                                    paginatedUsers.forEach(u => next.add(u.id));
-                                                    setSelectedUsers(next);
-                                                } else {
-                                                    const next = new Set(selectedUsers);
-                                                    paginatedUsers.forEach(u => next.delete(u.id));
-                                                    setSelectedUsers(next);
-                                                }
-                                            }}
-                                        />
-                                    </TableHead>
-                                    <TableHead>User</TableHead>
-                                    <TableHead>Email</TableHead>
-                                    <TableHead>Role</TableHead>
-                                    <TableHead>Joined</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {loading ? (
-                                    Array.from({ length: 3 }).map((_, i) => (
-                                        <TableRow key={i}>
-                                            <TableCell colSpan={6}><div className="h-8 animate-pulse bg-muted rounded w-full" /></TableCell>
-                                        </TableRow>
-                                    ))
-                                ) : paginatedUsers.length === 0 ? (
+                    <AnimatePresence mode="wait">
+                        <div className="rounded-md border overflow-hidden">
+                            <Table>
+                                <TableHeader>
                                     <TableRow>
-                                        <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                                            No users found.
-                                        </TableCell>
-                                    </TableRow>
-                                ) : paginatedUsers.map((u) => (
-                                    <TableRow key={u.id} className={selectedUsers.has(u.id) ? "bg-muted/50" : ""}>
-                                        <TableCell>
+                                        <TableHead className="w-12">
                                             <Checkbox 
-                                                checked={selectedUsers.has(u.id)}
-                                                onCheckedChange={() => toggleSelectUser(u.id)}
-                                                disabled={u.email === 'admin@wamaghach.com'}
+                                                checked={paginatedUsers.length > 0 && paginatedUsers.every(u => selectedUsers.has(u.id))}
+                                                onCheckedChange={(checked) => {
+                                                    const next = new Set(selectedUsers);
+                                                    if (checked) paginatedUsers.forEach(u => next.add(u.id));
+                                                    else paginatedUsers.forEach(u => next.delete(u.id));
+                                                    setSelectedUsers(next);
+                                                }}
                                             />
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-3">
-                                                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
-                                                    {u.name.charAt(0)}
-                                                </div>
-                                                <span className="font-bold">{u.name}</span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-muted-foreground">
-                                            <div className="flex items-center gap-2 text-xs"><Mail className="h-3 w-3" /> {u.email}</div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant={u.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
-                                                {u.role}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-xs text-muted-foreground">
-                                            {new Date(u.createdAt).toLocaleDateString()}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem onClick={() => { setEditingUser(u); setIsAddOpen(true); }}>
-                                                        <Edit className="mr-2 h-4 w-4" /> Edit Details
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem 
-                                                        className="text-destructive" 
-                                                        onClick={() => confirmDeleteUser(u.id, u.name)}
-                                                        disabled={u.email === 'admin@wamaghach.com'}
-                                                    >
-                                                        <Trash2 className="mr-2 h-4 w-4" /> Delete Account
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </TableCell>
+                                        </TableHead>
+                                        <TableHead>User</TableHead>
+                                        <TableHead>Role</TableHead>
+                                        <TableHead>Created</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
-                    {/* Pagination */}
-                    <div className="flex items-center justify-end space-x-2 py-4">
-                        <span className="text-xs text-muted-foreground">Page {currentPage} of {totalPages || 1}</span>
-                        <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1}>
-                            <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages || totalPages === 0}>
-                            <ChevronRight className="h-4 w-4" />
-                        </Button>
+                                </TableHeader>
+                                <TableBody>
+                                    {loading ? (
+                                        Array.from({ length: 3 }).map((_, i) => (
+                                            <TableRow key={i}><TableCell colSpan={5} className="h-16 animate-pulse bg-muted/20" /></TableRow>
+                                        ))
+                                    ) : paginatedUsers.length === 0 ? (
+                                        <TableRow><TableCell colSpan={5} className="h-32 text-center text-muted-foreground">No records found.</TableCell></TableRow>
+                                    ) : paginatedUsers.map((u) => (
+                                        <TableRow key={u.id} className={selectedUsers.has(u.id) ? "bg-muted/50" : ""}>
+                                            <TableCell>
+                                                <Checkbox 
+                                                    checked={selectedUsers.has(u.id)}
+                                                    onCheckedChange={(checked) => {
+                                                        const next = new Set(selectedUsers);
+                                                        if (checked) next.add(u.id); else next.delete(u.id);
+                                                        setSelectedUsers(next);
+                                                    }}
+                                                    disabled={u.email === 'admin@wamaghach.com'}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold">{u.name}</span>
+                                                    <span className="text-[10px] text-muted-foreground">{u.email}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell><Badge variant={u.role === 'admin' ? 'default' : 'secondary'} className="capitalize">{u.role}</Badge></TableCell>
+                                            <TableCell className="text-xs">{new Date(u.createdAt).toLocaleDateString()}</TableCell>
+                                            <TableCell className="text-right">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem onClick={() => { setEditingUser(u); setIsAddOpen(true); }}>
+                                                            <Edit className="mr-2 h-4 w-4" /> Edit
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem 
+                                                            className="text-destructive" 
+                                                            onClick={() => { setTargetUser({id: u.id, name: u.name}); setDeleteConfirmOpen(true); }}
+                                                            disabled={u.email === 'admin@wamaghach.com'}
+                                                        >
+                                                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </AnimatePresence>
+                    <div className="flex items-center justify-between py-4">
+                        <div className="flex-1">
+                            {selectedUsers.size > 0 && (
+                                <Button variant="destructive" size="sm" onClick={() => setBulkDeleteConfirmOpen(true)}>
+                                    Delete Selected ({selectedUsers.size})
+                                </Button>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">Page {currentPage} of {totalPages || 1}</span>
+                            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}><ChevronLeft className="h-4 w-4" /></Button>
+                            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0}><ChevronRight className="h-4 w-4" /></Button>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
 
-            <Dialog open={isAddOpen} onOpenChange={(open) => { if (!isSubmitting) setIsAddOpen(open); if(!open && !isSubmitting) setEditingUser(null); }}>
+            <Dialog open={isAddOpen} onOpenChange={(open) => { if(!isSubmitting) setIsAddOpen(open); }}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{editingUser ? 'Edit User' : 'Register User'}</DialogTitle>
-                        <DialogDescription>Hotel personnel management.</DialogDescription>
+                        <DialogTitle>{editingUser ? 'Update User' : 'Register New User'}</DialogTitle>
+                        <DialogDescription>Enter account details for system access.</DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={handleSaveUser} className="space-y-4">
+                    <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
                         <div className="space-y-2">
                             <Label>Full Name</Label>
-                            <Input name="name" defaultValue={editingUser?.name} placeholder="e.g. John Doe" required disabled={isSubmitting} />
+                            <Input {...register('name', { required: true })} disabled={isSubmitting} />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label>Email</Label>
-                                <Input name="email" type="email" defaultValue={editingUser?.email} required disabled={isSubmitting} />
+                                <Input type="email" {...register('email', { required: true })} disabled={isSubmitting} />
                             </div>
                             <div className="space-y-2">
                                 <Label>Role</Label>
-                                <Select name="role" defaultValue={editingUser?.role || "staff"} disabled={isSubmitting}>
+                                <Select defaultValue="staff" onValueChange={(v) => setValue('role', v as UserRole)}>
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="admin">Admin</SelectItem>
@@ -330,31 +291,42 @@ export default function UsersPage() {
                         </div>
                         {!editingUser && (
                             <div className="space-y-2">
-                                <Label>Initial Password</Label>
-                                <Input name="password" type="password" placeholder="••••••••" required disabled={isSubmitting} />
+                                <Label>Password</Label>
+                                <Input type="password" placeholder="Initial access key" {...register('password')} disabled={isSubmitting} />
                             </div>
                         )}
                         <DialogFooter>
                             <Button type="submit" disabled={isSubmitting}>
                                 {isSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                                {editingUser ? "Save Changes" : "Create Account"}
+                                {editingUser ? "Apply Changes" : "Create Account"}
                             </Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
             </Dialog>
 
-            <AlertDialog open={!!confirmConfig} onOpenChange={(open) => { if (!open) setConfirmConfig(null); }}>
+            <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>{confirmConfig?.title}</AlertDialogTitle>
-                        <AlertDialogDescription>{confirmConfig?.description}</AlertDialogDescription>
+                        <AlertDialogTitle>Permanently delete user?</AlertDialogTitle>
+                        <AlertDialogDescription>This will remove all access for {targetUser?.name}. This action cannot be undone.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={confirmConfig?.onConfirm} className="bg-destructive hover:bg-destructive/90">
-                            Confirm
-                        </AlertDialogAction>
+                        <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90 text-white">Delete Account</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={bulkDeleteConfirmOpen} onOpenChange={setBulkDeleteConfirmOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete {selectedUsers.size} users?</AlertDialogTitle>
+                        <AlertDialogDescription>The selected personnel will lose system access immediately.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive hover:bg-destructive/90 text-white">Confirm Removal</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
