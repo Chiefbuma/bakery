@@ -4,7 +4,7 @@ import mysql from 'mysql2/promise';
 /**
  * Optimized Database connection pool for MySQL.
  * Configured for Next.js 15 production stability on shared hosting.
- * Uses credentials provided in the hosting panel's environment variables.
+ * Connections are established lazily at runtime.
  */
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
@@ -20,9 +20,5 @@ const pool = mysql.createPool({
   connectTimeout: 30000,
   timezone: '+03:00', // East Africa Time
 });
-
-// We no longer test the connection immediately during the build phase 
-// to prevent ECONNREFUSED errors in build logs.
-// Connections are established lazily at runtime.
 
 export default pool;

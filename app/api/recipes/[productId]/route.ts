@@ -10,10 +10,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ product
     
     await connection.beginTransaction();
     
-    // Clear existing recipe mapping
     await connection.query('DELETE FROM recipes WHERE productId = ?', [productId]);
     
-    // Insert new mappings
     for (const c of consumptions) {
       await connection.query(
         'INSERT INTO recipes (productId, supplyId, amount) VALUES (?, ?, ?)',
