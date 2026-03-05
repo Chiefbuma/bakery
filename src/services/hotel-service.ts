@@ -7,8 +7,14 @@ const API_BASE = '/api';
 
 // USER MANAGEMENT
 export async function getUsers(): Promise<User[]> {
-  const res = await fetch(`${API_BASE}/users`);
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE}/users`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch (e) {
+    return [];
+  }
 }
 
 export async function addUser(user: Omit<User, 'id' | 'createdAt'>): Promise<User> {
@@ -34,9 +40,15 @@ export async function deleteUser(id: string): Promise<void> {
 
 // INVENTORY - PRODUCTS
 export async function getProducts(module?: HotelModule): Promise<Product[]> {
-  const url = module ? `${API_BASE}/products?module=${module}` : `${API_BASE}/products`;
-  const res = await fetch(url);
-  return res.json();
+  try {
+    const url = module && module !== 'all' ? `${API_BASE}/products?module=${module}` : `${API_BASE}/products`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch (e) {
+    return [];
+  }
 }
 
 export async function addProduct(product: Omit<Product, 'id'>): Promise<Product> {
@@ -64,9 +76,15 @@ export async function deleteProducts(ids: string[]): Promise<void> {
 
 // INVENTORY - SUPPLIES
 export async function getSupplies(module?: HotelModule): Promise<Supply[]> {
-  const url = module && module !== 'all' ? `${API_BASE}/supplies?module=${module}` : `${API_BASE}/supplies`;
-  const res = await fetch(url);
-  return res.json();
+  try {
+    const url = module && module !== 'all' ? `${API_BASE}/supplies?module=${module}` : `${API_BASE}/supplies`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch (e) {
+    return [];
+  }
 }
 
 export async function addSupply(supply: Omit<Supply, 'id'>): Promise<Supply> {
@@ -94,15 +112,21 @@ export async function deleteSupplies(ids: string[]): Promise<void> {
 
 // RECIPE MANAGEMENT
 export async function getProductRecipes(): Promise<Record<string, SupplyConsumption[]>> {
-  const res = await fetch(`${API_BASE}/recipes`);
-  const data = await res.json();
-  // Transform array response to dictionary for UI
-  const recipes: Record<string, SupplyConsumption[]> = {};
-  data.forEach((r: any) => {
-    if (!recipes[r.productId]) recipes[r.productId] = [];
-    recipes[r.productId].push({ supplyId: r.supplyId, amount: parseFloat(r.amount) });
-  });
-  return recipes;
+  try {
+    const res = await fetch(`${API_BASE}/recipes`);
+    if (!res.ok) return {};
+    const data = await res.json();
+    const recipes: Record<string, SupplyConsumption[]> = {};
+    if (Array.isArray(data)) {
+      data.forEach((r: any) => {
+        if (!recipes[r.productId]) recipes[r.productId] = [];
+        recipes[r.productId].push({ supplyId: r.supplyId, amount: parseFloat(r.amount) });
+      });
+    }
+    return recipes;
+  } catch (e) {
+    return {};
+  }
 }
 
 export async function saveProductRecipe(productId: string, consumptions: SupplyConsumption[]): Promise<void> {
@@ -115,8 +139,14 @@ export async function saveProductRecipe(productId: string, consumptions: SupplyC
 
 // EXPENSES
 export async function getExpenses(): Promise<Expense[]> {
-  const res = await fetch(`${API_BASE}/expenses`);
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE}/expenses`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch (e) {
+    return [];
+  }
 }
 
 export async function addExpense(expense: Omit<Expense, 'id'>): Promise<Expense> {
@@ -153,8 +183,14 @@ export async function placeOrder(transaction: Omit<Transaction, 'id' | 'timestam
 }
 
 export async function getPendingOrders(): Promise<Transaction[]> {
-  const res = await fetch(`${API_BASE}/pos/pending`);
-  return res.json();
+  try {
+    const res = await fetch(`${API_BASE}/pos/pending`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch (e) {
+    return [];
+  }
 }
 
 // DASHBOARD

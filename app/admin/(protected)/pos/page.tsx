@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { getProducts, placeOrder, getPendingOrders } from "@/services/hotel-service";
 import type { Product, HotelModule, SaleItem, Transaction } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -57,10 +57,12 @@ export default function POSPage() {
                 getProducts(activeModule),
                 getPendingOrders()
             ]);
-            setProducts(prodData);
-            setPendingOrders(pendingData);
+            setProducts(Array.isArray(prodData) ? prodData : []);
+            setPendingOrders(Array.isArray(pendingData) ? pendingData : []);
         } catch (err) {
             console.error("POS Data Load Error", err);
+            setProducts([]);
+            setPendingOrders([]);
         }
     }, [activeModule]);
 
@@ -212,9 +214,12 @@ export default function POSPage() {
         toast({ title: "Order Loaded", description: `Processing payment for ${order.orderNumber}` });
     };
 
-    const filteredProducts = products.filter(p => 
-        p.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredProducts = useMemo(() => {
+        if (!Array.isArray(products)) return [];
+        return products.filter(p => 
+            p.name.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [products, searchQuery]);
 
     return (
         <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-background">
@@ -267,7 +272,7 @@ export default function POSPage() {
                                 >
                                     <div className="relative h-40 w-full bg-muted">
                                         <Image 
-                                            src={product.image_url} 
+                                            src={product.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=60&w=400'} 
                                             alt={product.name} 
                                             fill 
                                             className="object-cover group-hover:scale-105 transition-transform duration-300"
