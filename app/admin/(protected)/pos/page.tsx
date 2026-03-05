@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -11,7 +10,7 @@ import { formatPrice, cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import Image from "image";
+import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 
@@ -73,8 +72,8 @@ export default function POSPage() {
     const addToCart = (product: Product) => {
         setCart(prev => {
             const existing = prev.find(item => item.productId === product.id);
-            const price = Number(product.price);
-            const costPrice = Number(product.costPrice);
+            const price = Number(product.price || 0);
+            const costPrice = Number(product.costPrice || 0);
             if (existing) {
                 return prev.map(item => {
                     if (item.productId === product.id) {
@@ -99,7 +98,7 @@ export default function POSPage() {
         setCart(prev => prev.map(item => {
             if (item.productId === id) {
                 const newQty = Math.max(1, item.quantity + delta);
-                const price = Number(item.price);
+                const price = Number(item.price || 0);
                 return { ...item, quantity: newQty, total: Number((newQty * price).toFixed(2)) };
             }
             return item;
@@ -121,7 +120,7 @@ export default function POSPage() {
         
         const itemsSnapshot = [...cart];
         const finalCustomerName = customerName || "Guest";
-        const totalCost = itemsSnapshot.reduce((acc, item) => acc + (Number(item.costPrice) * item.quantity), 0);
+        const totalCost = itemsSnapshot.reduce((acc, item) => acc + (Number(item.costPrice || 0) * item.quantity), 0);
 
         try {
             const response = await placeOrder({
@@ -343,23 +342,27 @@ export default function POSPage() {
                 <DialogContent className="max-w-[400px] p-0 overflow-hidden bg-white text-black print-section">
                     <div className="p-8 space-y-4 text-center receipt-font text-sm leading-tight w-[80mm] mx-auto">
                         <div className="space-y-1">
-                            <p className="font-bold uppercase">Wamaghach Kahua-ini Hotel , Along Othaya-Karatina Road, 500 metres from Kiahungu Town, Contact 0720 333 461, MPESA BUY GOODS TILL 4209898</p>
+                            <p className="font-bold">
+                                {receiptData?.status === 'paid' 
+                                    ? "Wamaghach Kahua-ini Hotel , Along Othaya-Karatina Road, 500 metres from Kiahungu Town, Contact 0720 333 461, MPESA BUY GOODS TILL 4209898" 
+                                    : "Bill"}
+                            </p>
                             {receiptData?.paymentMethod !== 'none' && (
-                                <>
+                                <div className="mt-2">
                                     <p>Receipt Ref: <b>{receiptData?.orderNumber}</b></p>
                                     <p>Date: <b>{new Date(receiptData?.timestamp || '').toLocaleString('en-KE', { dateStyle: 'medium', timeStyle: 'short' })}</b></p>
-                                </>
+                                </div>
                             )}
                         </div>
                         
-                        <Separator className="border-black border-dashed" />
-                        <p className="font-bold uppercase">Order Items</p>
+                        <Separator className="border-black border-dashed my-2" />
+                        <p className="font-bold uppercase tracking-widest">Order Details</p>
                         
-                        <table className="w-full text-left border-collapse">
+                        <table className="w-full text-left border-collapse mt-2">
                             <thead>
                                 <tr className="border-b border-dashed border-black">
                                     <td className="py-1"><b>QTY</b></td>
-                                    <td className="py-1"><b>Item</b></td>
+                                    <td className="py-1"><b>Order</b></td>
                                     <td className="py-1 text-right"><b>Amount</b></td>
                                 </tr>
                             </thead>
@@ -374,7 +377,7 @@ export default function POSPage() {
                             </tbody>
                         </table>
 
-                        <Separator className="border-black border-dashed" />
+                        <Separator className="border-black border-dashed my-2" />
 
                         <div className="space-y-1">
                             <div className="flex justify-between">
@@ -395,10 +398,10 @@ export default function POSPage() {
                             )}
                         </div>
 
-                        <Separator className="border-black border-dashed" />
+                        <Separator className="border-black border-dashed my-2" />
 
                         <div className="space-y-1">
-                            <p className="font-bold uppercase">Order Reference</p>
+                            <p className="font-bold uppercase text-[10px] text-muted-foreground">Order Ref.</p>
                             <h4 className="font-bold text-lg">{receiptData?.orderNumber}</h4>
                         </div>
 
