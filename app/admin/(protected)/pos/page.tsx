@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { ShoppingCart, Search, Trash2, Printer, Plus, Minus, History, CheckCircle2 } from "lucide-react";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
@@ -37,14 +37,20 @@ export default function POSPage() {
 
     const { toast } = useToast();
 
-    // Helper to resolve local upload URLs or external URLs
+    /**
+     * Absolute Image URL Resolver.
+     * Corrects relative /uploads/ paths to absolute URLs for production.
+     */
     const resolveImageUrl = (url: string | null | undefined) => {
         if (!url) return 'https://picsum.photos/seed/hotel/400/300';
         if (url.startsWith('http')) return url;
-        
-        // Ensure relative paths like /uploads/ are absolute for production
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || '';
-        return `${baseUrl}${url}`;
+        if (url.startsWith('/uploads') || url.startsWith('uploads')) {
+            const path = url.startsWith('/') ? url : `/${url}`;
+            if (typeof window !== 'undefined') {
+                return `${window.location.origin}${path}`;
+            }
+        }
+        return url;
     };
 
     useEffect(() => {
@@ -68,7 +74,6 @@ export default function POSPage() {
             setProducts(Array.isArray(prodData) ? prodData : []);
             setPendingOrders(Array.isArray(pendingData) ? pendingData : []);
         } catch (err) {
-            console.error("POS Data Load Error", err);
             setProducts([]);
             setPendingOrders([]);
         }
@@ -115,12 +120,17 @@ export default function POSPage() {
     const balanceValue = amountReceived ? parseFloat(amountReceived) - cartTotal : 0;
 
     const finalizeOrder = async (method: 'cash' | 'mpesa' | 'none', status: 'paid' | 'pending', received?: number, bal?: number) => {
+        setIsProcessing(true);
         const totalCost = cart.reduce((acc, item) => acc + (item.costPrice * item.quantity), 0);
+        
         try {
-            const transaction = await placeOrder({
+            // CRITICAL: Preserve cart items for the receipt before clearing state
+            const snapshotItems = [...cart];
+
+            const response = await placeOrder({
                 orderNumber: `WK-${Date.now()}`,
                 module: activeModule,
-                items: cart,
+                items: snapshotItems,
                 totalAmount: cartTotal,
                 totalCost,
                 paymentMethod: method,
@@ -131,7 +141,21 @@ export default function POSPage() {
             });
 
             if (status === 'paid') {
-                setReceiptData(transaction);
+                const fullReceipt: Transaction = {
+                    id: response.id || `TX-${Date.now()}`,
+                    orderNumber: response.orderNumber || `WK-${Date.now()}`,
+                    module: activeModule,
+                    items: snapshotItems,
+                    totalAmount: cartTotal,
+                    totalCost,
+                    timestamp: new Date().toISOString(),
+                    paymentMethod: method,
+                    status: 'paid',
+                    customerName,
+                    amountReceived: received,
+                    balance: bal
+                };
+                setReceiptData(fullReceipt);
                 toast({ title: "Payment Successful" });
             } else {
                 toast({ title: "Order Saved as Pending" });
@@ -151,7 +175,6 @@ export default function POSPage() {
 
     const handlePayLater = async () => {
         if (cart.length === 0) return;
-        setIsProcessing(true);
         finalizeOrder('none', 'pending');
     };
 
@@ -163,7 +186,6 @@ export default function POSPage() {
                 toast({ variant: "destructive", title: "Invalid Amount" });
                 return;
             }
-            setIsProcessing(true);
             finalizeOrder('cash', 'paid', parseFloat(amountReceived), balanceValue);
         } else if (paymentMethod === 'mpesa') {
             handleMpesaPayment();
@@ -196,14 +218,13 @@ export default function POSPage() {
     };
 
     const handleCompletePending = async (order: Transaction) => {
-        setCart(order.items);
+        setCart(order.items || []);
         setCustomerName(order.customerName || "");
         setActiveModule(order.module);
         setIsHistoryOpen(false);
     };
 
     const filteredProducts = useMemo(() => {
-        // Defensive check: products must be an array to filter
         if (!Array.isArray(products)) return [];
         return products.filter(p => 
             p.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -212,7 +233,6 @@ export default function POSPage() {
 
     return (
         <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-background">
-            {/* Menu Section */}
             <div className="flex-1 flex flex-col min-w-0 border-r">
                 <div className="p-4 border-b bg-card flex items-center justify-between gap-4">
                     <div className="flex items-center gap-4 flex-1">
@@ -285,7 +305,6 @@ export default function POSPage() {
                 </div>
             </div>
 
-            {/* Cart Section */}
             <div className="w-[400px] flex flex-col bg-card shadow-2xl">
                 <div className="p-4 border-b flex items-center gap-2 bg-primary/5">
                     <ShoppingCart className="h-5 w-5 text-primary" />
@@ -332,7 +351,6 @@ export default function POSPage() {
                 </div>
             </div>
 
-            {/* Payment Dialog */}
             <Dialog open={isPaymentOpen} onOpenChange={setIsPaymentOpen}>
                 <DialogContent>
                     <DialogHeader><DialogTitle>Finalize Sale</DialogTitle></DialogHeader>
@@ -357,12 +375,11 @@ export default function POSPage() {
                 </DialogContent>
             </Dialog>
 
-            {/* Pending Orders Dialog */}
             <Dialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
                 <DialogContent className="max-w-2xl">
                     <DialogHeader><DialogTitle>Pending Bills</DialogTitle></DialogHeader>
                     <div className="divide-y max-h-[400px] overflow-y-auto">
-                        {pendingOrders.map(order => (
+                        {Array.isArray(pendingOrders) && pendingOrders.map(order => (
                             <div key={order.id} className="p-4 flex items-center justify-between hover:bg-muted/50">
                                 <div>
                                     <p className="font-bold">{order.customerName || 'Guest'}</p>
@@ -378,18 +395,17 @@ export default function POSPage() {
                 </DialogContent>
             </Dialog>
 
-            {/* Receipt Dialog */}
             <Dialog open={!!receiptData} onOpenChange={() => setReceiptData(null)}>
                 <DialogContent className="max-w-xs font-mono">
                     <div className="text-center space-y-2 border-b pb-4">
                         <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto" />
-                        <h3 className="font-bold uppercase">Wamaghach Hotel</h3>
+                        <h3 className="font-bold uppercase tracking-tighter">Wamaghach Hotel</h3>
                         <p className="text-[10px]">{receiptData?.orderNumber}</p>
                     </div>
                     <div className="py-4 space-y-1">
-                        {receiptData?.items.map(item => (
+                        {receiptData?.items?.map(item => (
                             <div key={item.productId} className="flex justify-between text-xs">
-                                <span>{item.name} x{item.quantity}</span>
+                                <span className="truncate max-w-[150px]">{item.name} x{item.quantity}</span>
                                 <span>{formatPrice(item.total)}</span>
                             </div>
                         ))}
@@ -398,7 +414,7 @@ export default function POSPage() {
                         <div className="flex justify-between"><span>TOTAL</span><span>{formatPrice(receiptData?.totalAmount || 0)}</span></div>
                         <div className="flex justify-between text-[10px] font-normal italic"><span>PAID VIA</span><span>{receiptData?.paymentMethod.toUpperCase()}</span></div>
                     </div>
-                    <Button className="w-full mt-6" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" /> Print</Button>
+                    <Button className="w-full mt-6" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" /> Print Receipt</Button>
                 </DialogContent>
             </Dialog>
         </div>
