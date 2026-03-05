@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
@@ -12,17 +13,19 @@ export async function POST(req: Request) {
   try {
     await connection.beginTransaction();
     const body = await req.json();
+    
+    // Defensive extraction
     const { 
       orderNumber, 
-      module, 
-      items, 
-      totalAmount, 
-      totalCost, 
-      paymentMethod, 
-      status, 
-      customerName, 
-      amountReceived, 
-      balance 
+      module = 'general', 
+      items = [], 
+      totalAmount = 0, 
+      totalCost = 0, 
+      paymentMethod = 'none', 
+      status = 'pending', 
+      customerName = 'Guest', 
+      amountReceived = 0, 
+      balance = 0 
     } = body;
     
     const transactionId = `TX-${Date.now()}`;
@@ -35,6 +38,8 @@ export async function POST(req: Request) {
 
     // 2. Atomic Inventory Updates
     for (const item of items) {
+      if (!item.productId) continue;
+
       // Record item sale
       await connection.query(
         'INSERT INTO transaction_items (transactionId, productId, name, quantity, price, costPrice, total) VALUES (?, ?, ?, ?, ?, ?, ?)',
@@ -55,23 +60,24 @@ export async function POST(req: Request) {
           [item.productId]
         );
         
-        for (const recipe of recipes) {
-          // Precise decimal subtraction for raw supplies
-          await connection.query(
-            'UPDATE supplies SET quantity = GREATEST(0, quantity - ?) WHERE id = ?',
-            [recipe.amount * item.quantity, recipe.supplyId]
-          );
+        if (Array.isArray(recipes)) {
+          for (const recipe of recipes) {
+            await connection.query(
+              'UPDATE supplies SET quantity = GREATEST(0, quantity - ?) WHERE id = ?',
+              [recipe.amount * item.quantity, recipe.supplyId]
+            );
+          }
         }
       }
     }
 
     await connection.commit();
     return NextResponse.json({ id: transactionId, orderNumber, status: 'success' });
-  } catch (error) {
-    await connection.rollback();
+  } catch (error: any) {
+    if (connection) await connection.rollback();
     console.error('POS Engine Error:', error);
-    return NextResponse.json({ error: "Atomic transaction failed" }, { status: 500 });
+    return NextResponse.json({ error: error.message || "Atomic transaction failed" }, { status: 500 });
   } finally {
-    connection.release();
+    if (connection) connection.release();
   }
 }

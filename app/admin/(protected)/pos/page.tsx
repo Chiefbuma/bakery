@@ -42,11 +42,14 @@ export default function POSPage() {
     const resolveImageUrl = (url: string | null | undefined) => {
         if (!url) return 'https://picsum.photos/seed/hotel/400/300';
         if (url.startsWith('http')) return url;
-        if (url.startsWith('/uploads') || url.startsWith('uploads')) {
-            const path = url.startsWith('/') ? url : `/${url}`;
+        
+        // Ensure uploads use absolute path relative to domain
+        if (url.startsWith('/uploads/') || url.startsWith('uploads/')) {
+            const clean = url.startsWith('/') ? url : `/${url}`;
             if (typeof window !== 'undefined') {
-                return `${window.location.origin}${path}`;
+                return `${window.location.origin}${clean}`;
             }
+            return clean;
         }
         return url;
     };
@@ -114,13 +117,13 @@ export default function POSPage() {
     const balanceValue = amountReceived ? parseFloat(amountReceived) - cartTotal : 0;
 
     const finalizeOrder = async (method: 'cash' | 'mpesa' | 'none', status: 'paid' | 'pending', received?: number, bal?: number) => {
-        if (cart.length === 0) return;
+        if (!cart || cart.length === 0) return;
         setIsProcessing(true);
         const totalCost = cart.reduce((acc, item) => acc + (item.costPrice * item.quantity), 0);
         
         try {
-            // SNAPSHOT items for receipt before state clear
-            const itemsSnapshot = JSON.parse(JSON.stringify(cart));
+            // SNAPSHOT items for receipt before state clear to prevent TypeError
+            const itemsSnapshot = [...cart];
 
             const response = await placeOrder({
                 orderNumber: `WK-${Date.now()}`,
@@ -155,7 +158,7 @@ export default function POSPage() {
                 toast({ title: "Bill Saved as Pending" });
             }
 
-            // CLEAR state after capturing receipt data
+            // Reset state
             setCart([]);
             setCustomerName("");
             setAmountReceived("");

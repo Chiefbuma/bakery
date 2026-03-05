@@ -42,8 +42,8 @@ export async function GET() {
       WHERE (MONTH(date) = ? AND YEAR(date) = ?) OR (MONTH(date) = ? AND YEAR(date) = ?)
     `, [currentMonth, currentYear, prevMonth, prevYear, currentMonth, currentYear, prevMonth, prevYear]);
 
-    const statsRow = stats[0] || {};
-    const expRow = expenses[0] || {};
+    const statsRow = (stats && stats[0]) || {};
+    const expRow = (expenses && expenses[0]) || {};
 
     // 3. Module Comparison
     const modules: HotelModule[] = ['restaurant', 'bar', 'carwash', 'accommodation', 'entertainment'];
@@ -56,8 +56,8 @@ export async function GET() {
         WHERE module = ? AND status = 'paid'
       `, [currentMonth, currentYear, prevMonth, prevYear, m]);
       
-      const c = Number(mStats[0]?.curr || 0);
-      const p = Number(mStats[0]?.prev || 0);
+      const c = Number(mStats && mStats[0]?.curr || 0);
+      const p = Number(mStats && mStats[0]?.prev || 0);
       const diff = p === 0 ? (c > 0 ? 100 : 0) : ((c - p) / p) * 100;
 
       return {
