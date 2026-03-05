@@ -39,11 +39,11 @@ export default function POSPage() {
 
     const { toast } = useToast();
 
+    // FIXED: Robust resolver for local /uploads/ paths in production
     const resolveImageUrl = (url: string | null | undefined) => {
         if (!url) return 'https://picsum.photos/seed/hotel/400/300';
         if (url.startsWith('http')) return url;
         
-        // Ensure uploads use absolute path relative to domain
         if (url.startsWith('/uploads/') || url.startsWith('uploads/')) {
             const clean = url.startsWith('/') ? url : `/${url}`;
             if (typeof window !== 'undefined') {
@@ -121,10 +121,11 @@ export default function POSPage() {
         setIsProcessing(true);
         const totalCost = cart.reduce((acc, item) => acc + (item.costPrice * item.quantity), 0);
         
-        try {
-            // SNAPSHOT items for receipt before state clear to prevent TypeError
-            const itemsSnapshot = [...cart];
+        // FIXED: SNAPSHOT items for receipt before state clear to prevent TypeError
+        const itemsSnapshot = JSON.parse(JSON.stringify(cart));
+        const finalCustomerName = customerName || "Guest";
 
+        try {
             const response = await placeOrder({
                 orderNumber: `WK-${Date.now()}`,
                 module: activeModule,
@@ -133,7 +134,7 @@ export default function POSPage() {
                 totalCost,
                 paymentMethod: method,
                 status: status,
-                customerName,
+                customerName: finalCustomerName,
                 amountReceived: received,
                 balance: bal
             });
@@ -149,7 +150,7 @@ export default function POSPage() {
                     timestamp: new Date().toISOString(),
                     paymentMethod: method,
                     status: 'paid',
-                    customerName,
+                    customerName: finalCustomerName,
                     amountReceived: received,
                     balance: bal
                 });
@@ -343,7 +344,7 @@ export default function POSPage() {
                         <p className="text-[10px]">{receiptData?.orderNumber}</p>
                     </div>
                     <div className="py-4 space-y-1">
-                        {receiptData?.items && Array.isArray(receiptData.items) && receiptData.items.map(item => (
+                        {receiptData?.items && Array.isArray(receiptData.items) && receiptData.items.map((item: any) => (
                             <div key={item.productId} className="flex justify-between text-xs">
                                 <span className="truncate max-w-[150px]">{item.name} x{item.quantity}</span>
                                 <span>{formatPrice(item.total)}</span>

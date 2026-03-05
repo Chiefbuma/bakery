@@ -1,3 +1,3 @@
 
 import { redirect } from 'next/navigation';
-export default function Page() { redirect('/admin/pos'); }
+export default function LegacyOrdersPage() { redirect('/admin/pos'); }
