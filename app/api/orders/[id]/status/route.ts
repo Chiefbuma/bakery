@@ -22,8 +22,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
             return NextResponse.json({ message: 'Order not found' }, { status: 404 });
         }
         
-        const [updatedOrderRows]: any = await connection.query('SELECT * FROM transactions WHERE id = ?', [id]);
-        return NextResponse.json(updatedOrderRows[0]);
+        return NextResponse.json({ success: true });
     } catch (error) {
         return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
     } finally {

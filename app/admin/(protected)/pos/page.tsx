@@ -39,7 +39,6 @@ export default function POSPage() {
 
     const { toast } = useToast();
 
-    // Fix for Uploaded Images resolving to absolute paths on production
     const resolveImageUrl = (url: string | null | undefined) => {
         if (!url) return 'https://picsum.photos/seed/hotel/400/300';
         if (url.startsWith('http')) return url;
@@ -156,7 +155,7 @@ export default function POSPage() {
                 toast({ title: "Bill Saved as Pending" });
             }
 
-            // CLEAR state after capture
+            // CLEAR state after capturing receipt data
             setCart([]);
             setCustomerName("");
             setAmountReceived("");
