@@ -1,7 +1,6 @@
 
 /**
- * @file Legacy Cake Hook
- * @deprecated This hook is deprecated.
+ * @file Legacy Hook (Neutralized)
  */
 export function useCakeData() {
   return { loading: false, cakes: [], specialOffer: null };

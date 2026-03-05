@@ -5,13 +5,18 @@ import type { Product, Transaction, HotelModule, DashboardData, SaleItem, Supply
 
 const API_BASE = '/api';
 
+// Defensively return arrays to prevent frontend crashes
+function ensureArray<T>(data: any): T[] {
+  return Array.isArray(data) ? data : [];
+}
+
 // USER MANAGEMENT
 export async function getUsers(): Promise<User[]> {
   try {
     const res = await fetch(`${API_BASE}/users`);
     if (!res.ok) return [];
     const data = await res.json();
-    return Array.isArray(data) ? data : [];
+    return ensureArray(data);
   } catch (e) {
     return [];
   }
@@ -45,7 +50,7 @@ export async function getProducts(module?: HotelModule): Promise<Product[]> {
     const res = await fetch(url);
     if (!res.ok) return [];
     const data = await res.json();
-    return Array.isArray(data) ? data : [];
+    return ensureArray(data);
   } catch (e) {
     return [];
   }
@@ -81,7 +86,7 @@ export async function getSupplies(module?: HotelModule): Promise<Supply[]> {
     const res = await fetch(url);
     if (!res.ok) return [];
     const data = await res.json();
-    return Array.isArray(data) ? data : [];
+    return ensureArray(data);
   } catch (e) {
     return [];
   }
@@ -143,7 +148,7 @@ export async function getExpenses(): Promise<Expense[]> {
     const res = await fetch(`${API_BASE}/expenses`);
     if (!res.ok) return [];
     const data = await res.json();
-    return Array.isArray(data) ? data : [];
+    return ensureArray(data);
   } catch (e) {
     return [];
   }
@@ -187,7 +192,7 @@ export async function getPendingOrders(): Promise<Transaction[]> {
     const res = await fetch(`${API_BASE}/pos/pending`);
     if (!res.ok) return [];
     const data = await res.json();
-    return Array.isArray(data) ? data : [];
+    return ensureArray(data);
   } catch (e) {
     return [];
   }

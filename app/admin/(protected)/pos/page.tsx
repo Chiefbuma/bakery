@@ -7,13 +7,14 @@ import type { Product, HotelModule, SaleItem, Transaction } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, User, Search, Trash2, Printer, Loader2, Plus, Minus, History, CreditCard, Banknote, CheckCircle2 } from "lucide-react";
-import { formatPrice, cn } from "@/lib/utils";
+import { ShoppingCart, Search, Trash2, Printer, Plus, Minus, History, CheckCircle2 } from "lucide-react";
+import { formatPrice } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { motion, AnimatePresence } from "framer-motion";
 
 const PAYSTACK_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || 'pk_test_placeholder';
@@ -35,6 +36,16 @@ export default function POSPage() {
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
     const { toast } = useToast();
+
+    // Helper to resolve local upload URLs or external URLs
+    const resolveImageUrl = (url: string | null | undefined) => {
+        if (!url) return 'https://picsum.photos/seed/hotel/400/300';
+        if (url.startsWith('http')) return url;
+        
+        // Ensure relative paths like /uploads/ are absolute for production
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || '';
+        return `${baseUrl}${url}`;
+    };
 
     useEffect(() => {
         const script = document.createElement('script');
@@ -95,17 +106,6 @@ export default function POSPage() {
             return item;
         }));
     };
-
-    const handleManualQtyChange = (id: string, value: string) => {
-        const num = parseInt(value);
-        if (isNaN(num) || num < 1) return;
-        setCart(prev => prev.map(item => {
-            if (item.productId === id) {
-                return { ...item, quantity: num, total: num * item.price };
-            }
-            return item;
-        }));
-    }
 
     const removeFromCart = (id: string) => {
         setCart(prev => prev.filter(item => item.productId !== id));
@@ -203,6 +203,7 @@ export default function POSPage() {
     };
 
     const filteredProducts = useMemo(() => {
+        // Defensive check: products must be an array to filter
         if (!Array.isArray(products)) return [];
         return products.filter(p => 
             p.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -257,7 +258,7 @@ export default function POSPage() {
                                 >
                                     <div className="relative h-40 w-full bg-muted">
                                         <Image 
-                                            src={product.image_url || 'https://picsum.photos/seed/food/400/300'} 
+                                            src={resolveImageUrl(product.image_url)} 
                                             alt={product.name} 
                                             fill 
                                             className="object-cover group-hover:scale-105 transition-transform"
