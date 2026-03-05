@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -18,7 +19,6 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const PAYSTACK_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || 'pk_test_placeholder';
 
-// CRITICAL: Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
 export default function POSPage() {
@@ -39,6 +39,7 @@ export default function POSPage() {
 
     const { toast } = useToast();
 
+    // Fix for Uploaded Images resolving to absolute paths on production
     const resolveImageUrl = (url: string | null | undefined) => {
         if (!url) return 'https://picsum.photos/seed/hotel/400/300';
         if (url.startsWith('http')) return url;
@@ -56,11 +57,7 @@ export default function POSPage() {
         script.src = 'https://js.paystack.co/v1/inline.js';
         script.async = true;
         document.body.appendChild(script);
-        return () => {
-            if (document.body.contains(script)) {
-                document.body.removeChild(script);
-            }
-        };
+        return () => { if (document.body.contains(script)) document.body.removeChild(script); };
     }, []);
 
     const loadData = useCallback(async () => {
@@ -123,8 +120,8 @@ export default function POSPage() {
         const totalCost = cart.reduce((acc, item) => acc + (item.costPrice * item.quantity), 0);
         
         try {
-            // CRITICAL: Capture current cart items locally before any state resets to avoid mapping errors
-            const itemsSnapshot = [...cart];
+            // SNAPSHOT items for receipt before state clear
+            const itemsSnapshot = JSON.parse(JSON.stringify(cart));
 
             const response = await placeOrder({
                 orderNumber: `WK-${Date.now()}`,
@@ -140,7 +137,6 @@ export default function POSPage() {
             });
 
             if (status === 'paid') {
-                // Construct receipt from snapshot to guarantee availability
                 setReceiptData({
                     id: response.id || `TX-${Date.now()}`,
                     orderNumber: response.orderNumber || `WK-${Date.now()}`,
@@ -160,6 +156,7 @@ export default function POSPage() {
                 toast({ title: "Bill Saved as Pending" });
             }
 
+            // CLEAR state after capture
             setCart([]);
             setCustomerName("");
             setAmountReceived("");
@@ -190,7 +187,6 @@ export default function POSPage() {
             toast({ variant: "destructive", title: "Payment Gateway Error" });
             return;
         }
-
         setIsProcessing(true);
         const handler = (window as any).PaystackPop.setup({
             key: PAYSTACK_PUBLIC_KEY,
