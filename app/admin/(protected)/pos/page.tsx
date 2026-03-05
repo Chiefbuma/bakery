@@ -99,14 +99,15 @@ export default function POSPage() {
         setCart(prev => prev.map(item => {
             if (item.productId === id) {
                 const newQty = Math.max(1, item.quantity + delta);
-                return { ...item, quantity: newQty, total: Number((newQty * Number(item.price)).toFixed(2)) };
+                const price = Number(item.price);
+                return { ...item, quantity: newQty, total: Number((newQty * price).toFixed(2)) };
             }
             return item;
         }));
     };
 
     const cartTotal = useMemo(() => {
-        return cart.reduce((acc, curr) => Number(acc) + (Number(curr.total) || 0), 0);
+        return cart.reduce((acc, curr) => acc + (Number(curr.total) || 0), 0);
     }, [cart]);
 
     const balanceValue = useMemo(() => {
@@ -117,10 +118,10 @@ export default function POSPage() {
     const finalizeOrder = async (method: 'cash' | 'mpesa' | 'none', status: 'paid' | 'pending', received?: number, bal?: number) => {
         if (cart.length === 0) return;
         setIsProcessing(true);
-        const totalCost = cart.reduce((acc, item) => acc + (Number(item.costPrice) * item.quantity), 0);
         
-        const itemsSnapshot = JSON.parse(JSON.stringify(cart));
+        const itemsSnapshot = [...cart];
         const finalCustomerName = customerName || "Guest";
+        const totalCost = itemsSnapshot.reduce((acc, item) => acc + (Number(item.costPrice) * item.quantity), 0);
 
         try {
             const response = await placeOrder({
@@ -151,9 +152,6 @@ export default function POSPage() {
                     amountReceived: received,
                     balance: bal
                 });
-                toast({ title: "Order Complete" });
-            } else {
-                toast({ title: "Order Saved as Pending" });
             }
 
             setCart([]);
@@ -161,6 +159,7 @@ export default function POSPage() {
             setAmountReceived("");
             setIsPaymentOpen(false);
             loadData();
+            toast({ title: status === 'paid' ? "Sale Complete" : "Order Held" });
         } catch (err) {
             toast({ variant: "destructive", title: "Transaction Failed" });
         } finally {
@@ -267,27 +266,24 @@ export default function POSPage() {
                     
                     <div className="space-y-2">
                         <div className="grid grid-cols-12 gap-2 text-[10px] uppercase font-black text-muted-foreground px-2">
-                            <div className="col-span-4">Item</div>
+                            <div className="col-span-5">Item</div>
                             <div className="col-span-3 text-center">Qty</div>
-                            <div className="col-span-2 text-right">Price</div>
-                            <div className="col-span-3 text-right">Amount</div>
+                            <div className="col-span-4 text-right">Amount</div>
                         </div>
                         <Separator />
                         {cart.map(item => (
                             <div key={item.productId} className="grid grid-cols-12 gap-2 items-center bg-muted/30 p-2 rounded-lg border border-transparent hover:border-primary/20 transition-colors">
-                                <div className="col-span-4 min-w-0">
+                                <div className="col-span-5 min-w-0">
                                     <p className="text-xs font-bold truncate">{item.name}</p>
+                                    <p className="text-[10px] text-muted-foreground">{formatPrice(item.price)}</p>
                                 </div>
                                 <div className="col-span-3 flex items-center justify-center gap-1">
                                     <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full" onClick={() => updateQuantity(item.productId, -1)}><Minus className="h-2 w-2" /></Button>
                                     <span className="text-xs font-bold w-4 text-center">{item.quantity}</span>
                                     <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full" onClick={() => updateQuantity(item.productId, 1)}><Plus className="h-2 w-2" /></Button>
                                 </div>
-                                <div className="col-span-2 text-right">
-                                    <p className="text-[10px] text-muted-foreground">{formatPrice(Number(item.price))}</p>
-                                </div>
-                                <div className="col-span-3 text-right">
-                                    <p className="text-xs font-black text-primary">{formatPrice(Number(item.total))}</p>
+                                <div className="col-span-4 text-right">
+                                    <p className="text-xs font-black text-primary">{formatPrice(item.total)}</p>
                                 </div>
                             </div>
                         ))}
@@ -404,7 +400,6 @@ export default function POSPage() {
                         <div className="space-y-1">
                             <p className="font-bold uppercase">Order Reference</p>
                             <h4 className="font-bold text-lg">{receiptData?.orderNumber}</h4>
-                            <p className="text-[10px] text-muted-foreground">Thank you for choosing Wamaghach!</p>
                         </div>
 
                         <div className="pt-4 flex flex-col gap-2 no-print">

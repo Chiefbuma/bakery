@@ -5,15 +5,9 @@ import { join } from 'path';
 
 export const dynamic = 'force-dynamic';
 
-/**
- * Dynamic Media Server
- * Solves the issue where files written to /public are not visible until restart.
- * It reads directly from the filesystem at runtime.
- */
 export async function GET(req: Request, { params }: { params: Promise<{ filename: string }> }) {
   try {
     const { filename } = await params;
-    // Sanitize filename to prevent directory traversal
     const safeFilename = filename.split('/').pop() || '';
     const filePath = join(process.cwd(), 'public', 'uploads', safeFilename);
     
@@ -29,7 +23,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ filename
       },
     });
   } catch (e) {
-    console.error('Media Server Error:', e);
     return new NextResponse(null, { status: 404 });
   }
 }

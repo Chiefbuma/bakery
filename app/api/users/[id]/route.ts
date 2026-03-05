@@ -17,7 +17,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     
     return NextResponse.json({ message: 'Personnel profile updated' });
   } catch (error) {
-    console.error('Update User Error:', error);
     return NextResponse.json({ error: "Update failed" }, { status: 500 });
   }
 }
@@ -28,7 +27,6 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     await pool.query('DELETE FROM users WHERE id = ?', [id]);
     return NextResponse.json({ message: 'Access revoked' });
   } catch (error) {
-    console.error('Delete User Error:', error);
     return NextResponse.json({ error: "Removal failed" }, { status: 500 });
   }
 }

@@ -208,10 +208,15 @@ export default function InventoryPage() {
         return Math.max(1, Math.ceil(count / ITEMS_PER_PAGE));
     }, [activeTab, filteredProducts.length, filteredSupplies.length]);
 
-    const paginatedItems = useMemo(() => {
+    const paginatedProducts = useMemo(() => {
         const start = (currentPage - 1) * ITEMS_PER_PAGE;
-        return activeTab === 'supplies' ? filteredSupplies.slice(start, start + ITEMS_PER_PAGE) : filteredProducts.slice(start, start + ITEMS_PER_PAGE);
-    }, [activeTab, filteredProducts, filteredSupplies, currentPage]);
+        return filteredProducts.slice(start, start + ITEMS_PER_PAGE);
+    }, [filteredProducts, currentPage]);
+
+    const paginatedSupplies = useMemo(() => {
+        const start = (currentPage - 1) * ITEMS_PER_PAGE;
+        return filteredSupplies.slice(start, start + ITEMS_PER_PAGE);
+    }, [filteredSupplies, currentPage]);
 
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
@@ -271,7 +276,7 @@ export default function InventoryPage() {
                                 <TableBody>
                                     {loading ? (
                                         <TableRow><TableCell colSpan={5} className="text-center py-10">Loading...</TableCell></TableRow>
-                                    ) : (paginatedItems as Product[]).map((p) => (
+                                    ) : paginatedProducts.map((p) => (
                                         <TableRow key={p.id}>
                                             <TableCell className="font-bold">{p.name}</TableCell>
                                             <TableCell className="capitalize text-xs text-muted-foreground">{p.module}</TableCell>
@@ -317,7 +322,7 @@ export default function InventoryPage() {
                                 <TableBody>
                                     {loading ? (
                                         <TableRow><TableCell colSpan={4} className="text-center py-10">Loading...</TableCell></TableRow>
-                                    ) : (paginatedItems as Supply[]).map((s) => (
+                                    ) : paginatedSupplies.map((s) => (
                                         <TableRow key={s.id}>
                                             <TableCell className="font-bold">{s.name}</TableCell>
                                             <TableCell>{s.quantity} {s.unit}</TableCell>

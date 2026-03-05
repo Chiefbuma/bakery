@@ -4,7 +4,6 @@ import mysql from 'mysql2/promise';
 /**
  * Optimized Database connection pool for MySQL.
  * Connections are established lazily to prevent build-time ECONNREFUSED errors.
- * Configuration is prioritized for shared hosting environments.
  */
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
@@ -13,12 +12,12 @@ const pool = mysql.createPool({
   database: process.env.DB_DATABASE,
   port: parseInt(process.env.DB_PORT || '3306'),
   waitForConnections: true,
-  connectionLimit: 5, // Optimized for shared hosting limits
+  connectionLimit: 5,
   queueLimit: 0,
   enableKeepAlive: true,
   keepAliveInitialDelay: 10000,
   connectTimeout: 60000,
-  timezone: '+03:00', // East Africa Time
+  timezone: '+03:00',
 });
 
 export default pool;
