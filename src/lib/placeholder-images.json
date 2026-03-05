@@ -1,52 +1,34 @@
 {
   "placeholderImages": [
     {
-      "id": "special-offer-cake",
-      "description": "A beautiful and delicious chocolate fudge cake with caramel drizzle.",
-      "imageUrl": "https://images.unsplash.com/photo-1602351447937-745cb720612f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxjaG9jb2xhdGUlMjBjYWtlfGVufDB8fHx8MTc2OTE0NTM0OHww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "caramel cake"
+      "id": "hotel-exterior",
+      "description": "Premium hotel exterior with modern architecture.",
+      "imageUrl": "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80&w=1080",
+      "imageHint": "luxury hotel"
     },
     {
-      "id": "red-velvet-delight",
-      "description": "A slice of classic red velvet cake with cream cheese frosting.",
-      "imageUrl": "https://images.unsplash.com/photo-1645366188121-2a19e02fcbd5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxyZWQlMjB2ZWx2ZXR8ZW58MHx8fHwxNzY5MTgxNjE4fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "red velvet"
+      "id": "restaurant-meal",
+      "description": "Authentic Swahili Pilau and grilled fish.",
+      "imageUrl": "https://images.unsplash.com/photo-1589302168068-964664d93dc0?auto=format&fit=crop&q=80&w=1080",
+      "imageHint": "pilau rice"
     },
     {
-      "id": "strawberry-dream",
-      "description": "A light and airy strawberry shortcake with fresh berries.",
-      "imageUrl": "https://images.unsplash.com/photo-1650419424455-d0513aaf0dd6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxzdHJhd2JlcnJ5JTIwY2FrZXxlbnwwfHx8fDE3NjkxODE2MTh8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "strawberry cake"
+      "id": "bar-drinks",
+      "description": "Assorted cold beverages and cocktails at the bar.",
+      "imageUrl": "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&q=80&w=1080",
+      "imageHint": "bar drinks"
     },
     {
-      "id": "lemon-zest-creation",
-      "description": "A zesty lemon drizzle cake with a tangy glaze.",
-      "imageUrl": "https://images.unsplash.com/photo-1691242720316-7bea97eb655f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxsZW1vbiUyMGNha2V8ZW58MHx8fHwxNzY5MTgxNjE4fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "lemon cake"
+      "id": "car-wash",
+      "description": "Professional car cleaning and detailing service.",
+      "imageUrl": "https://images.unsplash.com/photo-1605610816700-162d1c1cfdf1?auto=format&fit=crop&q=80&w=1080",
+      "imageHint": "car wash"
     },
     {
-      "id": "vanilla-bean-classic",
-      "description": "A timeless vanilla bean cake with buttercream frosting.",
-      "imageUrl": "https://images.unsplash.com/photo-1588195538326-c5b1e9f80a1b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx2YW5pbGxhJTIwY2FrZXxlbnwwfHx8fDE3NjkxODE2MTh8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "vanilla cake"
-    },
-    {
-      "id": "matcha-elegance",
-      "description": "A sophisticated matcha green tea cake.",
-      "imageUrl": "https://images.unsplash.com/photo-1567945520067-d37a381fd5e5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxtYXRjaGElMjBjYWtlfGVufDB8fHx8MTc2OTE4MTYxOHww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "matcha cake"
-    },
-    {
-      "id": "cover-art",
-      "description": "Abstract art for cover page background",
-      "imageUrl": "https://images.unsplash.com/photo-1620121692029-d088224ddc74?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxhYnN0cmFjdCUyMGJhY2tncm91bmR8ZW58MHx8fHwxNzY5MTc0ODA4fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "abstract background"
-    },
-    {
-      "id": "custom-cake-placeholder",
-      "description": "A blank canvas for a custom cake creation.",
-      "imageUrl": "https://images.unsplash.com/photo-1621303837174-89787a7d4729?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxwbGFpbiUyMHdoaXRlJTIwY2FrZXxlbnwwfHx8fDE2OTI4MDc4ODV8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "plain cake"
+      "id": "hotel-room",
+      "description": "Spacious hotel room with premium bedding.",
+      "imageUrl": "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&q=80&w=1080",
+      "imageHint": "hotel room"
     }
   ]
 }

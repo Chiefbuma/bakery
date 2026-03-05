@@ -1,6 +1,3 @@
 
 import { redirect } from 'next/navigation';
-
-export default function LegacyCakesPage() {
-    redirect('/admin/pos');
-}
+export default function LegacyPage() { redirect('/admin/pos'); }
