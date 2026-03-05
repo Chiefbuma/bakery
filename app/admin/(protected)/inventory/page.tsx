@@ -11,10 +11,9 @@ import {
     addSupply, 
     updateProduct, 
     updateSupply,
-    getProductRecipes,
     uploadImage
 } from "@/services/hotel-service";
-import type { Product, HotelModule, Supply, SupplyConsumption } from "@/lib/types";
+import type { Product, HotelModule, Supply } from "@/lib/types";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";

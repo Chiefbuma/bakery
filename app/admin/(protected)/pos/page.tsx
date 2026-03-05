@@ -40,8 +40,10 @@ export default function POSPage() {
     const resolveImageUrl = (url: string | null | undefined) => {
         if (!url) return 'https://picsum.photos/seed/hotel/400/300';
         if (url.startsWith('http')) return url;
-        const origin = typeof window !== 'undefined' ? window.location.origin : '';
-        return url.startsWith('/') ? `${origin}${url}` : `${origin}/${url}`;
+        if (url.startsWith('/uploads/')) {
+            return `/api/media/${url.replace('/uploads/', '')}`;
+        }
+        return url;
     };
 
     useEffect(() => {
@@ -72,6 +74,7 @@ export default function POSPage() {
         setCart(prev => {
             const existing = prev.find(item => item.productId === product.id);
             const price = Number(product.price);
+            const costPrice = Number(product.costPrice);
             if (existing) {
                 return prev.map(item => {
                     if (item.productId === product.id) {
@@ -86,7 +89,7 @@ export default function POSPage() {
                 name: product.name, 
                 quantity: 1, 
                 price: price, 
-                costPrice: Number(product.costPrice),
+                costPrice: costPrice,
                 total: price 
             }];
         });
@@ -96,14 +99,14 @@ export default function POSPage() {
         setCart(prev => prev.map(item => {
             if (item.productId === id) {
                 const newQty = Math.max(1, item.quantity + delta);
-                return { ...item, quantity: newQty, total: Number((newQty * item.price).toFixed(2)) };
+                return { ...item, quantity: newQty, total: Number((newQty * Number(item.price)).toFixed(2)) };
             }
             return item;
         }));
     };
 
     const cartTotal = useMemo(() => {
-        return cart.reduce((acc, curr) => acc + (Number(curr.total) || 0), 0);
+        return cart.reduce((acc, curr) => Number(acc) + (Number(curr.total) || 0), 0);
     }, [cart]);
 
     const balanceValue = useMemo(() => {
@@ -116,7 +119,6 @@ export default function POSPage() {
         setIsProcessing(true);
         const totalCost = cart.reduce((acc, item) => acc + (Number(item.costPrice) * item.quantity), 0);
         
-        // Take a snapshot of the cart for the receipt before clearing it
         const itemsSnapshot = JSON.parse(JSON.stringify(cart));
         const finalCustomerName = customerName || "Guest";
 
@@ -213,7 +215,15 @@ export default function POSPage() {
                     .no-print { display: none !important; }
                     body * { visibility: hidden; }
                     .print-section, .print-section * { visibility: visible; }
-                    .print-section { position: absolute; left: 0; top: 0; width: 80mm; }
+                    .print-section { 
+                        position: absolute; 
+                        left: 0; 
+                        top: 0; 
+                        width: 80mm; 
+                        margin: 0; 
+                        padding: 5mm;
+                        background: white;
+                    }
                 }
             `}</style>
 
@@ -337,11 +347,7 @@ export default function POSPage() {
                 <DialogContent className="max-w-[400px] p-0 overflow-hidden bg-white text-black print-section">
                     <div className="p-8 space-y-4 text-center receipt-font text-sm leading-tight w-[80mm] mx-auto">
                         <div className="space-y-1">
-                            <p className="font-bold uppercase">
-                                {receiptData?.paymentMethod !== 'none' 
-                                    ? "Wamaghach Kahua-ini Hotel , Along Othaya-Karatina Road, 500 metres from Kiahungu Town, Contact 0720 333 461, MPESA BUY GOODS TILL 4209898" 
-                                    : "Bill"}
-                            </p>
+                            <p className="font-bold uppercase">Wamaghach Kahua-ini Hotel , Along Othaya-Karatina Road, 500 metres from Kiahungu Town, Contact 0720 333 461, MPESA BUY GOODS TILL 4209898</p>
                             {receiptData?.paymentMethod !== 'none' && (
                                 <>
                                     <p>Receipt Ref: <b>{receiptData?.orderNumber}</b></p>
