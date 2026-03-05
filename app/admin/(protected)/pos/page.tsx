@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -123,7 +122,7 @@ export default function POSPage() {
         const totalCost = cart.reduce((acc, item) => acc + (item.costPrice * item.quantity), 0);
         
         try {
-            // CRITICAL: Construct snapshot before clearing cart state
+            // CRITICAL: Construct snapshot before clearing cart state to prevent receipt mapping crash
             const snapshotItems = [...cart];
 
             const response = await placeOrder({
@@ -140,7 +139,7 @@ export default function POSPage() {
             });
 
             if (status === 'paid') {
-                // Ensure receiptData is constructed from snapshot to avoid mapping undefined
+                // Ensure receiptData is constructed from snapshot to avoid mapping undefined properties
                 setReceiptData({
                     id: response.id || `TX-${Date.now()}`,
                     orderNumber: response.orderNumber || `WK-${Date.now()}`,
@@ -160,6 +159,7 @@ export default function POSPage() {
                 toast({ title: "Bill Saved as Pending" });
             }
 
+            // ONLY CLEAR cart state after receipt data is securely set from snapshot
             setCart([]);
             setCustomerName("");
             setAmountReceived("");
@@ -345,6 +345,7 @@ export default function POSPage() {
                         <p className="text-[10px]">{receiptData?.orderNumber}</p>
                     </div>
                     <div className="py-4 space-y-1">
+                        {/* Defensive mapping over items array captured from snapshot */}
                         {Array.isArray(receiptData?.items) && receiptData.items.map(item => (
                             <div key={item.productId} className="flex justify-between text-xs">
                                 <span className="truncate max-w-[150px]">{item.name} x{item.quantity}</span>

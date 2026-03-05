@@ -1,11 +1,13 @@
-
 'use client';
 
 import type { Product, Transaction, HotelModule, DashboardData, SaleItem, Supply, Expense, User, UserRole, SupplyConsumption } from '@/lib/types';
 
 const API_BASE = '/api';
 
-// Defensively return arrays to prevent frontend crashes
+/**
+ * Defensive collection fetcher.
+ * Ensures an array is ALWAYS returned to prevent frontend filter/map crashes.
+ */
 function ensureArray<T>(data: any): T[] {
   return Array.isArray(data) ? data : [];
 }

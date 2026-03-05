@@ -1,7 +1,10 @@
-
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
+/**
+ * Handles Product updates and deletions.
+ * Mandatory: params must be awaited in Next.js 15.
+ */
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;

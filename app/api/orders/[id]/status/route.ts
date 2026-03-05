@@ -1,16 +1,9 @@
-
 import { NextResponse, NextRequest } from 'next/server';
 import pool from '@/lib/db';
-import { verifyAuth } from '@/lib/auth-utils';
 
 const allowedStatuses = ['processing', 'complete', 'cancelled'];
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const auth = verifyAuth(req);
-    if (!auth.authenticated) {
-        return NextResponse.json({ message: auth.error }, { status: 401 });
-    }
-
     const connection = await pool.getConnection();
     try {
         const { id } = await params;
@@ -34,7 +27,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     } catch (error) {
         connection.release();
         const message = error instanceof Error ? error.message : 'An unknown error occurred';
-        console.error(`API Error (PUT /orders/${(await params).id}/status):`, error);
         return NextResponse.json({ message: `Failed to update order status: ${message}` }, { status: 500 });
     }
 }

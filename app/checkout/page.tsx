@@ -1,3 +1,2 @@
-
 import { redirect } from 'next/navigation';
-export default function NeutralizedPage() { redirect('/'); }
+export default function LegacyPage() { redirect('/'); }

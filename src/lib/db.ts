@@ -3,8 +3,8 @@ import mysql from 'mysql2/promise';
 
 /**
  * Optimized Database connection pool for MySQL.
- * Configured for Next.js 15 production stability on shared hosting.
- * Connections are established lazily at runtime to prevent build-time errors.
+ * Connections are established lazily to prevent build-time ECONNREFUSED errors.
+ * Configuration is prioritized for shared hosting environments.
  */
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
@@ -13,11 +13,11 @@ const pool = mysql.createPool({
   database: process.env.DB_DATABASE,
   port: parseInt(process.env.DB_PORT || '3306'),
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit: 5, // Optimized for shared hosting limits
   queueLimit: 0,
   enableKeepAlive: true,
   keepAliveInitialDelay: 10000,
-  connectTimeout: 60000, // Increased timeout for shared hosting
+  connectTimeout: 60000,
   timezone: '+03:00', // East Africa Time
 });
 

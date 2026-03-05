@@ -3,6 +3,8 @@ import { NextResponse, NextRequest } from 'next/server';
 import pool from '@/lib/db';
 import jwt from 'jsonwebtoken';
 
+export const dynamic = 'force-dynamic';
+
 const JWT_SECRET = process.env.JWT_SECRET || 'pk_live_8d9017d3458e0213efd55c219527b9171482e87d';
 
 export async function POST(req: NextRequest) {
@@ -21,8 +23,6 @@ export async function POST(req: NextRequest) {
 
         const user = rows[0];
 
-        // In a real production system, use bcrypt.compare here.
-        // For the current setup, we match the provided access key.
         if (password !== user.password) {
             return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
         }
