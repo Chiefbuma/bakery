@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Product, Transaction, HotelModule, DashboardData, SaleItem, Supply, Expense, User, UserRole, SupplyConsumption } from '@/lib/types';
@@ -6,11 +7,30 @@ const API_BASE = '/api';
 
 /**
  * Defensive collection fetcher.
- * Ensures an array is ALWAYS returned to prevent frontend filter/map crashes.
+ * Ensures an array is ALWAYS returned and numeric fields are cast.
  */
 function ensureArray<T>(data: any): T[] {
   return Array.isArray(data) ? data : [];
 }
+
+const castProduct = (p: any): Product => ({
+  ...p,
+  price: Number(p.price || 0),
+  costPrice: Number(p.costPrice || 0),
+  stock: Number(p.stock || 0),
+  minStockLevel: Number(p.minStockLevel || 0)
+});
+
+const castSupply = (s: any): Supply => ({
+  ...s,
+  quantity: Number(s.quantity || 0),
+  unitCost: Number(s.unitCost || 0)
+});
+
+const castExpense = (e: any): Expense => ({
+  ...e,
+  amount: Number(e.amount || 0)
+});
 
 // USER MANAGEMENT
 export async function getUsers(): Promise<User[]> {
@@ -52,7 +72,7 @@ export async function getProducts(module?: HotelModule): Promise<Product[]> {
     const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) return [];
     const data = await res.json();
-    return ensureArray(data);
+    return ensureArray(data).map(castProduct);
   } catch (e) {
     return [];
   }
@@ -88,7 +108,7 @@ export async function getSupplies(module?: HotelModule): Promise<Supply[]> {
     const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) return [];
     const data = await res.json();
-    return ensureArray(data);
+    return ensureArray(data).map(castSupply);
   } catch (e) {
     return [];
   }
@@ -150,7 +170,7 @@ export async function getExpenses(): Promise<Expense[]> {
     const res = await fetch(`${API_BASE}/expenses`, { cache: 'no-store' });
     if (!res.ok) return [];
     const data = await res.json();
-    return ensureArray(data);
+    return ensureArray(data).map(castExpense);
   } catch (e) {
     return [];
   }

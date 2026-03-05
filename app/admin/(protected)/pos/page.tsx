@@ -71,20 +71,23 @@ export default function POSPage() {
     const addToCart = (product: Product) => {
         setCart(prev => {
             const existing = prev.find(item => item.productId === product.id);
+            const price = Number(product.price);
             if (existing) {
-                return prev.map(item => 
-                    item.productId === product.id 
-                    ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * item.price } 
-                    : item
-                );
+                return prev.map(item => {
+                    if (item.productId === product.id) {
+                        const newQty = item.quantity + 1;
+                        return { ...item, quantity: newQty, total: Number((newQty * price).toFixed(2)) };
+                    }
+                    return item;
+                });
             }
             return [...prev, { 
                 productId: product.id, 
                 name: product.name, 
                 quantity: 1, 
-                price: product.price, 
-                costPrice: product.costPrice,
-                total: product.price 
+                price: price, 
+                costPrice: Number(product.costPrice),
+                total: price 
             }];
         });
     };
@@ -93,20 +96,27 @@ export default function POSPage() {
         setCart(prev => prev.map(item => {
             if (item.productId === id) {
                 const newQty = Math.max(1, item.quantity + delta);
-                return { ...item, quantity: newQty, total: newQty * item.price };
+                return { ...item, quantity: newQty, total: Number((newQty * item.price).toFixed(2)) };
             }
             return item;
         }));
     };
 
-    const cartTotal = cart.reduce((acc, curr) => acc + curr.total, 0);
-    const balanceValue = amountReceived ? parseFloat(amountReceived) - cartTotal : 0;
+    const cartTotal = useMemo(() => {
+        return cart.reduce((acc, curr) => acc + (Number(curr.total) || 0), 0);
+    }, [cart]);
+
+    const balanceValue = useMemo(() => {
+        const received = parseFloat(amountReceived) || 0;
+        return received - cartTotal;
+    }, [amountReceived, cartTotal]);
 
     const finalizeOrder = async (method: 'cash' | 'mpesa' | 'none', status: 'paid' | 'pending', received?: number, bal?: number) => {
         if (cart.length === 0) return;
         setIsProcessing(true);
-        const totalCost = cart.reduce((acc, item) => acc + (item.costPrice * item.quantity), 0);
+        const totalCost = cart.reduce((acc, item) => acc + (Number(item.costPrice) * item.quantity), 0);
         
+        // Take a snapshot of the cart for the receipt before clearing it
         const itemsSnapshot = JSON.parse(JSON.stringify(cart));
         const finalCustomerName = customerName || "Guest";
 
@@ -228,7 +238,7 @@ export default function POSPage() {
                                 </div>
                                 <div className="p-4">
                                     <h3 className="font-bold text-sm truncate">{product.name}</h3>
-                                    <span className="text-primary font-bold">{formatPrice(product.price)}</span>
+                                    <span className="text-primary font-bold">{formatPrice(Number(product.price))}</span>
                                 </div>
                             </button>
                         ))}
@@ -236,33 +246,47 @@ export default function POSPage() {
                 </div>
             </div>
 
-            <div className="w-[400px] flex flex-col bg-card shadow-xl border-l">
+            <div className="w-[480px] flex flex-col bg-card shadow-xl border-l">
                 <div className="p-4 border-b flex items-center gap-2">
                     <ShoppingCart className="h-5 w-5" />
                     <h2 className="font-bold">Active Cart</h2>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
                     <Input placeholder="Guest Name / Table" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
-                    <Separator />
-                    {cart.map(item => (
-                        <div key={item.productId} className="flex justify-between items-center bg-muted/30 p-2 rounded-lg">
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold truncate">{item.name}</p>
-                                <p className="text-xs text-muted-foreground">{formatPrice(item.price)}</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => updateQuantity(item.productId, -1)}><Minus className="h-3 w-3" /></Button>
-                                <span className="text-sm w-4 text-center">{item.quantity}</span>
-                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => updateQuantity(item.productId, 1)}><Plus className="h-3 w-3" /></Button>
-                            </div>
+                    
+                    <div className="space-y-2">
+                        <div className="grid grid-cols-12 gap-2 text-[10px] uppercase font-black text-muted-foreground px-2">
+                            <div className="col-span-4">Item</div>
+                            <div className="col-span-3 text-center">Qty</div>
+                            <div className="col-span-2 text-right">Price</div>
+                            <div className="col-span-3 text-right">Amount</div>
                         </div>
-                    ))}
+                        <Separator />
+                        {cart.map(item => (
+                            <div key={item.productId} className="grid grid-cols-12 gap-2 items-center bg-muted/30 p-2 rounded-lg border border-transparent hover:border-primary/20 transition-colors">
+                                <div className="col-span-4 min-w-0">
+                                    <p className="text-xs font-bold truncate">{item.name}</p>
+                                </div>
+                                <div className="col-span-3 flex items-center justify-center gap-1">
+                                    <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full" onClick={() => updateQuantity(item.productId, -1)}><Minus className="h-2 w-2" /></Button>
+                                    <span className="text-xs font-bold w-4 text-center">{item.quantity}</span>
+                                    <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full" onClick={() => updateQuantity(item.productId, 1)}><Plus className="h-2 w-2" /></Button>
+                                </div>
+                                <div className="col-span-2 text-right">
+                                    <p className="text-[10px] text-muted-foreground">{formatPrice(Number(item.price))}</p>
+                                </div>
+                                <div className="col-span-3 text-right">
+                                    <p className="text-xs font-black text-primary">{formatPrice(Number(item.total))}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
                 <div className="p-6 border-t bg-muted/20 space-y-4">
                     <div className="flex justify-between items-end">
-                        <span className="text-muted-foreground font-medium">Grand Total</span>
+                        <span className="text-muted-foreground font-medium uppercase tracking-tighter text-xs">Grand Total</span>
                         <span className="text-3xl font-black text-primary leading-none">{formatPrice(cartTotal)}</span>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
@@ -273,11 +297,11 @@ export default function POSPage() {
             </div>
 
             <Dialog open={isPaymentOpen} onOpenChange={setIsPaymentOpen}>
-                <DialogContent>
+                <DialogContent className="sm:max-w-[450px]">
                     <DialogHeader><DialogTitle>Payment Confirmation</DialogTitle></DialogHeader>
                     
                     <div className="bg-primary/5 p-6 rounded-xl border-2 border-primary/20 text-center space-y-2">
-                        <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Total Amount Due</p>
+                        <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">Total Amount Due</p>
                         <p className="text-5xl font-black text-primary">{formatPrice(cartTotal)}</p>
                     </div>
 
@@ -289,11 +313,11 @@ export default function POSPage() {
                     {paymentMethod === 'cash' && (
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <Label>Cash Amount Received (Ksh)</Label>
-                                <Input type="number" value={amountReceived} onChange={(e) => setAmountReceived(e.target.value)} className="text-2xl h-14 font-black text-center" autoFocus />
+                                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Cash Amount Received (Ksh)</Label>
+                                <Input type="number" value={amountReceived} onChange={(e) => setAmountReceived(e.target.value)} className="text-3xl h-16 font-black text-center" autoFocus />
                             </div>
-                            <div className="flex justify-between items-center p-4 bg-muted rounded-lg border">
-                                <span className="font-bold">Change Due</span>
+                            <div className="flex justify-between items-center p-4 bg-muted/50 rounded-lg border border-dashed border-primary/30">
+                                <span className="font-bold text-sm">Change Due</span>
                                 <span className="text-2xl font-black text-primary">{formatPrice(Math.max(0, balanceValue))}</span>
                             </div>
                         </div>
@@ -313,7 +337,7 @@ export default function POSPage() {
                 <DialogContent className="max-w-[400px] p-0 overflow-hidden bg-white text-black print-section">
                     <div className="p-8 space-y-4 text-center receipt-font text-sm leading-tight w-[80mm] mx-auto">
                         <div className="space-y-1">
-                            <p className="font-bold">
+                            <p className="font-bold uppercase">
                                 {receiptData?.paymentMethod !== 'none' 
                                     ? "Wamaghach Kahua-ini Hotel , Along Othaya-Karatina Road, 500 metres from Kiahungu Town, Contact 0720 333 461, MPESA BUY GOODS TILL 4209898" 
                                     : "Bill"}
@@ -327,13 +351,13 @@ export default function POSPage() {
                         </div>
                         
                         <Separator className="border-black border-dashed" />
-                        <p className="font-bold">Order</p>
+                        <p className="font-bold uppercase">Order Items</p>
                         
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="border-b border-dashed border-black">
                                     <td className="py-1"><b>QTY</b></td>
-                                    <td className="py-1"><b>Order</b></td>
+                                    <td className="py-1"><b>Item</b></td>
                                     <td className="py-1 text-right"><b>Amount</b></td>
                                 </tr>
                             </thead>
@@ -342,7 +366,7 @@ export default function POSPage() {
                                     <tr key={item.productId}>
                                         <td className="py-1">{item.quantity}</td>
                                         <td className="py-1">{item.name}</td>
-                                        <td className="py-1 text-right">{formatPrice(item.total)}</td>
+                                        <td className="py-1 text-right">{formatPrice(Number(item.total))}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -353,17 +377,17 @@ export default function POSPage() {
                         <div className="space-y-1">
                             <div className="flex justify-between">
                                 <b>Total Amount</b>
-                                <b>{formatPrice(receiptData?.totalAmount || 0)}</b>
+                                <b>{formatPrice(Number(receiptData?.totalAmount || 0))}</b>
                             </div>
                             {receiptData?.paymentMethod === 'cash' && (
                                 <>
                                     <div className="flex justify-between">
                                         <b>Amount Tendered</b>
-                                        <b>{formatPrice(receiptData?.amountReceived || 0)}</b>
+                                        <b>{formatPrice(Number(receiptData?.amountReceived || 0))}</b>
                                     </div>
                                     <div className="flex justify-between">
                                         <b>Change</b>
-                                        <b>{formatPrice(receiptData?.balance || 0)}</b>
+                                        <b>{formatPrice(Number(receiptData?.balance || 0))}</b>
                                     </div>
                                 </>
                             )}
@@ -372,8 +396,9 @@ export default function POSPage() {
                         <Separator className="border-black border-dashed" />
 
                         <div className="space-y-1">
-                            <p className="font-bold">Order Name.</p>
+                            <p className="font-bold uppercase">Order Reference</p>
                             <h4 className="font-bold text-lg">{receiptData?.orderNumber}</h4>
+                            <p className="text-[10px] text-muted-foreground">Thank you for choosing Wamaghach!</p>
                         </div>
 
                         <div className="pt-4 flex flex-col gap-2 no-print">
