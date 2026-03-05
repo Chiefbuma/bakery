@@ -184,6 +184,10 @@ export async function placeOrder(transaction: Omit<Transaction, 'id' | 'timestam
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(transaction),
   });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || 'Transaction failed');
+  }
   return res.json();
 }
 
@@ -201,6 +205,7 @@ export async function getPendingOrders(): Promise<Transaction[]> {
 // DASHBOARD
 export async function getDashboardData(): Promise<DashboardData> {
   const res = await fetch(`${API_BASE}/dashboard`);
+  if (!res.ok) throw new Error('Failed to load dashboard data');
   return res.json();
 }
 
