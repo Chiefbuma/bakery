@@ -5,9 +5,8 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { getProducts, placeOrder, getPendingOrders } from "@/services/hotel-service";
 import type { Product, HotelModule, SaleItem, Transaction } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/tabs";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, Search, Trash2, Printer, Plus, Minus, History, CheckCircle2, Loader2 } from "lucide-react";
+import { ShoppingCart, Search, History, Printer, Plus, Minus, Loader2 } from "lucide-react";
 import { formatPrice, cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -15,7 +14,6 @@ import { Separator } from "@/components/ui/separator";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { motion, AnimatePresence } from "framer-motion";
 
 const PAYSTACK_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || 'pk_test_placeholder';
 
@@ -101,10 +99,6 @@ export default function POSPage() {
         }));
     };
 
-    const removeFromCart = (id: string) => {
-        setCart(prev => prev.filter(item => item.productId !== id));
-    };
-
     const cartTotal = cart.reduce((acc, curr) => acc + curr.total, 0);
     const balanceValue = amountReceived ? parseFloat(amountReceived) - cartTotal : 0;
 
@@ -113,7 +107,6 @@ export default function POSPage() {
         setIsProcessing(true);
         const totalCost = cart.reduce((acc, item) => acc + (item.costPrice * item.quantity), 0);
         
-        // Snapshot items for receipt
         const itemsSnapshot = JSON.parse(JSON.stringify(cart));
         const finalCustomerName = customerName || "Guest";
 
@@ -198,6 +191,22 @@ export default function POSPage() {
 
     return (
         <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-background">
+            <style jsx global>{`
+                @font-face {
+                    font-family: 'pixFueler-C';
+                    src: local('Courier New'), local('Courier'), monospace;
+                }
+                .receipt-font {
+                    font-family: 'pixFueler-C', monospace;
+                }
+                @media print {
+                    .no-print { display: none !important; }
+                    body * { visibility: hidden; }
+                    .print-section, .print-section * { visibility: visible; }
+                    .print-section { position: absolute; left: 0; top: 0; width: 80mm; }
+                }
+            `}</style>
+
             <div className="flex-1 flex flex-col min-w-0 border-r">
                 <div className="p-4 border-b bg-card flex items-center justify-between gap-4">
                     <div className="relative w-full max-w-md">
@@ -268,7 +277,7 @@ export default function POSPage() {
                     <DialogHeader><DialogTitle>Payment Confirmation</DialogTitle></DialogHeader>
                     
                     <div className="bg-primary/5 p-6 rounded-xl border-2 border-primary/20 text-center space-y-2">
-                        <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Total Amount to Pay</p>
+                        <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Total Amount Due</p>
                         <p className="text-5xl font-black text-primary">{formatPrice(cartTotal)}</p>
                     </div>
 
@@ -284,43 +293,98 @@ export default function POSPage() {
                                 <Input type="number" value={amountReceived} onChange={(e) => setAmountReceived(e.target.value)} className="text-2xl h-14 font-black text-center" autoFocus />
                             </div>
                             <div className="flex justify-between items-center p-4 bg-muted rounded-lg border">
-                                <span className="font-bold">Change to Return</span>
+                                <span className="font-bold">Change Due</span>
                                 <span className="text-2xl font-black text-primary">{formatPrice(Math.max(0, balanceValue))}</span>
                             </div>
                         </div>
                     )}
 
                     <DialogFooter className="pt-4">
-                        <Button variant="outline" onClick={() => setIsPaymentOpen(false)}>Back</Button>
+                        <Button variant="outline" onClick={() => setIsPaymentOpen(false)}>Cancel</Button>
                         <Button onClick={handleCheckout} disabled={isProcessing} className="min-w-[150px] font-bold">
                             {isProcessing ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : null}
-                            Confirm Payment
+                            Complete Sale
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
             <Dialog open={!!receiptData} onOpenChange={() => setReceiptData(null)}>
-                <DialogContent className="max-w-xs font-mono text-xs">
-                    <div className="text-center border-b pb-4 mb-4">
-                        <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-2" />
-                        <h2 className="font-bold text-lg uppercase">Wamaghach Hotel</h2>
-                        <p>{receiptData?.orderNumber}</p>
-                        <p>{new Date().toLocaleString()}</p>
-                    </div>
-                    <div className="space-y-1 mb-4">
-                        {receiptData?.items?.map((item: any) => (
-                            <div key={item.productId} className="flex justify-between">
-                                <span>{item.name} x{item.quantity}</span>
-                                <span>{formatPrice(item.total)}</span>
+                <DialogContent className="max-w-[400px] p-0 overflow-hidden bg-white text-black print-section">
+                    <div className="p-8 space-y-4 text-center receipt-font text-sm leading-tight w-[80mm] mx-auto">
+                        <div className="space-y-1">
+                            <p className="font-bold">
+                                {receiptData?.paymentMethod !== 'none' 
+                                    ? "Wamaghach Kahua-ini Hotel , Along Othaya-Karatina Road, 500 metres from Kiahungu Town, Contact 0720 333 461, MPESA BUY GOODS TILL 4209898" 
+                                    : "Bill"}
+                            </p>
+                            {receiptData?.paymentMethod !== 'none' && (
+                                <>
+                                    <p>Receipt Ref: <b>{receiptData?.orderNumber}</b></p>
+                                    <p>Date: <b>{new Date(receiptData?.timestamp || '').toLocaleString('en-KE', { dateStyle: 'medium', timeStyle: 'short' })}</b></p>
+                                </>
+                            )}
+                        </div>
+                        
+                        <Separator className="border-black border-dashed" />
+                        <p className="font-bold">Order</p>
+                        
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="border-b border-dashed border-black">
+                                    <td className="py-1"><b>QTY</b></td>
+                                    <td className="py-1"><b>Order</b></td>
+                                    <td className="py-1 text-right"><b>Amount</b></td>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {receiptData?.items?.map((item: any) => (
+                                    <tr key={item.productId}>
+                                        <td className="py-1">{item.quantity}</td>
+                                        <td className="py-1">{item.name}</td>
+                                        <td className="py-1 text-right">{formatPrice(item.total)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+
+                        <Separator className="border-black border-dashed" />
+
+                        <div className="space-y-1">
+                            <div className="flex justify-between">
+                                <b>Total Amount</b>
+                                <b>{formatPrice(receiptData?.totalAmount || 0)}</b>
                             </div>
-                        ))}
+                            {receiptData?.paymentMethod === 'cash' && (
+                                <>
+                                    <div className="flex justify-between">
+                                        <b>Amount Tendered</b>
+                                        <b>{formatPrice(receiptData?.amountReceived || 0)}</b>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <b>Change</b>
+                                        <b>{formatPrice(receiptData?.balance || 0)}</b>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        <Separator className="border-black border-dashed" />
+
+                        <div className="space-y-1">
+                            <p className="font-bold">Order Name.</p>
+                            <h4 className="font-bold text-lg">{receiptData?.orderNumber}</h4>
+                        </div>
+
+                        <div className="pt-4 flex flex-col gap-2 no-print">
+                            <Button className="w-full" onClick={() => window.print()}>
+                                <Printer className="mr-2 h-4 w-4" /> Print Receipt
+                            </Button>
+                            <Button variant="ghost" className="w-full" onClick={() => setReceiptData(null)}>
+                                Close
+                            </Button>
+                        </div>
                     </div>
-                    <div className="border-t pt-4 space-y-1 font-bold">
-                        <div className="flex justify-between text-sm"><span>GRAND TOTAL</span><span>{formatPrice(receiptData?.totalAmount || 0)}</span></div>
-                        <div className="flex justify-between"><span>PAID VIA</span><span className="uppercase">{receiptData?.paymentMethod}</span></div>
-                    </div>
-                    <Button className="w-full mt-6" onClick={() => window.print()}><Printer className="mr-2 h-4 w-4" /> Print Receipt</Button>
                 </DialogContent>
             </Dialog>
         </div>

@@ -12,7 +12,6 @@ import {
     updateProduct, 
     updateSupply,
     getProductRecipes,
-    saveProductRecipe,
     uploadImage
 } from "@/services/hotel-service";
 import type { Product, HotelModule, Supply, SupplyConsumption } from "@/lib/types";
@@ -22,12 +21,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/utils";
-import { PlusCircle, Search, Trash2, Edit, ChevronLeft, ChevronRight, Settings2, X, Upload } from "lucide-react";
+import { PlusCircle, Search, Trash2, Edit, ChevronLeft, ChevronRight, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion } from "framer-motion";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useForm } from "react-hook-form";
 import {
@@ -46,7 +45,6 @@ export const dynamic = 'force-dynamic';
 export default function InventoryPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [supplies, setSupplies] = useState<Supply[]>([]);
-    const [recipes, setRecipes] = useState<Record<string, SupplyConsumption[]>>({});
     const [loading, setLoading] = useState(true);
     const [activeModule, setActiveModule] = useState<HotelModule | 'all'>('all');
     const [searchQuery, setSearchQuery] = useState("");
@@ -57,7 +55,6 @@ export default function InventoryPage() {
 
     const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
     const [isSupplyDialogOpen, setIsSupplyDialogOpen] = useState(false);
-    const [isRecipeDialogOpen, setIsRecipeDialogOpen] = useState(false);
     
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [editingSupply, setEditingSupply] = useState<Supply | null>(null);
@@ -72,14 +69,12 @@ export default function InventoryPage() {
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
-            const [prodData, suppData, recipeData] = await Promise.all([
+            const [prodData, suppData] = await Promise.all([
                 getProducts(activeModule === 'all' ? undefined : activeModule),
-                getSupplies(activeModule === 'all' ? undefined : activeModule),
-                getProductRecipes()
+                getSupplies(activeModule === 'all' ? undefined : activeModule)
             ]);
             setProducts(prodData);
             setSupplies(suppData);
-            setRecipes(recipeData);
         } catch (error) {
             toast({ variant: "destructive", title: "Error loading inventory" });
         } finally {
