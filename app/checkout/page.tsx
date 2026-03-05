@@ -1,2 +1,2 @@
 import { redirect } from 'next/navigation';
-export default function LegacyPage() { redirect('/'); }
+export default function NeutralizedPage() { redirect('/admin/pos'); }

@@ -1,6 +1,8 @@
 import { NextResponse, NextRequest } from 'next/server';
 import pool from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 const allowedStatuses = ['processing', 'complete', 'cancelled'];
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -16,17 +18,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         const [result]: any = await connection.query('UPDATE transactions SET status = ? WHERE id = ?', [status === 'complete' ? 'paid' : 'pending', id]);
         
         if (result.affectedRows === 0) {
-            connection.release();
             return NextResponse.json({ message: 'Order not found' }, { status: 404 });
         }
         
         const [updatedOrderRows]: any = await connection.query('SELECT * FROM transactions WHERE id = ?', [id]);
-        connection.release();
-        
         return NextResponse.json(updatedOrderRows[0]);
     } catch (error) {
+        return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+    } finally {
         connection.release();
-        const message = error instanceof Error ? error.message : 'An unknown error occurred';
-        return NextResponse.json({ message: `Failed to update order status: ${message}` }, { status: 500 });
     }
 }

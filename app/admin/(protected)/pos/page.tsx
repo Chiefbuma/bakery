@@ -18,6 +18,9 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const PAYSTACK_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || 'pk_test_placeholder';
 
+// CRITICAL: Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 export default function POSPage() {
     const [activeModule, setActiveModule] = useState<HotelModule>('restaurant');
     const [products, setProducts] = useState<Product[]>([]);
@@ -36,11 +39,9 @@ export default function POSPage() {
 
     const { toast } = useToast();
 
-    // Absolute Image URL Resolver for local uploads
     const resolveImageUrl = (url: string | null | undefined) => {
         if (!url) return 'https://picsum.photos/seed/hotel/400/300';
         if (url.startsWith('http')) return url;
-        // Correctly handle local paths with the browser origin
         if (url.startsWith('/uploads') || url.startsWith('uploads')) {
             const path = url.startsWith('/') ? url : `/${url}`;
             if (typeof window !== 'undefined') {
@@ -122,13 +123,13 @@ export default function POSPage() {
         const totalCost = cart.reduce((acc, item) => acc + (item.costPrice * item.quantity), 0);
         
         try {
-            // CRITICAL: Construct snapshot before clearing cart state to prevent receipt mapping crash
-            const snapshotItems = [...cart];
+            // CRITICAL: Capture current cart items locally before any state resets to avoid mapping errors
+            const itemsSnapshot = [...cart];
 
             const response = await placeOrder({
                 orderNumber: `WK-${Date.now()}`,
                 module: activeModule,
-                items: snapshotItems,
+                items: itemsSnapshot,
                 totalAmount: cartTotal,
                 totalCost,
                 paymentMethod: method,
@@ -139,12 +140,12 @@ export default function POSPage() {
             });
 
             if (status === 'paid') {
-                // Ensure receiptData is constructed from snapshot to avoid mapping undefined properties
+                // Construct receipt from snapshot to guarantee availability
                 setReceiptData({
                     id: response.id || `TX-${Date.now()}`,
                     orderNumber: response.orderNumber || `WK-${Date.now()}`,
                     module: activeModule,
-                    items: snapshotItems,
+                    items: itemsSnapshot,
                     totalAmount: cartTotal,
                     totalCost,
                     timestamp: new Date().toISOString(),
@@ -159,7 +160,6 @@ export default function POSPage() {
                 toast({ title: "Bill Saved as Pending" });
             }
 
-            // ONLY CLEAR cart state after receipt data is securely set from snapshot
             setCart([]);
             setCustomerName("");
             setAmountReceived("");
@@ -345,8 +345,7 @@ export default function POSPage() {
                         <p className="text-[10px]">{receiptData?.orderNumber}</p>
                     </div>
                     <div className="py-4 space-y-1">
-                        {/* Defensive mapping over items array captured from snapshot */}
-                        {Array.isArray(receiptData?.items) && receiptData.items.map(item => (
+                        {receiptData?.items && Array.isArray(receiptData.items) && receiptData.items.map(item => (
                             <div key={item.productId} className="flex justify-between text-xs">
                                 <span className="truncate max-w-[150px]">{item.name} x{item.quantity}</span>
                                 <span>{formatPrice(item.total)}</span>

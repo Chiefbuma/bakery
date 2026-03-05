@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Handles Product updates and deletions.
- * Mandatory: params must be awaited in Next.js 15.
+ * Next.js 15 requires awaiting params before use.
  */
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -30,6 +32,6 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     return NextResponse.json({ message: 'Product removed' });
   } catch (error) {
     console.error('Delete Product Error:', error);
-    return NextResponse.json({ error: "Cannot delete product (check active sales)" }, { status: 500 });
+    return NextResponse.json({ error: "Cannot delete product" }, { status: 500 });
   }
 }

@@ -1,4 +1,3 @@
-
 import { redirect } from 'next/navigation';
 export const dynamic = 'force-dynamic';
-export default function LegacyPage() { redirect('/admin/pos'); }
+export default function NeutralizedPage() { redirect('/admin/pos'); }

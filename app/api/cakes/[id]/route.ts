@@ -1,2 +1,3 @@
 import { NextResponse } from 'next/server';
-export async function GET() { return NextResponse.json({ error: "Gone" }, { status: 410 }); }
+export const dynamic = 'force-dynamic';
+export async function GET() { return NextResponse.json({ error: 'Gone' }, { status: 410 }); }

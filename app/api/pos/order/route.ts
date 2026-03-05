@@ -1,6 +1,7 @@
-
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
+
+export const dynamic = 'force-dynamic';
 
 /**
  * Transactional Order Processing API.
@@ -42,9 +43,9 @@ export async function POST(req: Request) {
 
       // Inventory deductions (Only if paid)
       if (status === 'paid') {
-        // A. Deduct Master Stock (Locking row for update)
+        // A. Deduct Master Stock
         await connection.query(
-          'UPDATE products SET stock = stock - ? WHERE id = ? AND module NOT IN ("carwash", "entertainment", "accommodation")',
+          'UPDATE products SET stock = GREATEST(0, stock - ?) WHERE id = ? AND module NOT IN ("carwash", "entertainment", "accommodation")',
           [item.quantity, item.productId]
         );
 

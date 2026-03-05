@@ -49,7 +49,7 @@ export async function deleteUser(id: string): Promise<void> {
 export async function getProducts(module?: HotelModule): Promise<Product[]> {
   try {
     const url = module && module !== 'all' ? `${API_BASE}/products?module=${module}` : `${API_BASE}/products`;
-    const res = await fetch(url);
+    const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) return [];
     const data = await res.json();
     return ensureArray(data);
@@ -85,7 +85,7 @@ export async function deleteProducts(ids: string[]): Promise<void> {
 export async function getSupplies(module?: HotelModule): Promise<Supply[]> {
   try {
     const url = module && module !== 'all' ? `${API_BASE}/supplies?module=${module}` : `${API_BASE}/supplies`;
-    const res = await fetch(url);
+    const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) return [];
     const data = await res.json();
     return ensureArray(data);
@@ -120,7 +120,7 @@ export async function deleteSupplies(ids: string[]): Promise<void> {
 // RECIPE MANAGEMENT
 export async function getProductRecipes(): Promise<Record<string, SupplyConsumption[]>> {
   try {
-    const res = await fetch(`${API_BASE}/recipes`);
+    const res = await fetch(`${API_BASE}/recipes`, { cache: 'no-store' });
     if (!res.ok) return {};
     const data = await res.json();
     const recipes: Record<string, SupplyConsumption[]> = {};
@@ -147,7 +147,7 @@ export async function saveProductRecipe(productId: string, consumptions: SupplyC
 // EXPENSES
 export async function getExpenses(): Promise<Expense[]> {
   try {
-    const res = await fetch(`${API_BASE}/expenses`);
+    const res = await fetch(`${API_BASE}/expenses`, { cache: 'no-store' });
     if (!res.ok) return [];
     const data = await res.json();
     return ensureArray(data);
@@ -187,7 +187,7 @@ export async function placeOrder(transaction: Omit<Transaction, 'id' | 'timestam
     body: JSON.stringify(transaction),
   });
   if (!res.ok) {
-    const err = await res.json();
+    const err = await res.json().catch(() => ({ error: 'Transaction failed' }));
     throw new Error(err.error || 'Transaction failed');
   }
   return res.json();
@@ -195,7 +195,7 @@ export async function placeOrder(transaction: Omit<Transaction, 'id' | 'timestam
 
 export async function getPendingOrders(): Promise<Transaction[]> {
   try {
-    const res = await fetch(`${API_BASE}/pos/pending`);
+    const res = await fetch(`${API_BASE}/pos/pending`, { cache: 'no-store' });
     if (!res.ok) return [];
     const data = await res.json();
     return ensureArray(data);
@@ -206,7 +206,7 @@ export async function getPendingOrders(): Promise<Transaction[]> {
 
 // DASHBOARD
 export async function getDashboardData(): Promise<DashboardData> {
-  const res = await fetch(`${API_BASE}/dashboard`);
+  const res = await fetch(`${API_BASE}/dashboard`, { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to load dashboard data');
   return res.json();
 }
