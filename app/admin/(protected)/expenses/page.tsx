@@ -3,13 +3,12 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { getExpenses, addExpense, deleteExpenses, updateExpense } from "@/services/hotel-service";
-import type { Expense, HotelModule } from "@/lib/types";
+import type { Expense } from "@/lib/types";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/utils";
-import { PlusCircle, Loader2, Trash2, Edit, ChevronLeft, ChevronRight } from "lucide-react";
+import { PlusCircle, Trash2, Edit, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -34,7 +33,6 @@ export default function ExpensesPage() {
     const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
     const [targetExpense, setTargetExpense] = useState<{id: string, description: string} | null>(null);
     
-    // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 5;
 

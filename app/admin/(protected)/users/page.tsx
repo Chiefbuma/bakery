@@ -37,7 +37,6 @@ export default function UsersPage() {
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [targetUser, setTargetUser] = useState<{id: string, name: string} | null>(null);
     
-    // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 5;
 
@@ -97,15 +96,11 @@ export default function UsersPage() {
                 });
                 toast({ title: "User Created", description: "Account is ready for use." });
             }
-            
             setIsDialogOpen(false);
             setEditingUser(null);
-            
-            setTimeout(() => {
-                loadUsers();
-            }, 100);
+            setTimeout(() => { loadUsers(); }, 100);
         } catch (error) {
-            toast({ variant: "destructive", title: "Operation Failed", description: "Could not save user changes." });
+            toast({ variant: "destructive", title: "Operation Failed" });
         } finally {
             setIsSubmitting(false);
         }
@@ -183,11 +178,7 @@ export default function UsersPage() {
                                         <TableRow key={i}><TableCell colSpan={4} className="h-12 animate-pulse bg-muted/10" /></TableRow>
                                     ))
                                 ) : paginatedUsers.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={4} className="h-32 text-center text-muted-foreground">
-                                            No personnel found matching your search.
-                                        </TableCell>
-                                    </TableRow>
+                                    <TableRow><TableCell colSpan={4} className="h-32 text-center text-muted-foreground">No personnel found.</TableCell></TableRow>
                                 ) : paginatedUsers.map((u) => (
                                     <TableRow key={u.id}>
                                         <TableCell>
@@ -206,18 +197,11 @@ export default function UsersPage() {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-2">
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => handleOpenDialog(u)}><Edit className="h-4 w-4" /></Button>
                                                 <Button 
                                                     variant="ghost" 
                                                     size="icon" 
-                                                    className="h-8 w-8 text-primary hover:bg-primary/10"
-                                                    onClick={() => handleOpenDialog(u)}
-                                                >
-                                                    <Edit className="h-4 w-4" />
-                                                </Button>
-                                                <Button 
-                                                    variant="ghost" 
-                                                    size="icon" 
-                                                    className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                                                    className="h-8 w-8 text-destructive"
                                                     disabled={u.email === 'admin@wamaghach.com'}
                                                     onClick={() => { setTargetUser({id: u.id, name: u.name}); setDeleteConfirmOpen(true); }}
                                                 >
@@ -230,16 +214,11 @@ export default function UsersPage() {
                             </TableBody>
                         </Table>
                     </div>
-                    
                     <div className="flex items-center justify-end py-4">
                         <div className="flex items-center gap-2">
                             <span className="text-xs text-muted-foreground">Page {currentPage} of {totalPages || 1}</span>
-                            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
-                                <ChevronLeft className="h-4 w-4" />
-                            </Button>
-                            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0}>
-                                <ChevronRight className="h-4 w-4" />
-                            </Button>
+                            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}><ChevronLeft className="h-4 w-4" /></Button>
+                            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0}><ChevronRight className="h-4 w-4" /></Button>
                         </div>
                     </div>
                 </CardContent>
@@ -254,19 +233,17 @@ export default function UsersPage() {
                     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4 pt-4">
                         <div className="space-y-2">
                             <Label>Full Name</Label>
-                            <input {...register('name', { required: true })} disabled={isSubmitting} placeholder="e.g. John Doe" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
+                            <input {...register('name', { required: true })} disabled={isSubmitting} placeholder="e.g. John Doe" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label>Email Address</Label>
-                                <input type="email" {...register('email', { required: true })} disabled={isSubmitting} placeholder="john@wamaghach.com" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
+                                <input type="email" {...register('email', { required: true })} disabled={isSubmitting} placeholder="john@wamaghach.com" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
                             </div>
                             <div className="space-y-2">
                                 <Label>System Role</Label>
                                 <Select value={editingUser?.role || 'staff'} onValueChange={(v) => setValue('role', v as UserRole)}>
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="admin">Administrator</SelectItem>
                                         <SelectItem value="staff">Standard Staff</SelectItem>
@@ -277,14 +254,12 @@ export default function UsersPage() {
                         {!editingUser && (
                             <div className="space-y-2">
                                 <Label>Initial Access Key</Label>
-                                <input type="password" placeholder="••••••••" {...register('password')} disabled={isSubmitting} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
+                                <input type="password" placeholder="••••••••" {...register('password')} disabled={isSubmitting} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
                             </div>
                         )}
                         <DialogFooter className="pt-4">
                             <Button variant="outline" type="button" onClick={() => setIsDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
-                            <Button type="submit" disabled={isSubmitting} className="min-w-[120px]">
-                                {isSubmitting ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Saving...</> : (editingUser ? "Save Changes" : "Create Account")}
-                            </Button>
+                            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Saving..." : (editingUser ? "Save Changes" : "Create Account")}</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -294,15 +269,11 @@ export default function UsersPage() {
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Permanently delete user?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will remove all access for <strong>{targetUser?.name}</strong>. This action cannot be undone.
-                        </AlertDialogDescription>
+                        <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive hover:bg-destructive/90 text-white">
-                            Delete Account
-                        </AlertDialogAction>
+                        <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-white">Delete Account</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

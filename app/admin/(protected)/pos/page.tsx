@@ -11,7 +11,7 @@ import { formatPrice, cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import Image from "next/image";
+import Image from "image";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 
@@ -283,7 +283,7 @@ export default function POSPage() {
                                     <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full" onClick={() => updateQuantity(item.productId, 1)}><Plus className="h-2 w-2" /></Button>
                                 </div>
                                 <div className="col-span-4 text-right">
-                                    <p className="text-xs font-black text-primary">{formatPrice(item.total)}</p>
+                                    <p className="text-xs font-black text-primary">{formatPrice(Number(item.total))}</p>
                                 </div>
                             </div>
                         ))}

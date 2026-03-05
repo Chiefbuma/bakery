@@ -72,7 +72,6 @@ export default function InventoryPage() {
     const productForm = useForm<Omit<Product, 'id'>>();
     const supplyForm = useForm<Omit<Supply, 'id'>>();
     
-    // Recipe management state
     const [currentRecipe, setCurrentRecipe] = useState<SupplyConsumption[]>([]);
 
     const loadData = useCallback(async () => {
@@ -394,7 +393,6 @@ export default function InventoryPage() {
                 </Button>
             </div>
 
-            {/* Product Dialog */}
             <Dialog open={isProductDialogOpen} onOpenChange={(open) => { if(!isSubmitting) setIsProductDialogOpen(open); }}>
                 <DialogContent className="sm:max-w-lg">
                     <DialogHeader><DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle></DialogHeader>
@@ -461,7 +459,6 @@ export default function InventoryPage() {
                 </DialogContent>
             </Dialog>
 
-            {/* Supply Dialog */}
             <Dialog open={isSupplyDialogOpen} onOpenChange={(open) => { if(!isSubmitting) setIsSupplyDialogOpen(open); }}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader><DialogTitle>{editingSupply ? 'Edit Supply' : 'Add New Supply'}</DialogTitle></DialogHeader>
@@ -506,7 +503,6 @@ export default function InventoryPage() {
                 </DialogContent>
             </Dialog>
 
-            {/* Recipe Dialog */}
             <Dialog open={isRecipeDialogOpen} onOpenChange={setIsRecipeDialogOpen}>
                 <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
