@@ -11,21 +11,23 @@ import {
     addSupply, 
     updateProduct, 
     updateSupply,
-    uploadImage
+    uploadImage,
+    getProductRecipes,
+    saveProductRecipe
 } from "@/services/hotel-service";
-import type { Product, HotelModule, Supply } from "@/lib/types";
+import type { Product, HotelModule, Supply, SupplyConsumption } from "@/lib/types";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/utils";
-import { PlusCircle, Search, Trash2, Edit, ChevronLeft, ChevronRight, Upload } from "lucide-react";
+import { PlusCircle, Search, Trash2, Edit, ChevronLeft, ChevronRight, Upload, Loader2, UtensilsCrossed } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion } from "framer-motion";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useForm } from "react-hook-form";
 import {
@@ -44,36 +46,46 @@ export const dynamic = 'force-dynamic';
 export default function InventoryPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [supplies, setSupplies] = useState<Supply[]>([]);
+    const [recipes, setRecipes] = useState<Record<string, SupplyConsumption[]>>({});
     const [loading, setLoading] = useState(true);
     const [activeModule, setActiveModule] = useState<HotelModule | 'all'>('all');
     const [searchQuery, setSearchQuery] = useState("");
     const [activeTab, setActiveTab] = useState<string>("products");
     
+    // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
-    const ITEMS_PER_PAGE = 8;
+    const ITEMS_PER_PAGE = 5;
 
     const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
     const [isSupplyDialogOpen, setIsSupplyDialogOpen] = useState(false);
+    const [isRecipeDialogOpen, setIsRecipeDialogOpen] = useState(false);
     
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [editingSupply, setEditingSupply] = useState<Supply | null>(null);
+    const [recipeProduct, setRecipeProduct] = useState<Product | null>(null);
     
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
     const [targetItem, setTargetItem] = useState<{id: string, name: string, type: 'product' | 'supply' } | null>(null);
 
     const { toast } = useToast();
     const productForm = useForm<Omit<Product, 'id'>>();
     const supplyForm = useForm<Omit<Supply, 'id'>>();
+    
+    // Recipe management state
+    const [currentRecipe, setCurrentRecipe] = useState<SupplyConsumption[]>([]);
 
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
-            const [prodData, suppData] = await Promise.all([
+            const [prodData, suppData, recipeData] = await Promise.all([
                 getProducts(activeModule === 'all' ? undefined : activeModule),
-                getSupplies(activeModule === 'all' ? undefined : activeModule)
+                getSupplies(activeModule === 'all' ? undefined : activeModule),
+                getProductRecipes()
             ]);
             setProducts(prodData);
             setSupplies(suppData);
+            setRecipes(recipeData);
         } catch (error) {
             toast({ variant: "destructive", title: "Error loading inventory" });
         } finally {
@@ -124,11 +136,17 @@ export default function InventoryPage() {
         setIsSupplyDialogOpen(true);
     };
 
+    const handleOpenRecipeDialog = (product: Product) => {
+        setRecipeProduct(product);
+        setCurrentRecipe(recipes[product.id] || []);
+        setIsRecipeDialogOpen(true);
+    };
+
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
         
-        setIsSubmitting(true);
+        setIsUploading(true);
         try {
             const url = await uploadImage(file);
             productForm.setValue('image_url', url);
@@ -136,7 +154,7 @@ export default function InventoryPage() {
         } catch (err) {
             toast({ variant: "destructive", title: "Upload Failed" });
         } finally {
-            setIsSubmitting(false);
+            setIsUploading(false);
         }
     };
 
@@ -173,6 +191,21 @@ export default function InventoryPage() {
             setTimeout(() => loadData(), 100);
         } catch (error) {
             toast({ variant: "destructive", title: "Operation Failed" });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const onRecipeSubmit = async () => {
+        if (!recipeProduct) return;
+        setIsSubmitting(true);
+        try {
+            await saveProductRecipe(recipeProduct.id, currentRecipe.filter(r => r.supplyId && r.amount > 0));
+            toast({ title: "Recipe Saved", description: `Production mappings for ${recipeProduct.name} updated.` });
+            setIsRecipeDialogOpen(false);
+            loadData();
+        } catch (err) {
+            toast({ variant: "destructive", title: "Failed to save recipe" });
         } finally {
             setIsSubmitting(false);
         }
@@ -229,7 +262,7 @@ export default function InventoryPage() {
                 <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
                     <TabsList className="bg-muted/50 p-1">
                         <TabsTrigger value="products">Master Stock</TabsTrigger>
-                        <TabsTrigger value="supplies">Raw Supplies</TabsTrigger>
+                        <TabsTrigger value="supplies">Raw Supplies Ledger</TabsTrigger>
                     </TabsList>
                     <div className="flex items-center gap-2">
                         <div className="relative w-64">
@@ -275,7 +308,11 @@ export default function InventoryPage() {
                                 </TableHeader>
                                 <TableBody>
                                     {loading ? (
-                                        <TableRow><TableCell colSpan={5} className="text-center py-10">Loading...</TableCell></TableRow>
+                                        Array.from({ length: 5 }).map((_, i) => (
+                                            <TableRow key={i}><TableCell colSpan={5} className="h-12 animate-pulse bg-muted/10" /></TableRow>
+                                        ))
+                                    ) : paginatedProducts.length === 0 ? (
+                                        <TableRow><TableCell colSpan={5} className="text-center py-10 text-muted-foreground italic">No products found.</TableCell></TableRow>
                                     ) : paginatedProducts.map((p) => (
                                         <TableRow key={p.id}>
                                             <TableCell className="font-bold">{p.name}</TableCell>
@@ -287,6 +324,9 @@ export default function InventoryPage() {
                                               </Badge>
                                             </TableCell>
                                             <TableCell className="text-right space-x-2">
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-600 hover:bg-amber-50" title="Manage Recipe" onClick={() => handleOpenRecipeDialog(p)}>
+                                                    <UtensilsCrossed className="h-4 w-4" />
+                                                </Button>
                                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => handleOpenProductDialog(p)}><Edit className="h-4 w-4" /></Button>
                                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setTargetItem({id: p.id, name: p.name, type: 'product'})}><Trash2 className="h-4 w-4" /></Button>
                                             </TableCell>
@@ -321,7 +361,11 @@ export default function InventoryPage() {
                                 </TableHeader>
                                 <TableBody>
                                     {loading ? (
-                                        <TableRow><TableCell colSpan={4} className="text-center py-10">Loading...</TableCell></TableRow>
+                                        Array.from({ length: 5 }).map((_, i) => (
+                                            <TableRow key={i}><TableCell colSpan={4} className="h-12 animate-pulse bg-muted/10" /></TableRow>
+                                        ))
+                                    ) : paginatedSupplies.length === 0 ? (
+                                        <TableRow><TableCell colSpan={4} className="text-center py-10 text-muted-foreground italic">No supplies found.</TableCell></TableRow>
                                     ) : paginatedSupplies.map((s) => (
                                         <TableRow key={s.id}>
                                             <TableCell className="font-bold">{s.name}</TableCell>
@@ -400,10 +444,12 @@ export default function InventoryPage() {
                         <div className="space-y-2">
                             <Label>Image URL / Upload</Label>
                             <div className="flex gap-2">
-                                <Input {...productForm.register('image_url')} disabled={isSubmitting} className="flex-1" />
+                                <Input {...productForm.register('image_url')} disabled={isSubmitting || isUploading} className="flex-1" />
                                 <div className="relative">
-                                    <input type="file" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
-                                    <Button type="button" variant="outline" size="icon"><Upload className="h-4 w-4" /></Button>
+                                    <input type="file" onChange={handleFileUpload} disabled={isUploading} className="absolute inset-0 opacity-0 cursor-pointer disabled:hidden" />
+                                    <Button type="button" variant="outline" size="icon" disabled={isUploading}>
+                                        {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                                    </Button>
                                 </div>
                             </div>
                         </div>
@@ -457,6 +503,64 @@ export default function InventoryPage() {
                             <Button type="submit" disabled={isSubmitting}>Save Supply</Button>
                         </DialogFooter>
                     </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Recipe Dialog */}
+            <Dialog open={isRecipeDialogOpen} onOpenChange={setIsRecipeDialogOpen}>
+                <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>Production Recipe: {recipeProduct?.name}</DialogTitle>
+                        <DialogDescription>Link this product to raw materials consumed during production.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-3">
+                            {currentRecipe.map((rcp, idx) => (
+                                <div key={idx} className="flex items-center gap-3">
+                                    <Select 
+                                        value={rcp.supplyId} 
+                                        onValueChange={(v) => {
+                                            const next = [...currentRecipe];
+                                            next[idx].supplyId = v;
+                                            setCurrentRecipe(next);
+                                        }}
+                                    >
+                                        <SelectTrigger className="flex-1">
+                                            <SelectValue placeholder="Select Supply" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {supplies.map(s => <SelectItem key={s.id} value={s.id}>{s.name} ({s.unit})</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                    <Input 
+                                        type="number" 
+                                        step="0.001" 
+                                        className="w-24" 
+                                        placeholder="Qty" 
+                                        value={rcp.amount} 
+                                        onChange={(e) => {
+                                            const next = [...currentRecipe];
+                                            next[idx].amount = parseFloat(e.target.value) || 0;
+                                            setCurrentRecipe(next);
+                                        }}
+                                    />
+                                    <Button variant="ghost" size="icon" className="text-destructive" onClick={() => {
+                                        setCurrentRecipe(prev => prev.filter((_, i) => i !== idx));
+                                    }}><Trash2 className="h-4 w-4" /></Button>
+                                </div>
+                            ))}
+                        </div>
+                        <Button variant="outline" className="w-full" onClick={() => setCurrentRecipe([...currentRecipe, { supplyId: '', amount: 0 }])}>
+                            <PlusCircle className="mr-2 h-4 w-4" /> Add Ingredient
+                        </Button>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsRecipeDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={onRecipeSubmit} disabled={isSubmitting}>
+                            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            Save Recipe
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
 

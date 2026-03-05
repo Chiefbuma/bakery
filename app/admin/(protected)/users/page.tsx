@@ -37,8 +37,9 @@ export default function UsersPage() {
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [targetUser, setTargetUser] = useState<{id: string, name: string} | null>(null);
     
+    // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
-    const ITEMS_PER_PAGE = 8;
+    const ITEMS_PER_PAGE = 5;
 
     const { toast } = useToast();
     const { register, handleSubmit, reset, setValue } = useForm<{
@@ -97,11 +98,9 @@ export default function UsersPage() {
                 toast({ title: "User Created", description: "Account is ready for use." });
             }
             
-            // CRITICAL: Close dialog first to release focus traps
             setIsDialogOpen(false);
             setEditingUser(null);
             
-            // DELAY data refresh slightly to allow DOM cleanup
             setTimeout(() => {
                 loadUsers();
             }, 100);
@@ -181,9 +180,7 @@ export default function UsersPage() {
                             <TableBody>
                                 {loading ? (
                                     Array.from({ length: 5 }).map((_, i) => (
-                                        <TableRow key={`skeleton-${i}`}>
-                                            <TableCell colSpan={4} className="h-16 animate-pulse bg-muted/10" />
-                                        </TableRow>
+                                        <TableRow key={i}><TableCell colSpan={4} className="h-12 animate-pulse bg-muted/10" /></TableRow>
                                     ))
                                 ) : paginatedUsers.length === 0 ? (
                                     <TableRow>

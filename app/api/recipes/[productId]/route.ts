@@ -14,6 +14,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ product
     await connection.query('DELETE FROM recipes WHERE productId = ?', [productId]);
     
     for (const c of consumptions) {
+      if (!c.supplyId || !c.amount) continue;
       await connection.query(
         'INSERT INTO recipes (productId, supplyId, amount) VALUES (?, ?, ?)',
         [productId, c.supplyId, c.amount]
@@ -24,6 +25,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ product
     return NextResponse.json({ success: true });
   } catch (error) {
     if (connection) await connection.rollback();
+    console.error('Recipe Save Error:', error);
     return NextResponse.json({ error: "Failed to save recipe" }, { status: 500 });
   } finally {
     if (connection) connection.release();

@@ -34,8 +34,9 @@ export default function ExpensesPage() {
     const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
     const [targetExpense, setTargetExpense] = useState<{id: string, description: string} | null>(null);
     
+    // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
-    const ITEMS_PER_PAGE = 8;
+    const ITEMS_PER_PAGE = 5;
 
     const { toast } = useToast();
     const { register, handleSubmit, reset, setValue, watch } = useForm<Omit<Expense, 'id'>>();
@@ -141,7 +142,9 @@ export default function ExpensesPage() {
                             </TableHeader>
                             <TableBody>
                                 {loading ? (
-                                    <TableRow><TableCell colSpan={5} className="h-24 text-center">Loading...</TableCell></TableRow>
+                                    Array.from({ length: 5 }).map((_, i) => (
+                                        <TableRow key={i}><TableCell colSpan={5} className="h-12 animate-pulse bg-muted/10" /></TableRow>
+                                    ))
                                 ) : paginatedExpenses.length === 0 ? (
                                     <TableRow><TableCell colSpan={5} className="h-24 text-center text-muted-foreground">No records found.</TableCell></TableRow>
                                 ) : paginatedExpenses.map((e) => (
