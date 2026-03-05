@@ -39,7 +39,7 @@ export default function POSPage() {
 
     const { toast } = useToast();
 
-    // FIXED: Robust resolver for local /uploads/ paths in production
+    // Resolver for local /uploads/ paths in production
     const resolveImageUrl = (url: string | null | undefined) => {
         if (!url) return 'https://picsum.photos/seed/hotel/400/300';
         if (url.startsWith('http')) return url;
@@ -121,7 +121,7 @@ export default function POSPage() {
         setIsProcessing(true);
         const totalCost = cart.reduce((acc, item) => acc + (item.costPrice * item.quantity), 0);
         
-        // FIXED: SNAPSHOT items for receipt before state clear to prevent TypeError
+        // Snapshot items for receipt
         const itemsSnapshot = JSON.parse(JSON.stringify(cart));
         const finalCustomerName = customerName || "Guest";
 
@@ -304,6 +304,12 @@ export default function POSPage() {
             <Dialog open={isPaymentOpen} onOpenChange={setIsPaymentOpen}>
                 <DialogContent>
                     <DialogHeader><DialogTitle>Checkout</DialogTitle></DialogHeader>
+                    
+                    <div className="bg-primary/10 p-4 rounded-lg mb-4 text-center border border-primary/20">
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Total Amount Due</p>
+                        <p className="text-4xl font-black text-primary">{formatPrice(cartTotal)}</p>
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4 py-4">
                         <Button variant={paymentMethod === 'cash' ? 'default' : 'outline'} className="h-16 font-bold" onClick={() => setPaymentMethod('cash')}>CASH</Button>
                         <Button variant={paymentMethod === 'mpesa' ? 'default' : 'outline'} className="h-16 font-bold" onClick={() => setPaymentMethod('mpesa')}>M-PESA</Button>
@@ -311,13 +317,13 @@ export default function POSPage() {
                     {paymentMethod === 'cash' && (
                         <div className="space-y-4">
                             <Label>Cash Received (Ksh)</Label>
-                            <Input type="number" value={amountReceived} onChange={(e) => setAmountReceived(e.target.value)} autoFocus />
-                            <div className="flex justify-between font-bold text-lg"><span>Change Due</span><span className="text-primary">{formatPrice(Math.max(0, balanceValue))}</span></div>
+                            <Input type="number" value={amountReceived} onChange={(e) => setAmountReceived(e.target.value)} autoFocus className="text-xl h-12 font-bold" />
+                            <div className="flex justify-between font-bold text-lg p-2 bg-muted rounded-md"><span>Change Due</span><span className="text-primary">{formatPrice(Math.max(0, balanceValue))}</span></div>
                         </div>
                     )}
-                    <DialogFooter>
+                    <DialogFooter className="pt-4">
                         <Button variant="outline" onClick={() => setIsPaymentOpen(false)}>Cancel</Button>
-                        <Button onClick={handleCheckout} disabled={isProcessing}>{isProcessing ? "Processing..." : "Complete Sale"}</Button>
+                        <Button onClick={handleCheckout} disabled={isProcessing} className="min-w-[140px] h-12 text-lg font-bold">{isProcessing ? <><Loader2 className="animate-spin mr-2 h-4 w-4" /> Processing</> : "Complete Sale"}</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

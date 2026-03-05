@@ -41,7 +41,6 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-// CRITICAL: Force dynamic rendering to prevent build-time DB connection attempts
 export const dynamic = 'force-dynamic';
 
 export default function InventoryPage() {
@@ -319,7 +318,11 @@ export default function InventoryPage() {
                                             <TableCell className="font-bold">{p.name}</TableCell>
                                             <TableCell className="capitalize text-xs text-muted-foreground">{p.module}</TableCell>
                                             <TableCell>{formatPrice(p.price)}</TableCell>
-                                            <TableCell>{p.stock} {p.unit}</TableCell>
+                                            <TableCell>
+                                              <Badge variant={p.stock <= p.minStockLevel ? "destructive" : "outline"} className="font-mono">
+                                                {p.stock} {p.unit}
+                                              </Badge>
+                                            </TableCell>
                                             <TableCell className="text-right space-x-2">
                                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => handleOpenProductDialog(p)}><Edit className="h-4 w-4" /></Button>
                                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setTargetItem({id: p.id, name: p.name, type: 'product'})}><Trash2 className="h-4 w-4" /></Button>
@@ -449,19 +452,38 @@ export default function InventoryPage() {
                                 <Input type="number" {...productForm.register('costPrice', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <Label>Module</Label>
-                            <Select value={productForm.watch('module')} onValueChange={(v) => productForm.setValue('module', v as any)}>
-                                <SelectTrigger><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="restaurant">Restaurant</SelectItem>
-                                    <SelectItem value="bar">Bar</SelectItem>
-                                    <SelectItem value="carwash">Car Wash</SelectItem>
-                                    <SelectItem value="accommodation">Rooms</SelectItem>
-                                    <SelectItem value="entertainment">Entertainment</SelectItem>
-                                </SelectContent>
-                            </Select>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Initial Stock</Label>
+                                <Input type="number" step="0.01" {...productForm.register('stock', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Unit (e.g. bottles, plates)</Label>
+                                <Input {...productForm.register('unit', { required: true })} placeholder="units" disabled={isSubmitting} />
+                            </div>
                         </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Module</Label>
+                                <Select value={productForm.watch('module')} onValueChange={(v) => productForm.setValue('module', v as any)}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="restaurant">Restaurant</SelectItem>
+                                        <SelectItem value="bar">Bar</SelectItem>
+                                        <SelectItem value="carwash">Car Wash</SelectItem>
+                                        <SelectItem value="accommodation">Rooms</SelectItem>
+                                        <SelectItem value="entertainment">Entertainment</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Min Stock Level (Alert)</Label>
+                                <Input type="number" {...productForm.register('minStockLevel', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
+                            </div>
+                        </div>
+
                         <div className="space-y-2">
                             <Label>Product Image</Label>
                             <div className="flex gap-2">
