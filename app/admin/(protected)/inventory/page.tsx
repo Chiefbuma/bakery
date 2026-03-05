@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/utils";
-import { PlusCircle, Search, Loader2, Trash2, Edit, ChevronLeft, ChevronRight, Settings2, Sparkles, X, Upload } from "lucide-react";
+import { PlusCircle, Search, Trash2, Edit, ChevronLeft, ChevronRight, Settings2, X, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -61,8 +61,6 @@ export default function InventoryPage() {
     
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [editingSupply, setEditingSupply] = useState<Supply | null>(null);
-    const [selectedProductForRecipe, setSelectedProductForRecipe] = useState<Product | null>(null);
-    const [tempConsumptions, setTempConsumptions] = useState<SupplyConsumption[]>([]);
     
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [targetItem, setTargetItem] = useState<{id: string, name: string, type: 'product' | 'supply' } | null>(null);
@@ -113,22 +111,6 @@ export default function InventoryPage() {
         setIsProductDialogOpen(true);
     };
 
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        
-        setIsSubmitting(true);
-        try {
-            const url = await uploadImage(file);
-            productForm.setValue('image_url', url);
-            toast({ title: "Image Uploaded" });
-        } catch (err) {
-            toast({ variant: "destructive", title: "Upload Failed" });
-        } finally {
-            setIsSubmitting(false);
-        }
-    }
-
     const handleOpenSupplyDialog = (supply?: Supply) => {
         if (supply) {
             setEditingSupply(supply);
@@ -148,16 +130,20 @@ export default function InventoryPage() {
         setIsSupplyDialogOpen(true);
     };
 
-    const handleOpenRecipeDialog = (product: Product) => {
-        setSelectedProductForRecipe(product);
-        setTempConsumptions(recipes[product.id] || []);
-        setIsRecipeDialogOpen(true);
-    };
-
-    const updateTempConsumptionAmount = (supplyId: string, amount: number) => {
-        setTempConsumptions(prev => prev.map(c => 
-            c.supplyId === supplyId ? { ...c, amount } : c
-        ));
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        
+        setIsSubmitting(true);
+        try {
+            const url = await uploadImage(file);
+            productForm.setValue('image_url', url);
+            toast({ title: "Image Uploaded" });
+        } catch (err) {
+            toast({ variant: "destructive", title: "Upload Failed" });
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const onProductSubmit = async (data: any) => {
@@ -198,21 +184,6 @@ export default function InventoryPage() {
         }
     };
 
-    const onRecipeSave = async () => {
-        if (!selectedProductForRecipe) return;
-        setIsSubmitting(true);
-        try {
-            await saveProductRecipe(selectedProductForRecipe.id, tempConsumptions);
-            toast({ title: "Recipe Saved" });
-            setIsRecipeDialogOpen(false);
-            setTimeout(() => loadData(), 100);
-        } catch (error) {
-            toast({ variant: "destructive", title: "Failed to save recipe" });
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
     const handleDeleteItem = async () => {
         if (!targetItem) return;
         try {
@@ -243,15 +214,10 @@ export default function InventoryPage() {
         return Math.max(1, Math.ceil(count / ITEMS_PER_PAGE));
     }, [activeTab, filteredProducts.length, filteredSupplies.length]);
 
-    const paginatedProducts = useMemo(() => {
+    const paginatedItems = useMemo(() => {
         const start = (currentPage - 1) * ITEMS_PER_PAGE;
-        return filteredProducts.slice(start, start + ITEMS_PER_PAGE);
-    }, [filteredProducts, currentPage]);
-
-    const paginatedSupplies = useMemo(() => {
-        const start = (currentPage - 1) * ITEMS_PER_PAGE;
-        return filteredSupplies.slice(start, start + ITEMS_PER_PAGE);
-    }, [filteredSupplies, currentPage]);
+        return activeTab === 'supplies' ? filteredSupplies.slice(start, start + ITEMS_PER_PAGE) : filteredProducts.slice(start, start + ITEMS_PER_PAGE);
+    }, [activeTab, filteredProducts, filteredSupplies, currentPage]);
 
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
@@ -265,7 +231,6 @@ export default function InventoryPage() {
                     <TabsList className="bg-muted/50 p-1">
                         <TabsTrigger value="products">Master Stock</TabsTrigger>
                         <TabsTrigger value="supplies">Raw Supplies</TabsTrigger>
-                        <TabsTrigger value="recipes">Production Recipes</TabsTrigger>
                     </TabsList>
                     <div className="flex items-center gap-2">
                         <div className="relative w-64">
@@ -282,7 +247,6 @@ export default function InventoryPage() {
                                 <SelectItem value="bar">Bar</SelectItem>
                                 <SelectItem value="carwash">Car Wash</SelectItem>
                                 <SelectItem value="accommodation">Rooms</SelectItem>
-                                <SelectItem value="entertainment">Entertainment</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -313,7 +277,7 @@ export default function InventoryPage() {
                                 <TableBody>
                                     {loading ? (
                                         <TableRow><TableCell colSpan={5} className="text-center py-10">Loading...</TableCell></TableRow>
-                                    ) : paginatedProducts.map((p) => (
+                                    ) : (paginatedItems as Product[]).map((p) => (
                                         <TableRow key={p.id}>
                                             <TableCell className="font-bold">{p.name}</TableCell>
                                             <TableCell className="capitalize text-xs text-muted-foreground">{p.module}</TableCell>
@@ -357,7 +321,9 @@ export default function InventoryPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {paginatedSupplies.map((s) => (
+                                    {loading ? (
+                                        <TableRow><TableCell colSpan={4} className="text-center py-10">Loading...</TableCell></TableRow>
+                                    ) : (paginatedItems as Supply[]).map((s) => (
                                         <TableRow key={s.id}>
                                             <TableCell className="font-bold">{s.name}</TableCell>
                                             <TableCell>{s.quantity} {s.unit}</TableCell>
@@ -368,53 +334,6 @@ export default function InventoryPage() {
                                             </TableCell>
                                         </TableRow>
                                     ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="recipes">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Production Mapping</CardTitle>
-                            <CardDescription>Link Master Stock products to Raw Supplies.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow className="bg-muted/50">
-                                        <TableHead>Product</TableHead>
-                                        <TableHead>Linked Supplies</TableHead>
-                                        <TableHead className="text-right">Config</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {paginatedProducts.map(p => {
-                                        const recipe = recipes[p.id] || [];
-                                        return (
-                                            <TableRow key={`recipe-${p.id}`}>
-                                                <TableCell className="font-bold">{p.name}</TableCell>
-                                                <TableCell>
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {recipe.length > 0 ? recipe.map(c => {
-                                                            const sup = supplies.find(s => s.id === c.supplyId);
-                                                            return (
-                                                                <Badge key={c.supplyId} variant="outline" className="text-[10px]">
-                                                                    {sup?.name || 'Unknown'}: {c.amount} {sup?.unit}
-                                                                </Badge>
-                                                            );
-                                                        }) : <span className="text-xs text-muted-foreground italic">No linked supplies</span>}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <Button variant="outline" size="sm" onClick={() => handleOpenRecipeDialog(p)}>
-                                                        <Settings2 className="mr-2 h-3 w-3" /> Manage Recipe
-                                                    </Button>
-                                                </TableCell>
-                                            </TableRow>
-                                        );
-                                    })}
                                 </TableBody>
                             </Table>
                         </CardContent>
@@ -432,11 +351,10 @@ export default function InventoryPage() {
                 </Button>
             </div>
 
+            {/* Product Dialog */}
             <Dialog open={isProductDialogOpen} onOpenChange={(open) => { if(!isSubmitting) setIsProductDialogOpen(open); }}>
                 <DialogContent className="sm:max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
-                    </DialogHeader>
+                    <DialogHeader><DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle></DialogHeader>
                     <form onSubmit={productForm.handleSubmit(onProductSubmit)} className="space-y-4">
                         <div className="space-y-2">
                             <Label>Product Name</Label>
@@ -452,18 +370,16 @@ export default function InventoryPage() {
                                 <Input type="number" {...productForm.register('costPrice', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
                             </div>
                         </div>
-                        
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label>Initial Stock</Label>
+                                <Label>Current Stock</Label>
                                 <Input type="number" step="0.01" {...productForm.register('stock', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
                             </div>
                             <div className="space-y-2">
-                                <Label>Unit (e.g. bottles, plates)</Label>
-                                <Input {...productForm.register('unit', { required: true })} placeholder="units" disabled={isSubmitting} />
+                                <Label>Measurement Unit</Label>
+                                <Input {...productForm.register('unit', { required: true })} placeholder="e.g. bottles, plates, KG" disabled={isSubmitting} />
                             </div>
                         </div>
-
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label>Module</Label>
@@ -474,7 +390,6 @@ export default function InventoryPage() {
                                         <SelectItem value="bar">Bar</SelectItem>
                                         <SelectItem value="carwash">Car Wash</SelectItem>
                                         <SelectItem value="accommodation">Rooms</SelectItem>
-                                        <SelectItem value="entertainment">Entertainment</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -483,11 +398,10 @@ export default function InventoryPage() {
                                 <Input type="number" {...productForm.register('minStockLevel', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
                             </div>
                         </div>
-
                         <div className="space-y-2">
-                            <Label>Product Image</Label>
+                            <Label>Image URL / Upload</Label>
                             <div className="flex gap-2">
-                                <Input {...productForm.register('image_url')} placeholder="URL or Upload ->" disabled={isSubmitting} className="flex-1" />
+                                <Input {...productForm.register('image_url')} disabled={isSubmitting} className="flex-1" />
                                 <div className="relative">
                                     <input type="file" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
                                     <Button type="button" variant="outline" size="icon"><Upload className="h-4 w-4" /></Button>
@@ -495,57 +409,64 @@ export default function InventoryPage() {
                             </div>
                         </div>
                         <DialogFooter>
-                            <Button variant="outline" type="button" onClick={() => setIsProductDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
+                            <Button variant="outline" type="button" onClick={() => setIsProductDialogOpen(false)}>Cancel</Button>
                             <Button type="submit" disabled={isSubmitting}>Save Product</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
             </Dialog>
 
-            <Dialog open={isRecipeDialogOpen} onOpenChange={setIsRecipeDialogOpen}>
-                <DialogContent className="max-w-xl">
-                    <DialogHeader>
-                        <DialogTitle>Recipe for {selectedProductForRecipe?.name}</DialogTitle>
-                        <DialogDescription>Define quantities consumed per sale.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        {tempConsumptions.map((c, i) => {
-                            const s = supplies.find(sup => sup.id === c.supplyId);
-                            return (
-                                <div key={c.supplyId} className="flex items-center justify-between bg-muted/30 p-2 rounded-md">
-                                    <span className="font-bold text-sm">{s?.name}</span>
-                                    <div className="flex items-center gap-2">
-                                        <Input type="number" step="0.0001" value={c.amount} onChange={(e) => updateTempConsumptionAmount(c.supplyId, parseFloat(e.target.value) || 0)} className="w-24 h-8" />
-                                        <span className="text-xs w-12">{s?.unit}</span>
-                                        <Button variant="ghost" size="icon" onClick={() => setTempConsumptions(prev => prev.filter((_, idx) => idx !== i))}><X className="h-4 w-4" /></Button>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                        <div className="pt-2">
-                            <Select onValueChange={(val) => {
-                                if (tempConsumptions.some(c => c.supplyId === val)) return;
-                                setTempConsumptions(prev => [...prev, { supplyId: val, amount: 1 }]);
-                            }}>
-                                <SelectTrigger><SelectValue placeholder="Add an ingredient..." /></SelectTrigger>
-                                <SelectContent>
-                                    {supplies.map(s => <SelectItem key={s.id} value={s.id}>{s.name} ({s.unit})</SelectItem>)}
-                                </SelectContent>
-                            </Select>
+            {/* Supply Dialog */}
+            <Dialog open={isSupplyDialogOpen} onOpenChange={(open) => { if(!isSubmitting) setIsSupplyDialogOpen(open); }}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader><DialogTitle>{editingSupply ? 'Edit Supply' : 'Add New Supply'}</DialogTitle></DialogHeader>
+                    <form onSubmit={supplyForm.handleSubmit(onSupplySubmit)} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label>Supply Name</Label>
+                            <Input {...supplyForm.register('name', { required: true })} disabled={isSubmitting} />
                         </div>
-                    </div>
-                    <DialogFooter>
-                        <Button onClick={onRecipeSave} disabled={isSubmitting}>Update Recipe</Button>
-                    </DialogFooter>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Quantity</Label>
+                                <Input type="number" step="0.001" {...supplyForm.register('quantity', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Unit</Label>
+                                <Input {...supplyForm.register('unit', { required: true })} placeholder="e.g. kg, liters" disabled={isSubmitting} />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Unit Cost (Ksh)</Label>
+                                <Input type="number" {...supplyForm.register('unitCost', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Module</Label>
+                                <Select value={supplyForm.watch('module') || 'restaurant'} onValueChange={(v) => supplyForm.setValue('module', v)}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="restaurant">Restaurant</SelectItem>
+                                        <SelectItem value="bar">Bar</SelectItem>
+                                        <SelectItem value="carwash">Car Wash</SelectItem>
+                                        <SelectItem value="accommodation">Rooms</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" type="button" onClick={() => setIsSupplyDialogOpen(false)}>Cancel</Button>
+                            <Button type="submit" disabled={isSubmitting}>Save Supply</Button>
+                        </DialogFooter>
+                    </form>
                 </DialogContent>
             </Dialog>
 
             <AlertDialog open={!!targetItem} onOpenChange={() => setTargetItem(null)}>
                 <AlertDialogContent>
-                    <AlertDialogHeader><AlertDialogTitle>Delete {targetItem?.name}?</AlertDialogTitle></AlertDialogHeader>
+                    <AlertDialogHeader><AlertDialogTitle>Confirm Delete</AlertDialogTitle></AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteItem} className="bg-destructive text-white">Confirm Delete</AlertDialogAction>
+                        <AlertDialogAction onClick={handleDeleteItem} className="bg-destructive text-white">Delete</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

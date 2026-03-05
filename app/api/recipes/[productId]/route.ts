@@ -23,9 +23,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ product
     await connection.commit();
     return NextResponse.json({ success: true });
   } catch (error) {
-    await connection.rollback();
+    if (connection) await connection.rollback();
     return NextResponse.json({ error: "Failed to save recipe" }, { status: 500 });
   } finally {
-    connection.release();
+    if (connection) connection.release();
   }
 }
