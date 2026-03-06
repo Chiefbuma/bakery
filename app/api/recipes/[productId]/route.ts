@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
@@ -10,8 +11,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ product
     const consumptions = await req.json(); 
     
     await connection.beginTransaction();
+    
+    // Clear existing recipe mapping for this product
     await connection.query('DELETE FROM recipes WHERE productId = ?', [productId]);
     
+    // Insert new mappings
     for (const c of consumptions) {
       if (!c.supplyId || !c.amount) continue;
       await connection.query(

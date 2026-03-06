@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -265,14 +266,14 @@ export default function POSPage() {
                     
                     <div className="space-y-2">
                         <div className="grid grid-cols-12 gap-2 text-[10px] uppercase font-black text-muted-foreground px-2">
-                            <div className="col-span-5">Item</div>
+                            <div className="col-span-4">Item</div>
                             <div className="col-span-3 text-center">Qty</div>
-                            <div className="col-span-4 text-right">Amount</div>
+                            <div className="col-span-5 text-right">Amount</div>
                         </div>
                         <Separator />
                         {cart.map(item => (
                             <div key={item.productId} className="grid grid-cols-12 gap-2 items-center bg-muted/30 p-2 rounded-lg border border-transparent hover:border-primary/20 transition-colors">
-                                <div className="col-span-5 min-w-0">
+                                <div className="col-span-4 min-w-0">
                                     <p className="text-xs font-bold truncate">{item.name}</p>
                                     <p className="text-[10px] text-muted-foreground">{formatPrice(item.price)}</p>
                                 </div>
@@ -281,7 +282,7 @@ export default function POSPage() {
                                     <span className="text-xs font-bold w-4 text-center">{item.quantity}</span>
                                     <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full" onClick={() => updateQuantity(item.productId, 1)}><Plus className="h-2 w-2" /></Button>
                                 </div>
-                                <div className="col-span-4 text-right">
+                                <div className="col-span-5 text-right">
                                     <p className="text-xs font-black text-primary">{formatPrice(Number(item.total))}</p>
                                 </div>
                             </div>
