@@ -97,14 +97,17 @@ export default function POSPage() {
     };
 
     const updateQuantity = (id: string, delta: number) => {
-        setCart(prev => prev.map(item => {
-            if (item.productId === id) {
-                const newQty = Math.max(1, item.quantity + delta);
-                const price = Number(item.price || 0);
-                return { ...item, quantity: newQty, total: Number((newQty * price).toFixed(2)) };
-            }
-            return item;
-        }));
+        setCart(prev => {
+            const next = prev.map(item => {
+                if (item.productId === id) {
+                    const newQty = Math.max(1, item.quantity + delta);
+                    const price = Number(item.price || 0);
+                    return { ...item, quantity: newQty, total: Number((newQty * price).toFixed(2)) };
+                }
+                return item;
+            });
+            return next;
+        });
     };
 
     const cartTotal = useMemo(() => {
@@ -116,7 +119,7 @@ export default function POSPage() {
         return received - cartTotal;
     }, [amountReceived, cartTotal]);
 
-    const finalizeOrder = async (method: 'cash' | 'mpesa' | 'none', status: 'paid' | 'pending', received?: number, bal?: number) => {
+    const finalizeOrder = async (method: 'cash' | 'mpesa' | 'card' | 'none', status: 'paid' | 'pending', received?: number, bal?: number) => {
         if (cart.length === 0) return;
         setIsProcessing(true);
         

@@ -267,7 +267,7 @@ export default function UsersPage() {
                 </DialogContent>
             </Dialog>
 
-            <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+            <AlertDialog open={deleteConfirmOpen} onOpenChange={deleteConfirmOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Permanently delete user?</AlertDialogTitle>

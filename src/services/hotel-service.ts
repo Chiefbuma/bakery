@@ -5,10 +5,6 @@ import type { Product, Transaction, HotelModule, DashboardData, SaleItem, Supply
 
 const API_BASE = '/api';
 
-/**
- * Defensive collection fetcher.
- * Ensures an array is ALWAYS returned and numeric fields are cast.
- */
 function ensureArray<T>(data: any): T[] {
   return Array.isArray(data) ? data : [];
 }
@@ -18,7 +14,8 @@ const castProduct = (p: any): Product => ({
   price: Number(p.price || 0),
   costPrice: Number(p.costPrice || 0),
   stock: Number(p.stock || 0),
-  minStockLevel: Number(p.minStockLevel || 0)
+  minStockLevel: Number(p.minStockLevel || 0),
+  hasRecipe: p.hasRecipe === 1 || p.hasRecipe === true
 });
 
 const castSupply = (s: any): Supply => ({
