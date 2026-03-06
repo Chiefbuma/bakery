@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -11,7 +10,6 @@ import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
 import { formatPrice, cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 
-// CRITICAL: Force dynamic rendering to prevent build-time DB connection attempts
 export const dynamic = 'force-dynamic';
 
 export default function DashboardPage() {
@@ -52,11 +50,10 @@ export default function DashboardPage() {
     return (
         <div className="space-y-10">
             <div className="flex flex-col gap-2">
-                <h1 className="text-3xl font-bold tracking-tight">Executive P&L Overview</h1>
+                <h1 className="text-3xl font-bold tracking-tight font-headline text-primary">Executive P&L Overview</h1>
                 <p className="text-muted-foreground">Financial comparison between {currentPeriodLabel} and {previousPeriodLabel}.</p>
             </div>
 
-            {/* Core Financial Performance */}
             <Card className="shadow-lg border-primary/10 overflow-hidden">
                 <CardHeader className="bg-primary/5">
                     <CardTitle>Consolidated Financial Statement</CardTitle>
@@ -67,8 +64,8 @@ export default function DashboardPage() {
                         <TableHeader>
                             <TableRow className="hover:bg-transparent">
                                 <TableHead className="w-[300px] font-bold">Metric</TableHead>
-                                <TableHead className="text-right font-bold text-primary">{previousPeriodLabel} (Prev)</TableHead>
-                                <TableHead className="text-right font-bold text-primary">{currentPeriodLabel} (Current)</TableHead>
+                                <TableHead className="text-right font-bold text-primary">{previousPeriodLabel}</TableHead>
+                                <TableHead className="text-right font-bold text-primary">{currentPeriodLabel}</TableHead>
                                 <TableHead className="text-right font-bold w-[120px]">MTD Growth</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -91,7 +88,7 @@ export default function DashboardPage() {
                                 <TableCell className="text-right text-destructive font-bold">{formatPrice(summary.operatingCost.current)}</TableCell>
                                 <TableCell className="text-right">{renderChange(summary.operatingCost.changePercent)}</TableCell>
                             </TableRow>
-                            <TableRow className="bg-primary/5 hover:bg-primary/10">
+                            <TableRow className="bg-primary/5 hover:bg-primary/10 border-t-2">
                                 <TableCell className="font-black text-lg">Net Operational Profits</TableCell>
                                 <TableCell className="text-right text-lg">{formatPrice(summary.netProfit.previous)}</TableCell>
                                 <TableCell className="text-right text-2xl font-black text-primary">{formatPrice(summary.netProfit.current)}</TableCell>
@@ -102,20 +99,19 @@ export default function DashboardPage() {
                 </CardContent>
             </Card>
 
-            {/* Module Performance Analysis */}
             <Card className="shadow-lg border-primary/10 overflow-hidden">
                 <CardHeader className="bg-primary/5">
                     <CardTitle>Module Contribution Analysis</CardTitle>
-                    <CardDescription>Revenue and growth breakdown by department.</CardDescription>
+                    <CardDescription>Comparative performance and cost breakdown by department.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                     <Table>
                         <TableHeader>
                             <TableRow className="hover:bg-transparent">
-                                <TableHead className="w-[200px] font-bold">Department / Module</TableHead>
-                                <TableHead className="text-right font-bold text-muted-foreground">{previousPeriodLabel}</TableHead>
-                                <TableHead className="text-right font-bold">{currentPeriodLabel}</TableHead>
-                                <TableHead className="text-right font-bold">Cost of Sale</TableHead>
+                                <TableHead className="w-[180px] font-bold">Department</TableHead>
+                                <TableHead className="text-right font-bold text-muted-foreground">{previousPeriodLabel} COGS</TableHead>
+                                <TableHead className="text-right font-bold text-muted-foreground">{currentPeriodLabel} COGS</TableHead>
+                                <TableHead className="text-right font-bold">{currentPeriodLabel} Sales</TableHead>
                                 <TableHead className="text-right font-bold w-[120px]">MTD Growth</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -126,9 +122,9 @@ export default function DashboardPage() {
                                         <div className="w-2 h-2 rounded-full bg-primary/40 group-hover:bg-primary transition-colors" />
                                         {m.module === 'accommodation' ? 'Rooms' : m.module}
                                     </TableCell>
-                                    <TableCell className="text-right text-muted-foreground">{formatPrice(m.previousSales)}</TableCell>
-                                    <TableCell className="text-right font-bold">{formatPrice(m.currentSales)}</TableCell>
+                                    <TableCell className="text-right text-muted-foreground italic">{formatPrice(m.previousCogs)}</TableCell>
                                     <TableCell className="text-right text-orange-600 font-medium">{formatPrice(m.currentCogs)}</TableCell>
+                                    <TableCell className="text-right font-bold">{formatPrice(m.currentSales)}</TableCell>
                                     <TableCell className="text-right">
                                         <Badge variant={m.changePercent >= 0 ? "secondary" : "destructive"} className="px-2 py-0">
                                             {m.changePercent > 0 ? "+" : ""}{Math.round(m.changePercent)}%

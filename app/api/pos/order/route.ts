@@ -1,4 +1,3 @@
-
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
@@ -25,18 +24,18 @@ export async function POST(req: Request) {
     const transactionId = `TX-${Date.now()}`;
     let calculatedTotalCost = 0;
 
-    // 1. Process each item for stock and true cost calculation
+    // 1. Process each item for stock and true cost snapshot
     for (const item of items) {
       if (!item.productId) continue;
 
-      // Fetch product to check if it has a recipe
+      // Fetch product details
       const [products]: any = await connection.query('SELECT hasRecipe, costPrice FROM products WHERE id = ?', [item.productId]);
       const product = products[0];
       
-      let itemCost = 0;
+      let itemUnitCost = 0;
 
       if (product.hasRecipe) {
-        // A. Calculate ingredient cost dynamically
+        // A. Calculate ingredient cost based on current supply unit costs
         const [ingredients]: any = await connection.query(`
           SELECT r.amount, s.unitCost 
           FROM recipes r 
@@ -44,19 +43,21 @@ export async function POST(req: Request) {
           WHERE r.productId = ?
         `, [item.productId]);
         
-        itemCost = ingredients.reduce((acc: number, ing: any) => acc + (Number(ing.amount) * Number(ing.unitCost)), 0);
+        itemUnitCost = ingredients.reduce((acc: number, ing: any) => {
+            return acc + (Number(ing.amount) * Number(ing.unitCost));
+        }, 0);
       } else {
         // B. Use fixed retail cost
-        itemCost = Number(product.costPrice || 0);
+        itemUnitCost = Number(product.costPrice || 0);
       }
 
-      const totalItemCost = itemCost * Number(item.quantity);
-      calculatedTotalCost += totalItemCost;
+      const totalItemCostSnapshot = Number((itemUnitCost * Number(item.quantity)).toFixed(2));
+      calculatedTotalCost += totalItemCostSnapshot;
 
-      // Record transaction item
+      // Record transaction item with snapshot cost
       await connection.query(
         'INSERT INTO transaction_items (transactionId, productId, name, quantity, price, costPrice, total) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [transactionId, item.productId, item.name, item.quantity, item.price, itemCost, item.total]
+        [transactionId, item.productId, item.name, item.quantity, item.price, itemUnitCost, item.total]
       );
 
       // Only deduct stock if payment is completed
@@ -80,7 +81,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // 2. Record the main transaction with the true calculated cost
+    // 2. Record the main transaction with the final calculated total cost
     await connection.query(
       'INSERT INTO transactions (id, orderNumber, module, totalAmount, totalCost, paymentMethod, status, customerName, amountReceived, balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [transactionId, orderNumber, module, totalAmount, calculatedTotalCost, paymentMethod, status, customerName, amountReceived, balance]

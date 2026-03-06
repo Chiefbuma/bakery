@@ -19,7 +19,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/badge";
 import { formatPrice } from "@/lib/utils";
 import { PlusCircle, Search, Trash2, Edit, ChevronLeft, ChevronRight, Upload, Loader2, UtensilsCrossed } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -272,6 +272,13 @@ export default function InventoryPage() {
         return productsWithRecipes.slice(start, start + ITEMS_PER_PAGE);
     }, [productsWithRecipes, currentPage]);
 
+    const recipeTotalCost = useMemo(() => {
+        return currentRecipe.reduce((acc, rcp) => {
+            const supply = supplies.find(s => s.id === rcp.supplyId);
+            return acc + (Number(rcp.amount || 0) * Number(supply?.unitCost || 0));
+        }, 0);
+    }, [currentRecipe, supplies]);
+
     const hasRecipeValue = productForm.watch('hasRecipe');
 
     return (
@@ -420,8 +427,8 @@ export default function InventoryPage() {
                 <TabsContent value="recipes">
                     <Card>
                         <CardHeader className="border-b pb-6">
-                            <CardTitle>Product Ingredients Mapping</CardTitle>
-                            <CardDescription>View links between sellable products and their raw ingredients.</CardDescription>
+                            <CardTitle>Production Ingredients Mapping</CardTitle>
+                            <CardDescription>View links between sellable products and their raw ingredients with cost contribution.</CardDescription>
                         </CardHeader>
                         <CardContent className="pt-6">
                             <Table>
@@ -429,38 +436,51 @@ export default function InventoryPage() {
                                     <TableRow className="bg-muted/50">
                                         <TableHead>Sellable Product</TableHead>
                                         <TableHead>Required Ingredients</TableHead>
+                                        <TableHead className="text-right">Total Production Cost</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {loading ? (
                                         Array.from({ length: 5 }).map((_, i) => (
-                                            <TableRow key={i}><TableCell colSpan={3} className="h-12 animate-pulse bg-muted/10" /></TableRow>
+                                            <TableRow key={i}><TableCell colSpan={4} className="h-12 animate-pulse bg-muted/10" /></TableRow>
                                         ))
                                     ) : paginatedRecipes.length === 0 ? (
-                                        <TableRow><TableCell colSpan={3} className="text-center py-10 text-muted-foreground italic">No recipes defined yet.</TableCell></TableRow>
-                                    ) : paginatedRecipes.map((p) => (
-                                        <TableRow key={p.id}>
-                                            <TableCell className="font-bold">{p.name}</TableCell>
-                                            <TableCell>
-                                                <div className="flex flex-wrap gap-1">
-                                                    {recipes[p.id]?.map((rcp, idx) => {
-                                                        const supply = supplies.find(s => s.id === rcp.supplyId);
-                                                        return (
-                                                            <Badge key={idx} variant="secondary" className="text-[10px]">
-                                                                {supply?.name || 'Unknown'}: {rcp.amount} {supply?.unit}
-                                                            </Badge>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <Button variant="ghost" size="sm" className="h-8 px-2 text-primary" onClick={() => handleOpenRecipeDialog(p)}>
-                                                    <Edit className="h-3 w-3 mr-1" /> Edit Recipe
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
+                                        <TableRow><TableCell colSpan={4} className="text-center py-10 text-muted-foreground italic">No recipes defined yet.</TableCell></TableRow>
+                                    ) : paginatedRecipes.map((p) => {
+                                        const prodRecipe = recipes[p.id] || [];
+                                        const totalCost = prodRecipe.reduce((acc, rcp) => {
+                                            const s = supplies.find(sup => sup.id === rcp.supplyId);
+                                            return acc + (Number(rcp.amount) * Number(s?.unitCost || 0));
+                                        }, 0);
+                                        
+                                        return (
+                                            <TableRow key={p.id}>
+                                                <TableCell className="font-bold">{p.name}</TableCell>
+                                                <TableCell>
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {prodRecipe.map((rcp, idx) => {
+                                                            const supply = supplies.find(s => s.id === rcp.supplyId);
+                                                            const lineCost = Number(rcp.amount) * Number(supply?.unitCost || 0);
+                                                            return (
+                                                                <Badge key={idx} variant="secondary" className="text-[10px]">
+                                                                    {supply?.name || 'Unknown'}: {rcp.amount} {supply?.unit} ({formatPrice(lineCost)})
+                                                                </Badge>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="text-right font-black text-primary">
+                                                    {formatPrice(totalCost)}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <Button variant="ghost" size="sm" className="h-8 px-2 text-primary" onClick={() => handleOpenRecipeDialog(p)}>
+                                                        <Edit className="h-3 w-3 mr-1" /> Edit Recipe
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
                                 </TableBody>
                             </Table>
                         </CardContent>
@@ -628,48 +648,67 @@ export default function InventoryPage() {
                 <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
                         <DialogTitle>Production Recipe: {recipeProduct?.name}</DialogTitle>
-                        <DialogDescription>Link this product to raw materials consumed during production.</DialogDescription>
+                        <DialogDescription>Link this product to raw materials. Costs are calculated instantly.</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                         <div className="space-y-3">
-                            {currentRecipe.map((rcp, idx) => (
-                                <div key={idx} className="flex items-center gap-3">
-                                    <Select 
-                                        value={rcp.supplyId} 
-                                        onValueChange={(v) => {
-                                            const next = [...currentRecipe];
-                                            next[idx].supplyId = v;
-                                            setCurrentRecipe(next);
-                                        }}
-                                    >
-                                        <SelectTrigger className="flex-1">
-                                            <SelectValue placeholder="Select Supply" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {supplies.map(s => <SelectItem key={s.id} value={s.id}>{s.name} ({s.unit})</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                    <Input 
-                                        type="number" 
-                                        step="0.001" 
-                                        className="w-24" 
-                                        placeholder="Qty" 
-                                        value={rcp.amount} 
-                                        onChange={(e) => {
-                                            const next = [...currentRecipe];
-                                            next[idx].amount = parseFloat(e.target.value) || 0;
-                                            setCurrentRecipe(next);
-                                        }}
-                                    />
-                                    <Button variant="ghost" size="icon" className="text-destructive" onClick={() => {
-                                        setCurrentRecipe(prev => prev.filter((_, i) => i !== idx));
-                                    }}><Trash2 className="h-4 w-4" /></Button>
-                                </div>
-                            ))}
+                            {currentRecipe.map((rcp, idx) => {
+                                const supply = supplies.find(s => s.id === rcp.supplyId);
+                                const lineCost = Number(rcp.amount || 0) * Number(supply?.unitCost || 0);
+                                
+                                return (
+                                    <div key={idx} className="flex flex-col gap-1 p-2 bg-muted/20 rounded border border-dashed">
+                                        <div className="flex items-center gap-3">
+                                            <Select 
+                                                value={rcp.supplyId} 
+                                                onValueChange={(v) => {
+                                                    const next = [...currentRecipe];
+                                                    next[idx].supplyId = v;
+                                                    setCurrentRecipe(next);
+                                                }}
+                                            >
+                                                <SelectTrigger className="flex-1">
+                                                    <SelectValue placeholder="Select Supply" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {supplies.map(s => <SelectItem key={s.id} value={s.id}>{s.name} ({s.unit})</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                            <div className="flex items-center gap-2">
+                                                <Input 
+                                                    type="number" 
+                                                    step="0.001" 
+                                                    className="w-24 h-9" 
+                                                    placeholder="Qty" 
+                                                    value={rcp.amount} 
+                                                    onChange={(e) => {
+                                                        const next = [...currentRecipe];
+                                                        next[idx].amount = parseFloat(e.target.value) || 0;
+                                                        setCurrentRecipe(next);
+                                                    }}
+                                                />
+                                                <span className="text-xs text-muted-foreground w-8">{supply?.unit}</span>
+                                            </div>
+                                            <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive" onClick={() => {
+                                                setCurrentRecipe(prev => prev.filter((_, i) => i !== idx));
+                                            }}><Trash2 className="h-4 w-4" /></Button>
+                                        </div>
+                                        <div className="flex justify-end pr-12">
+                                            <span className="text-[10px] font-bold text-primary">Line Cost: {formatPrice(lineCost)}</span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
-                        <Button variant="outline" className="w-full" onClick={() => setCurrentRecipe([...currentRecipe, { supplyId: '', amount: 0 }])}>
+                        
+                        <Button variant="outline" className="w-full border-dashed" onClick={() => setCurrentRecipe([...currentRecipe, { supplyId: '', amount: 0 }])}>
                             <PlusCircle className="mr-2 h-4 w-4" /> Add Ingredient
                         </Button>
+
+                        <div className="p-4 bg-primary/5 rounded-lg border-2 border-primary/20 flex justify-between items-center">
+                            <span className="font-black uppercase tracking-tighter text-xs">Total Production Cost</span>
+                            <span className="text-xl font-black text-primary">{formatPrice(recipeTotalCost)}</span>
+                        </div>
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsRecipeDialogOpen(false)}>Cancel</Button>

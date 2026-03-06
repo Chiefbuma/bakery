@@ -1,4 +1,3 @@
-
 export type HotelModule = 'restaurant' | 'bar' | 'carwash' | 'accommodation' | 'entertainment' | 'general';
 
 export type UserRole = 'admin' | 'staff';
@@ -87,6 +86,7 @@ export interface ModuleComparison {
   currentSales: number;
   currentCogs: number;
   previousSales: number;
+  previousCogs: number;
   changePercent: number;
 }
 

@@ -1,14 +1,9 @@
-
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import type { DashboardData, HotelModule } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
-/**
- * High-performance dashboard analytics for Next.js 15.
- * Uses SQL indexing for sub-second execution.
- */
 export async function GET() {
   try {
     const now = new Date();
@@ -45,21 +40,23 @@ export async function GET() {
     const statsRow = (stats && stats[0]) || {};
     const expRow = (expenses && expenses[0]) || {};
 
-    // 3. Module Comparison
+    // 3. Module Comparison with Multi-Period COGS
     const modules: HotelModule[] = ['restaurant', 'bar', 'carwash', 'accommodation', 'entertainment'];
     const moduleStats = await Promise.all(modules.map(async (m) => {
       const [mStats]: any = await pool.query(`
         SELECT 
           SUM(CASE WHEN MONTH(timestamp) = ? AND YEAR(timestamp) = ? THEN totalAmount ELSE 0 END) as curr,
           SUM(CASE WHEN MONTH(timestamp) = ? AND YEAR(timestamp) = ? THEN totalCost ELSE 0 END) as currCogs,
-          SUM(CASE WHEN MONTH(timestamp) = ? AND YEAR(timestamp) = ? THEN totalAmount ELSE 0 END) as prev
+          SUM(CASE WHEN MONTH(timestamp) = ? AND YEAR(timestamp) = ? THEN totalAmount ELSE 0 END) as prev,
+          SUM(CASE WHEN MONTH(timestamp) = ? AND YEAR(timestamp) = ? THEN totalCost ELSE 0 END) as prevCogs
         FROM transactions 
         WHERE module = ? AND status = 'paid'
-      `, [currentMonth, currentYear, currentMonth, currentYear, prevMonth, prevYear, m]);
+      `, [currentMonth, currentYear, currentMonth, currentYear, prevMonth, prevYear, prevMonth, prevYear, m]);
       
       const c = Number(mStats && mStats[0]?.curr || 0);
       const cCogs = Number(mStats && mStats[0]?.currCogs || 0);
       const p = Number(mStats && mStats[0]?.prev || 0);
+      const pCogs = Number(mStats && mStats[0]?.prevCogs || 0);
       const diff = p === 0 ? (c > 0 ? 100 : 0) : ((c - p) / p) * 100;
 
       return {
@@ -67,6 +64,7 @@ export async function GET() {
         currentSales: c,
         currentCogs: cCogs,
         previousSales: p,
+        previousCogs: pCogs,
         changePercent: diff
       };
     }));
