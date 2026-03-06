@@ -17,6 +17,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     
     return NextResponse.json({ message: 'Supply updated' });
   } catch (error) {
+    console.error('Update Supply Error:', error);
     return NextResponse.json({ error: "Database update failed" }, { status: 500 });
   }
 }
@@ -27,6 +28,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     await pool.query('DELETE FROM supplies WHERE id = ?', [id]);
     return NextResponse.json({ message: 'Supply deleted' });
   } catch (error) {
+    console.error('Delete Supply Error:', error);
     return NextResponse.json({ error: "Database removal failed" }, { status: 500 });
   }
 }

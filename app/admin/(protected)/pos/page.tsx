@@ -280,7 +280,7 @@ export default function POSPage() {
                         <div className="grid grid-cols-12 gap-2 text-[10px] uppercase font-black text-muted-foreground px-2">
                             <div className="col-span-4">Item</div>
                             <div className="col-span-3 text-center">Qty</div>
-                            <div className="col-span-5 text-right">Amount</div>
+                            <div className="col-span-5 text-right">Subtotal</div>
                         </div>
                         <Separator />
                         {cart.map(item => (

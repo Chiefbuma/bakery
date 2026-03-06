@@ -247,8 +247,8 @@ export default function InventoryPage() {
     [supplies, searchQuery]);
 
     const productsWithRecipes = useMemo(() => 
-        products.filter(p => recipes[p.id] && recipes[p.id].length > 0 && p.name.toLowerCase().includes(searchQuery.toLowerCase())),
-    [products, recipes, searchQuery]);
+        products.filter(p => p.hasRecipe && p.name.toLowerCase().includes(searchQuery.toLowerCase())),
+    [products, searchQuery]);
 
     const totalPages = useMemo(() => {
         let count = 0;
@@ -421,7 +421,7 @@ export default function InventoryPage() {
                 <TabsContent value="recipes">
                     <Card>
                         <CardHeader className="border-b pb-6">
-                            <CardTitle>Production Mappings</CardTitle>
+                            <CardTitle>Product Ingredients Mapping</CardTitle>
                             <CardDescription>View links between sellable products and their raw ingredients.</CardDescription>
                         </CardHeader>
                         <CardContent className="pt-6">

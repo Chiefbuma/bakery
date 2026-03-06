@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useForm } from "react-hook-form";
 
+export const dynamic = 'force-dynamic';
+
 export default function UsersPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
@@ -127,7 +129,7 @@ export default function UsersPage() {
         ),
     [users, searchQuery]);
 
-    const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+    const totalPages = Math.max(1, Math.ceil(filteredUsers.length / ITEMS_PER_PAGE));
     const paginatedUsers = useMemo(() => {
         const start = (currentPage - 1) * ITEMS_PER_PAGE;
         return filteredUsers.slice(start, start + ITEMS_PER_PAGE);

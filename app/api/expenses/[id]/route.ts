@@ -17,6 +17,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     
     return NextResponse.json({ message: 'Expense record updated' });
   } catch (error) {
+    console.error('Update Expense Error:', error);
     return NextResponse.json({ error: "Database error" }, { status: 500 });
   }
 }
@@ -27,6 +28,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     await pool.query('DELETE FROM expenses WHERE id = ?', [id]);
     return NextResponse.json({ message: 'Record cleared' });
   } catch (error) {
+    console.error('Delete Expense Error:', error);
     return NextResponse.json({ error: "Database error" }, { status: 500 });
   }
 }

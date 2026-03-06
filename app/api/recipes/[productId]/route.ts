@@ -13,11 +13,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ product
     await connection.beginTransaction();
     await connection.query('DELETE FROM recipes WHERE productId = ?', [productId]);
     
-    for (const c of consumptions) {
-      if (!c.supplyId || !c.amount) continue;
+    for (const rcp of consumptions) {
+      if (!rcp.supplyId || !rcp.amount) continue;
       await connection.query(
         'INSERT INTO recipes (productId, supplyId, amount) VALUES (?, ?, ?)',
-        [productId, c.supplyId, c.amount]
+        [productId, rcp.supplyId, rcp.amount]
       );
     }
     
@@ -25,6 +25,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ product
     return NextResponse.json({ success: true });
   } catch (error) {
     if (connection) await connection.rollback();
+    console.error('Save Recipe Error:', error);
     return NextResponse.json({ error: "Failed to save recipe" }, { status: 500 });
   } finally {
     if (connection) connection.release();
