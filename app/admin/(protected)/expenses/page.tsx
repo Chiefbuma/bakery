@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { getExpenses, addExpense, deleteExpenses, updateExpense } from "@/services/hotel-service";
-import type { Expense } from "@/lib/types";
+import type { Expense, HotelModule } from "@/lib/types";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -200,6 +200,20 @@ export default function ExpensesPage() {
                                     </SelectContent>
                                 </Select>
                             </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Module Classification</Label>
+                            <Select value={watch('module') || 'general'} onValueChange={(v) => setValue('module', v as HotelModule)}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="restaurant">Restaurant</SelectItem>
+                                    <SelectItem value="bar">Bar</SelectItem>
+                                    <SelectItem value="carwash">Car Wash</SelectItem>
+                                    <SelectItem value="accommodation">Rooms</SelectItem>
+                                    <SelectItem value="entertainment">Entertainment</SelectItem>
+                                    <SelectItem value="general">General/Administrative</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                         <DialogFooter className="pt-4">
                             <Button variant="outline" type="button" onClick={() => setIsDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>

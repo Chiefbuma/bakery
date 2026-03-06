@@ -24,6 +24,7 @@ export interface Product {
   minStockLevel: number;
   unit: string;
   image_url: string;
+  hasRecipe: boolean;
 }
 
 export interface Supply {
@@ -48,7 +49,7 @@ export interface Expense {
   amount: number;
   description: string;
   date: string;
-  module: string;
+  module: HotelModule;
 }
 
 export interface SaleItem {

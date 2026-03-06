@@ -26,12 +26,26 @@ export async function POST(req: Request) {
     const body = await req.json();
     const id = `PROD-${Date.now()}`;
     await pool.query(
-      'INSERT INTO products (id, name, description, category, module, price, costPrice, stock, minStockLevel, unit, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [id, body.name, body.description, body.category, body.module, body.price, body.costPrice, body.stock, body.minStockLevel, body.unit, body.image_url]
+      'INSERT INTO products (id, name, description, category, module, price, costPrice, stock, minStockLevel, unit, image_url, hasRecipe) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [
+        id, 
+        body.name, 
+        body.description, 
+        body.category, 
+        body.module, 
+        body.price, 
+        body.costPrice || 0, 
+        body.stock, 
+        body.minStockLevel, 
+        body.unit, 
+        body.image_url,
+        body.hasRecipe ? 1 : 0
+      ]
     );
     const [newProd] = await pool.query('SELECT * FROM products WHERE id = ?', [id]);
     return NextResponse.json((newProd as any)[0]);
   } catch (error) {
+    console.error('Create Product Error:', error);
     return NextResponse.json({ error: "Failed to create product" }, { status: 500 });
   }
 }

@@ -30,6 +30,7 @@ import { motion } from "framer-motion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useForm } from "react-hook-form";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -52,7 +53,6 @@ export default function InventoryPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [activeTab, setActiveTab] = useState<string>("products");
     
-    // Pagination state - Strict 5 per page
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 5;
 
@@ -110,7 +110,8 @@ export default function InventoryPage() {
                 stock: 0,
                 minStockLevel: 5,
                 unit: 'units',
-                image_url: ''
+                image_url: '',
+                hasRecipe: false
             });
         }
         setIsProductDialogOpen(true);
@@ -158,13 +159,23 @@ export default function InventoryPage() {
     };
 
     const onProductSubmit = async (data: any) => {
+        if (!data.hasRecipe && data.costPrice <= 0) {
+            toast({ variant: "destructive", title: "Validation Error", description: "Cost price must be greater than 0 for retail items." });
+            return;
+        }
+
         setIsSubmitting(true);
         try {
+            const finalData = {
+                ...data,
+                costPrice: data.hasRecipe ? 0 : data.costPrice
+            };
+
             if (editingProduct) {
-                await updateProduct(editingProduct.id, data);
+                await updateProduct(editingProduct.id, finalData);
                 toast({ title: "Product Updated" });
             } else {
-                await addProduct(data);
+                await addProduct(finalData);
                 toast({ title: "Product Added" });
             }
             setIsProductDialogOpen(false);
@@ -262,6 +273,8 @@ export default function InventoryPage() {
         return productsWithRecipes.slice(start, start + ITEMS_PER_PAGE);
     }, [productsWithRecipes, currentPage]);
 
+    const hasRecipeValue = productForm.watch('hasRecipe');
+
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
             <div className="flex flex-col gap-2">
@@ -291,6 +304,7 @@ export default function InventoryPage() {
                                 <SelectItem value="bar">Bar</SelectItem>
                                 <SelectItem value="carwash">Car Wash</SelectItem>
                                 <SelectItem value="accommodation">Rooms</SelectItem>
+                                <SelectItem value="entertainment">Entertainment</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -312,7 +326,7 @@ export default function InventoryPage() {
                                 <TableHeader>
                                     <TableRow className="bg-muted/50">
                                         <TableHead>Product</TableHead>
-                                        <TableHead>Module</TableHead>
+                                        <TableHead>Type</TableHead>
                                         <TableHead>Price</TableHead>
                                         <TableHead>Stock</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
@@ -327,8 +341,15 @@ export default function InventoryPage() {
                                         <TableRow><TableCell colSpan={5} className="text-center py-10 text-muted-foreground italic">No products found.</TableCell></TableRow>
                                     ) : paginatedProducts.map((p) => (
                                         <TableRow key={p.id}>
-                                            <TableCell className="font-bold">{p.name}</TableCell>
-                                            <TableCell className="capitalize text-xs text-muted-foreground">{p.module}</TableCell>
+                                            <TableCell className="font-bold">
+                                                <div>{p.name}</div>
+                                                <div className="text-[10px] text-muted-foreground uppercase">{p.module}</div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant={p.hasRecipe ? "secondary" : "outline"}>
+                                                    {p.hasRecipe ? "Production" : "Retail"}
+                                                </Badge>
+                                            </TableCell>
                                             <TableCell>{formatPrice(p.price)}</TableCell>
                                             <TableCell>
                                               <Badge variant={p.stock <= p.minStockLevel ? "destructive" : "outline"} className="font-mono">
@@ -336,9 +357,11 @@ export default function InventoryPage() {
                                               </Badge>
                                             </TableCell>
                                             <TableCell className="text-right space-x-2">
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-600 hover:bg-amber-50" title="Manage Recipe" onClick={() => handleOpenRecipeDialog(p)}>
-                                                    <UtensilsCrossed className="h-4 w-4" />
-                                                </Button>
+                                                {p.hasRecipe && (
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-600 hover:bg-amber-50" title="Manage Recipe" onClick={() => handleOpenRecipeDialog(p)}>
+                                                        <UtensilsCrossed className="h-4 w-4" />
+                                                    </Button>
+                                                )}
                                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => handleOpenProductDialog(p)}><Edit className="h-4 w-4" /></Button>
                                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setTargetItem({id: p.id, name: p.name, type: 'product'})}><Trash2 className="h-4 w-4" /></Button>
                                             </TableCell>
@@ -457,23 +480,54 @@ export default function InventoryPage() {
             </div>
 
             <Dialog open={isProductDialogOpen} onOpenChange={(open) => { if(!isSubmitting) setIsProductDialogOpen(open); }}>
-                <DialogContent className="sm:max-w-[480px]">
+                <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader><DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle></DialogHeader>
                     <form onSubmit={productForm.handleSubmit(onProductSubmit)} className="space-y-4">
                         <div className="space-y-2">
                             <Label>Product Name</Label>
                             <Input {...productForm.register('name', { required: true })} disabled={isSubmitting} />
                         </div>
+
+                        <div className="space-y-3 p-4 bg-muted/30 rounded-lg border">
+                            <Label className="text-xs font-bold uppercase tracking-wider">Product Cost Type</Label>
+                            <RadioGroup 
+                                value={hasRecipeValue ? "production" : "retail"} 
+                                onValueChange={(v) => productForm.setValue('hasRecipe', v === 'production')}
+                                className="flex gap-4"
+                            >
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="retail" id="retail" />
+                                    <Label htmlFor="retail" className="cursor-pointer">Retail (Fixed Cost)</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="production" id="production" />
+                                    <Label htmlFor="production" className="cursor-pointer">Production (Uses Ingredients)</Label>
+                                </div>
+                            </RadioGroup>
+                            <p className="text-[10px] text-muted-foreground">
+                                {hasRecipeValue 
+                                    ? "Cost is calculated dynamically from linked ingredients. The 'Cost Price' field is disabled." 
+                                    : "You must enter the purchase price for this item manually."}
+                            </p>
+                        </div>
+
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label>Selling Price (Ksh)</Label>
                                 <Input type="number" {...productForm.register('price', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
                             </div>
                             <div className="space-y-2">
-                                <Label>Cost Price (Ksh)</Label>
-                                <Input type="number" {...productForm.register('costPrice', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
+                                <Label className={hasRecipeValue ? "text-muted-foreground" : ""}>Cost Price (Ksh)</Label>
+                                <Input 
+                                    type="number" 
+                                    {...productForm.register('costPrice', { required: !hasRecipeValue, valueAsNumber: true })} 
+                                    disabled={isSubmitting || !!hasRecipeValue} 
+                                    className={hasRecipeValue ? "bg-muted" : ""}
+                                    placeholder={hasRecipeValue ? "Calculated from Ingredients" : "Enter purchase price"}
+                                />
                             </div>
                         </div>
+
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label>Current Stock</Label>
@@ -484,6 +538,7 @@ export default function InventoryPage() {
                                 <Input {...productForm.register('unit', { required: true })} placeholder="e.g. bottles, plates, KG" disabled={isSubmitting} />
                             </div>
                         </div>
+
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label>Module</Label>
@@ -494,6 +549,7 @@ export default function InventoryPage() {
                                         <SelectItem value="bar">Bar</SelectItem>
                                         <SelectItem value="carwash">Car Wash</SelectItem>
                                         <SelectItem value="accommodation">Rooms</SelectItem>
+                                        <SelectItem value="entertainment">Entertainment</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -502,6 +558,7 @@ export default function InventoryPage() {
                                 <Input type="number" {...productForm.register('minStockLevel', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
                             </div>
                         </div>
+
                         <div className="space-y-2">
                             <Label>Image URL / Upload</Label>
                             <div className="flex gap-2">
@@ -514,6 +571,7 @@ export default function InventoryPage() {
                                 </div>
                             </div>
                         </div>
+
                         <DialogFooter>
                             <Button variant="outline" type="button" onClick={() => setIsProductDialogOpen(false)}>Cancel</Button>
                             <Button type="submit" disabled={isSubmitting}>Save Product</Button>
@@ -554,6 +612,7 @@ export default function InventoryPage() {
                                         <SelectItem value="bar">Bar</SelectItem>
                                         <SelectItem value="carwash">Car Wash</SelectItem>
                                         <SelectItem value="accommodation">Rooms</SelectItem>
+                                        <SelectItem value="entertainment">Entertainment</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

@@ -11,11 +11,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ product
     const consumptions = await req.json(); 
     
     await connection.beginTransaction();
-    
-    // Clear existing recipe mapping for this product
     await connection.query('DELETE FROM recipes WHERE productId = ?', [productId]);
     
-    // Insert new mappings
     for (const c of consumptions) {
       if (!c.supplyId || !c.amount) continue;
       await connection.query(
@@ -28,7 +25,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ product
     return NextResponse.json({ success: true });
   } catch (error) {
     if (connection) await connection.rollback();
-    console.error('Recipe Save Error:', error);
     return NextResponse.json({ error: "Failed to save recipe" }, { status: 500 });
   } finally {
     if (connection) connection.release();

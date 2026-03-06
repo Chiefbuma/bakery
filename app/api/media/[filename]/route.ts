@@ -8,13 +8,11 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: Request, { params }: { params: Promise<{ filename: string }> }) {
   try {
     const { filename } = await params;
-    // Basic security to prevent path traversal
     const safeFilename = filename.split('/').pop() || '';
     const filePath = join(process.cwd(), 'public', 'uploads', safeFilename);
     
     const data = await readFile(filePath);
     
-    // Simple content-type detection
     const ext = safeFilename.split('.').pop()?.toLowerCase();
     const contentType = ext === 'png' ? 'image/png' : (ext === 'webp' ? 'image/webp' : 'image/jpeg');
 
@@ -25,7 +23,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ filename
       },
     });
   } catch (e) {
-    console.error('Media Server Error:', e);
     return new NextResponse(null, { status: 404 });
   }
 }

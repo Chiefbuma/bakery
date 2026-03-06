@@ -255,7 +255,7 @@ export default function POSPage() {
                         {filteredProducts.map(product => (
                             <button key={product.id} className="group relative flex flex-col bg-card rounded-xl border hover:border-primary hover:shadow-lg transition-all text-left overflow-hidden" onClick={() => addToCart(product)}>
                                 <div className="relative h-32 w-full bg-muted">
-                                    <Image src={resolveImageUrl(product.image_url)} alt={product.name} fill className="object-cover" />
+                                    <Image src={resolveImageUrl(product.image_url)} alt={product.name} width={400} height={300} className="object-cover h-full w-full" />
                                 </div>
                                 <div className="p-4">
                                     <h3 className="font-bold text-sm truncate">{product.name}</h3>
@@ -397,36 +397,32 @@ export default function POSPage() {
                 <DialogContent className="max-w-[400px] p-0 overflow-hidden bg-white text-black print-section">
                     <div className="p-8 space-y-4 text-center receipt-font text-sm leading-tight w-[80mm] mx-auto">
                         <div className="space-y-1">
-                            <p className="font-bold">
-                                {receiptData?.status === 'paid' 
-                                    ? "Wamaghach Kahua-ini Hotel , Along Othaya-Karatina Road, 500 metres from Kiahungu Town, Contact 0720 333 461, MPESA BUY GOODS TILL 4209898" 
-                                    : "Bill"}
+                            <p className="font-bold text-[10px]">
+                                Wamaghach Kahua-ini Hotel, Along Othaya-Karatina Road, 500 metres from Kiahungu Town, Contact 0720 333 461, MPESA BUY GOODS TILL 4209898
                             </p>
-                            {receiptData?.paymentMethod !== 'none' && (
-                                <div className="mt-2">
-                                    <p>Receipt Ref: <b>{receiptData?.orderNumber}</b></p>
-                                    <p>Date: <b>{new Date(receiptData?.timestamp || '').toLocaleString('en-KE', { dateStyle: 'medium', timeStyle: 'short' })}</b></p>
-                                </div>
-                            )}
+                            <div className="mt-2 text-[10px]">
+                                <p>Order Ref: <b>{receiptData?.orderNumber}</b></p>
+                                <p>Time: <b>{new Date().toLocaleString()}</b></p>
+                                <p>Guest: <b>{receiptData?.customerName || 'Walk-in'}</b></p>
+                            </div>
                         </div>
                         
                         <Separator className="border-black border-dashed my-2" />
-                        <p className="font-bold uppercase tracking-widest">Order Details</p>
                         
-                        <table className="w-full text-left border-collapse mt-2">
+                        <table className="w-full text-left text-[11px] border-collapse">
                             <thead>
                                 <tr className="border-b border-dashed border-black">
-                                    <td className="py-1"><b>QTY</b></td>
-                                    <td className="py-1"><b>Order</b></td>
-                                    <td className="py-1 text-right"><b>Amount</b></td>
+                                    <th className="py-1">QTY</th>
+                                    <th className="py-1">ITEM</th>
+                                    <th className="py-1 text-right">AMT</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {receiptData?.items?.map((item: any) => (
-                                    <tr key={item.productId}>
+                                {receiptData?.items?.map((item, idx) => (
+                                    <tr key={idx}>
                                         <td className="py-1">{item.quantity}</td>
                                         <td className="py-1">{item.name}</td>
-                                        <td className="py-1 text-right">{formatPrice(Number(item.total))}</td>
+                                        <td className="py-1 text-right">{item.total}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -434,38 +430,36 @@ export default function POSPage() {
 
                         <Separator className="border-black border-dashed my-2" />
 
-                        <div className="space-y-1">
-                            <div className="flex justify-between">
-                                <b>Total Amount</b>
-                                <b>{formatPrice(Number(receiptData?.totalAmount || 0))}</b>
+                        <div className="space-y-1 text-[11px]">
+                            <div className="flex justify-between font-black">
+                                <span>TOTAL</span>
+                                <span>{formatPrice(receiptData?.totalAmount || 0)}</span>
                             </div>
                             {receiptData?.paymentMethod === 'cash' && (
                                 <>
                                     <div className="flex justify-between">
-                                        <b>Amount Tendered</b>
-                                        <b>{formatPrice(Number(receiptData?.amountReceived || 0))}</b>
+                                        <span>CASH RECEIVED</span>
+                                        <span>{formatPrice(receiptData?.amountReceived || 0)}</span>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <b>Change</b>
-                                        <b>{formatPrice(Number(receiptData?.balance || 0))}</b>
+                                    <div className="flex justify-between font-bold">
+                                        <span>CHANGE</span>
+                                        <span>{formatPrice(receiptData?.balance || 0)}</span>
                                     </div>
                                 </>
                             )}
+                            <div className="flex justify-between italic">
+                                <span>MODE</span>
+                                <span className="uppercase">{receiptData?.paymentMethod}</span>
+                            </div>
                         </div>
 
                         <Separator className="border-black border-dashed my-2" />
+                        <p className="text-[9px] font-bold">Thank you for visiting Wamaghach!</p>
+                        <p className="text-[8px] text-muted-foreground">System by Firebase Studio</p>
 
-                        <div className="space-y-1">
-                            <p className="font-bold uppercase text-[10px] text-muted-foreground">Order Ref.</p>
-                            <h4 className="font-bold text-lg">{receiptData?.orderNumber}</h4>
-                        </div>
-
-                        <div className="pt-4 flex flex-col gap-2 no-print">
+                        <div className="pt-4 no-print">
                             <Button className="w-full" onClick={() => window.print()}>
                                 <Printer className="mr-2 h-4 w-4" /> Print Receipt
-                            </Button>
-                            <Button variant="ghost" className="w-full" onClick={() => setReceiptData(null)}>
-                                Close
                             </Button>
                         </div>
                     </div>

@@ -19,11 +19,12 @@ export async function POST(req: Request) {
     const id = `EXP-${Date.now()}`;
     await pool.query(
       'INSERT INTO expenses (id, category, amount, description, date, module) VALUES (?, ?, ?, ?, ?, ?)',
-      [id, body.category, body.amount, body.description, body.date, body.module]
+      [id, body.category, body.amount, body.description, body.date, body.module || 'general']
     );
     const [newExp] = await pool.query('SELECT * FROM expenses WHERE id = ?', [id]);
     return NextResponse.json((newExp as any)[0]);
   } catch (error) {
+    console.error('Create Expense Error:', error);
     return NextResponse.json({ error: "Failed to create expense" }, { status: 500 });
   }
 }

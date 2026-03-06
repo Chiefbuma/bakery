@@ -8,16 +8,15 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   try {
     const { id } = await params;
     const body = await req.json();
-    const { name, description, category, module, price, costPrice, stock, minStockLevel, unit, image_url } = body;
+    const { name, description, category, module, price, costPrice, stock, minStockLevel, unit, image_url, hasRecipe } = body;
     
     await pool.query(
-      'UPDATE products SET name = ?, description = ?, category = ?, module = ?, price = ?, costPrice = ?, stock = ?, minStockLevel = ?, unit = ?, image_url = ? WHERE id = ?',
-      [name, description, category, module, price, costPrice, stock, minStockLevel, unit, image_url, id]
+      'UPDATE products SET name = ?, description = ?, category = ?, module = ?, price = ?, costPrice = ?, stock = ?, minStockLevel = ?, unit = ?, image_url = ?, hasRecipe = ? WHERE id = ?',
+      [name, description, category, module, price, costPrice || 0, stock, minStockLevel, unit, image_url, hasRecipe ? 1 : 0, id]
     );
     
     return NextResponse.json({ message: 'Product updated successfully' });
   } catch (error) {
-    console.error('Product Update Error:', error);
     return NextResponse.json({ error: "Database update failed" }, { status: 500 });
   }
 }
@@ -28,7 +27,6 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     await pool.query('DELETE FROM products WHERE id = ?', [id]);
     return NextResponse.json({ message: 'Product removed' });
   } catch (error) {
-    console.error('Product Delete Error:', error);
     return NextResponse.json({ error: "Cannot delete product" }, { status: 500 });
   }
 }
