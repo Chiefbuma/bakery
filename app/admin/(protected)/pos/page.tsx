@@ -207,7 +207,7 @@ export default function POSPage() {
         })));
         setCustomerName(order.customerName || "");
         setIsHistoryOpen(false);
-        toast({ title: "Order Resumed", description: `Loaded items for ${order.customerName || 'Guest'}` });
+        toast({ title: "Order Resumed" });
     };
 
     const filteredProducts = products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));

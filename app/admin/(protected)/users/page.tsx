@@ -90,13 +90,13 @@ export default function UsersPage() {
         try {
             if (editingUser) {
                 await updateUser(editingUser.id, data);
-                toast({ title: "User Updated", description: `${data.name}'s profile has been updated.` });
+                toast({ title: "User Updated" });
             } else {
                 await addUser({
                     ...data,
                     password: data.password || 'staff123',
                 });
-                toast({ title: "User Created", description: "Account is ready for use." });
+                toast({ title: "User Created" });
             }
             setIsDialogOpen(false);
             setEditingUser(null);

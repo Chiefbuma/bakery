@@ -159,7 +159,7 @@ export default function InventoryPage() {
     };
 
     const onProductSubmit = async (data: any) => {
-        if (!data.hasRecipe && data.costPrice <= 0) {
+        if (!data.hasRecipe && Number(data.costPrice) <= 0) {
             toast({ variant: "destructive", title: "Validation Error", description: "Cost price must be greater than 0 for retail items." });
             return;
         }
@@ -168,7 +168,7 @@ export default function InventoryPage() {
         try {
             const finalData = {
                 ...data,
-                costPrice: data.hasRecipe ? 0 : data.costPrice
+                costPrice: data.hasRecipe ? 0 : Number(data.costPrice)
             };
 
             if (editingProduct) {
@@ -211,7 +211,7 @@ export default function InventoryPage() {
         setIsSubmitting(true);
         try {
             await saveProductRecipe(recipeProduct.id, currentRecipe.filter(r => r.supplyId && r.amount > 0));
-            toast({ title: "Recipe Saved", description: `Production mappings for ${recipeProduct.name} updated.` });
+            toast({ title: "Recipe Saved" });
             setIsRecipeDialogOpen(false);
             loadData();
         } catch (err) {
