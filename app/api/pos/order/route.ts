@@ -43,7 +43,6 @@ export async function POST(req: Request) {
       // Only deduct stock if payment is completed
       if (status === 'paid') {
         // A. Deduct from Master Stock (Sellable Product)
-        // Skip stock deduction for service-based modules if needed, but usually we track everything
         await connection.query(
           'UPDATE products SET stock = GREATEST(0, stock - ?) WHERE id = ?',
           [item.quantity, item.productId]

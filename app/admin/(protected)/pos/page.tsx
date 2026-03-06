@@ -6,7 +6,7 @@ import { getProducts, placeOrder, getPendingOrders } from "@/services/hotel-serv
 import type { Product, HotelModule, SaleItem, Transaction } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, Search, History, Printer, Plus, Minus, Loader2 } from "lucide-react";
+import { ShoppingCart, Search, History, Printer, Plus, Minus, Loader2, Play } from "lucide-react";
 import { formatPrice, cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const PAYSTACK_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || 'pk_test_placeholder';
 
@@ -159,7 +160,7 @@ export default function POSPage() {
             setAmountReceived("");
             setIsPaymentOpen(false);
             loadData();
-            toast({ title: status === 'paid' ? "Sale Complete" : "Order Held" });
+            toast({ title: status === 'paid' ? "Sale Complete" : "Order Held for Pay Later" });
         } catch (err) {
             toast({ variant: "destructive", title: "Transaction Failed" });
         } finally {
@@ -196,6 +197,17 @@ export default function POSPage() {
             onClose: () => setIsProcessing(false)
         });
         handler.openIframe();
+    };
+
+    const resumeOrder = (order: Transaction) => {
+        setCart(order.items.map(item => ({
+            ...item,
+            price: Number(item.price),
+            total: Number(item.total)
+        })));
+        setCustomerName(order.customerName || "");
+        setIsHistoryOpen(false);
+        toast({ title: "Order Resumed", description: `Loaded items for ${order.customerName || 'Guest'}` });
     };
 
     const filteredProducts = products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -296,7 +308,7 @@ export default function POSPage() {
                         <span className="text-3xl font-black text-primary leading-none">{formatPrice(cartTotal)}</span>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                        <Button variant="outline" onClick={() => finalizeOrder('none', 'pending')} disabled={cart.length === 0 || isProcessing}>Hold Bill</Button>
+                        <Button variant="outline" onClick={() => finalizeOrder('none', 'pending')} disabled={cart.length === 0 || isProcessing}>Pay Later</Button>
                         <Button onClick={() => setIsPaymentOpen(true)} disabled={cart.length === 0 || isProcessing}>Checkout</Button>
                     </div>
                 </div>
@@ -336,6 +348,48 @@ export default function POSPage() {
                             Complete Sale
                         </Button>
                     </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
+                <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Pay Later Orders (Pending Bills)</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Time</TableHead>
+                                    <TableHead>Guest/Reference</TableHead>
+                                    <TableHead>Items</TableHead>
+                                    <TableHead className="text-right">Total</TableHead>
+                                    <TableHead className="text-right">Action</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {pendingOrders.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="text-center py-10 text-muted-foreground italic">No pending bills found.</TableCell>
+                                    </TableRow>
+                                ) : (
+                                    pendingOrders.map(order => (
+                                        <TableRow key={order.id}>
+                                            <TableCell className="text-xs">{new Date(order.timestamp).toLocaleTimeString()}</TableCell>
+                                            <TableCell className="font-bold">{order.customerName || "Guest"}</TableCell>
+                                            <TableCell className="text-xs">{order.items.length} items</TableCell>
+                                            <TableCell className="text-right font-bold text-primary">{formatPrice(order.totalAmount)}</TableCell>
+                                            <TableCell className="text-right">
+                                                <Button size="sm" onClick={() => resumeOrder(order)} className="gap-2">
+                                                    <Play className="h-3 w-3" /> Resume
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </DialogContent>
             </Dialog>
 

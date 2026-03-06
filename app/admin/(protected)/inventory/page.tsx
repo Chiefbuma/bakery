@@ -235,10 +235,17 @@ export default function InventoryPage() {
         supplies.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase())),
     [supplies, searchQuery]);
 
+    const productsWithRecipes = useMemo(() => 
+        products.filter(p => recipes[p.id] && recipes[p.id].length > 0 && p.name.toLowerCase().includes(searchQuery.toLowerCase())),
+    [products, recipes, searchQuery]);
+
     const totalPages = useMemo(() => {
-        const count = activeTab === 'supplies' ? filteredSupplies.length : filteredProducts.length;
+        let count = 0;
+        if (activeTab === 'supplies') count = filteredSupplies.length;
+        else if (activeTab === 'recipes') count = productsWithRecipes.length;
+        else count = filteredProducts.length;
         return Math.max(1, Math.ceil(count / ITEMS_PER_PAGE));
-    }, [activeTab, filteredProducts.length, filteredSupplies.length]);
+    }, [activeTab, filteredProducts.length, filteredSupplies.length, productsWithRecipes.length]);
 
     const paginatedProducts = useMemo(() => {
         const start = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -249,6 +256,11 @@ export default function InventoryPage() {
         const start = (currentPage - 1) * ITEMS_PER_PAGE;
         return filteredSupplies.slice(start, start + ITEMS_PER_PAGE);
     }, [filteredSupplies, currentPage]);
+
+    const paginatedRecipes = useMemo(() => {
+        const start = (currentPage - 1) * ITEMS_PER_PAGE;
+        return productsWithRecipes.slice(start, start + ITEMS_PER_PAGE);
+    }, [productsWithRecipes, currentPage]);
 
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
@@ -262,6 +274,7 @@ export default function InventoryPage() {
                     <TabsList className="bg-muted/50 p-1">
                         <TabsTrigger value="products">Master Stock</TabsTrigger>
                         <TabsTrigger value="supplies">Raw Supplies Ledger</TabsTrigger>
+                        <TabsTrigger value="recipes">Product Ingredients</TabsTrigger>
                     </TabsList>
                     <div className="flex items-center gap-2">
                         <div className="relative w-64">
@@ -381,6 +394,56 @@ export default function InventoryPage() {
                         </CardContent>
                     </Card>
                 </TabsContent>
+
+                <TabsContent value="recipes">
+                    <Card>
+                        <CardHeader className="border-b pb-6">
+                            <CardTitle>Production Mappings</CardTitle>
+                            <CardDescription>View links between sellable products and their raw ingredients.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-6">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow className="bg-muted/50">
+                                        <TableHead>Sellable Product</TableHead>
+                                        <TableHead>Required Ingredients</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {loading ? (
+                                        Array.from({ length: 5 }).map((_, i) => (
+                                            <TableRow key={i}><TableCell colSpan={3} className="h-12 animate-pulse bg-muted/10" /></TableRow>
+                                        ))
+                                    ) : paginatedRecipes.length === 0 ? (
+                                        <TableRow><TableCell colSpan={3} className="text-center py-10 text-muted-foreground italic">No recipes defined yet.</TableCell></TableRow>
+                                    ) : paginatedRecipes.map((p) => (
+                                        <TableRow key={p.id}>
+                                            <TableCell className="font-bold">{p.name}</TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {recipes[p.id]?.map((rcp, idx) => {
+                                                        const supply = supplies.find(s => s.id === rcp.supplyId);
+                                                        return (
+                                                            <Badge key={idx} variant="secondary" className="text-[10px]">
+                                                                {supply?.name || 'Unknown'}: {rcp.amount} {supply?.unit}
+                                                            </Badge>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Button variant="ghost" size="sm" className="h-8 px-2 text-primary" onClick={() => handleOpenRecipeDialog(p)}>
+                                                    <Edit className="h-3 w-3 mr-1" /> Edit Recipe
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
             </Tabs>
 
             <div className="flex items-center justify-end space-x-2 py-4">
@@ -394,7 +457,7 @@ export default function InventoryPage() {
             </div>
 
             <Dialog open={isProductDialogOpen} onOpenChange={(open) => { if(!isSubmitting) setIsProductDialogOpen(open); }}>
-                <DialogContent className="sm:max-w-lg">
+                <DialogContent className="sm:max-w-[480px]">
                     <DialogHeader><DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle></DialogHeader>
                     <form onSubmit={productForm.handleSubmit(onProductSubmit)} className="space-y-4">
                         <div className="space-y-2">
@@ -474,7 +537,7 @@ export default function InventoryPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label>Unit</Label>
-                                <Input {...supplyForm.register('unit', { required: true })} placeholder="e.g. kg, liters" disabled={isSubmitting} />
+                                <Input {...supplyForm.register('unit', { required: true })} placeholder="e.g. kg, liters, g" disabled={isSubmitting} />
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
