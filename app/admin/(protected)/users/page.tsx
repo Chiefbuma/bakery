@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -230,7 +229,7 @@ export default function UsersPage() {
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle>{editingUser ? 'Update Profile' : 'Register New User'}</DialogTitle>
-                        <DialogDescription>Enter account details for system access.</DialogDescription>
+                        <DialogDescription>Enter staff credentials for system access and role assignment.</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4 pt-4">
                         <div className="space-y-2">
@@ -271,10 +270,10 @@ export default function UsersPage() {
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Permanently delete user?</AlertDialogTitle>
-                        <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+                        <AlertDialogDescription>Are you sure you want to remove this account? They will lose all access to the system immediately.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel onClick={() => setDeleteConfirmOpen(false)}>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-white">Delete Account</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

@@ -175,7 +175,7 @@ export default function ExpensesPage() {
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle>{editingExpense ? 'Edit Expense' : 'Record New Expense'}</DialogTitle>
-                        <DialogDescription>Log operational costs.</DialogDescription>
+                        <DialogDescription>Log operational costs classified by module.</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4 pt-4">
                         <div className="space-y-2">
@@ -228,7 +228,7 @@ export default function ExpensesPage() {
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Delete record?</AlertDialogTitle>
-                        <AlertDialogDescription>This cannot be undone.</AlertDialogDescription>
+                        <AlertDialogDescription>Are you sure you want to permanently delete this expense record? This action cannot be undone.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>

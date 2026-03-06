@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { ShoppingCart, Search, History, Printer, Plus, Minus, Loader2, Play } from "lucide-react";
 import { formatPrice, cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +38,8 @@ export default function POSPage() {
     const { toast } = useToast();
 
     const resolveImageUrl = (url: string | null | undefined) => {
-        if (!url) return 'https://picsum.photos/seed/hotel/400/300';
+        if (!url) return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=400';
+        if (url.startsWith('/uploads/')) return `/api/media${url.replace('/uploads', '')}`;
         if (url.startsWith('http')) return url;
         return url;
     };
@@ -317,7 +318,10 @@ export default function POSPage() {
 
             <Dialog open={isPaymentOpen} onOpenChange={setIsPaymentOpen}>
                 <DialogContent className="sm:max-w-[450px]">
-                    <DialogHeader><DialogTitle>Payment Confirmation</DialogTitle></DialogHeader>
+                    <DialogHeader>
+                        <DialogTitle>Payment Confirmation</DialogTitle>
+                        <DialogDescription>Process the final payment for the current order.</DialogDescription>
+                    </DialogHeader>
                     
                     <div className="bg-primary/5 p-6 rounded-xl border-2 border-primary/20 text-center space-y-2">
                         <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">Total Amount Due</p>
@@ -356,6 +360,7 @@ export default function POSPage() {
                 <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Pay Later Orders (Pending Bills)</DialogTitle>
+                        <DialogDescription>Review and resume orders that were saved for later payment.</DialogDescription>
                     </DialogHeader>
                     <div className="py-4">
                         <Table>
@@ -397,6 +402,8 @@ export default function POSPage() {
             <Dialog open={!!receiptData} onOpenChange={() => setReceiptData(null)}>
                 <DialogContent className="max-w-[400px] p-0 overflow-hidden bg-white text-black print-section">
                     <div className="p-8 space-y-4 text-center receipt-font text-sm leading-tight w-[80mm] mx-auto">
+                        <DialogTitle className="sr-only">Order Receipt</DialogTitle>
+                        <DialogDescription className="sr-only">Printable summary of your order for your records.</DialogDescription>
                         <div className="space-y-1">
                             <p className="font-bold text-[10px]">
                                 Wamaghach Kahua-ini Hotel, Along Othaya-Karatina Road, 500 metres from Kiahungu Town, Contact 0720 333 461, MPESA BUY GOODS TILL 4209898

@@ -32,9 +32,14 @@ export async function POST(req: Request) {
       const [products]: any = await connection.query('SELECT hasRecipe, costPrice FROM products WHERE id = ?', [item.productId]);
       const product = products[0];
       
+      if (!product) {
+          console.error(`Product not found: ${item.productId}`);
+          continue;
+      }
+
       let unitCostSnapshot = 0;
 
-      if (product.hasRecipe) {
+      if (product.hasRecipe === 1 || product.hasRecipe === true) {
         // Calculate cost from current ingredient unit costs
         const [ingredients]: any = await connection.query(`
           SELECT r.amount, s.unitCost 
@@ -69,7 +74,7 @@ export async function POST(req: Request) {
         );
 
         // Ingredient Stock
-        if (product.hasRecipe) {
+        if (product.hasRecipe === 1 || product.hasRecipe === true) {
           const [recipes]: any = await connection.query('SELECT supplyId, amount FROM recipes WHERE productId = ?', [item.productId]);
           for (const recipe of recipes) {
             await connection.query(

@@ -500,7 +500,10 @@ export default function InventoryPage() {
 
             <Dialog open={isProductDialogOpen} onOpenChange={(open) => { if(!isSubmitting) setIsProductDialogOpen(open); }}>
                 <DialogContent className="sm:max-w-[500px]">
-                    <DialogHeader><DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle></DialogHeader>
+                    <DialogHeader>
+                        <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
+                        <DialogDescription>Manage your sellable hotel inventory.</DialogDescription>
+                    </DialogHeader>
                     <form onSubmit={productForm.handleSubmit(onProductSubmit)} className="space-y-4">
                         <div className="space-y-2">
                             <Label>Product Name</Label>
@@ -601,7 +604,10 @@ export default function InventoryPage() {
 
             <Dialog open={isSupplyDialogOpen} onOpenChange={(open) => { if(!isSubmitting) setIsSupplyDialogOpen(open); }}>
                 <DialogContent className="sm:max-w-md">
-                    <DialogHeader><DialogTitle>{editingSupply ? 'Edit Supply' : 'Add New Supply'}</DialogTitle></DialogHeader>
+                    <DialogHeader>
+                        <DialogTitle>{editingSupply ? 'Edit Supply' : 'Add New Supply'}</DialogTitle>
+                        <DialogDescription>Track your raw materials and consumables.</DialogDescription>
+                    </DialogHeader>
                     <form onSubmit={supplyForm.handleSubmit(onSupplySubmit)} className="space-y-4">
                         <div className="space-y-2">
                             <Label>Supply Name</Label>
@@ -722,7 +728,10 @@ export default function InventoryPage() {
 
             <AlertDialog open={!!targetItem} onOpenChange={() => setTargetItem(null)}>
                 <AlertDialogContent>
-                    <AlertDialogHeader><DialogTitle>Confirm Delete</DialogTitle></AlertDialogHeader>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
+                        <AlertDialogDescription>Are you sure you want to remove this item from inventory? This cannot be undone.</AlertDialogDescription>
+                    </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={handleDeleteItem} className="bg-destructive text-white">Delete</AlertDialogAction>

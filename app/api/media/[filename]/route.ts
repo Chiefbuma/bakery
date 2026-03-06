@@ -22,6 +22,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ filename
       },
     });
   } catch (e) {
+    console.error(`Media fetch error for ${filename}:`, e);
     return new NextResponse(null, { status: 404 });
   }
 }
