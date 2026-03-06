@@ -1,8 +1,14 @@
+
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import type { DashboardData, HotelModule } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * @fileOverview Analytics Engine
+ * Calculates departmental sales and true COGS (Cost of Sale) across periods.
+ */
 
 export async function GET() {
   try {
@@ -28,7 +34,7 @@ export async function GET() {
       )
     `, [currentMonth, currentYear, currentMonth, currentYear, prevMonth, prevYear, prevMonth, prevYear, currentMonth, currentYear, prevMonth, prevYear]);
 
-    // 2. OpEx Metrics
+    // 2. Operating Expenses
     const [expenses]: any = await pool.query(`
       SELECT 
         SUM(CASE WHEN MONTH(date) = ? AND YEAR(date) = ? THEN amount ELSE 0 END) as currOpex,
@@ -40,7 +46,7 @@ export async function GET() {
     const statsRow = (stats && stats[0]) || {};
     const expRow = (expenses && expenses[0]) || {};
 
-    // 3. Module Comparison with Comparative Cost of Sale
+    // 3. Module Comparison with Period-Specific Cost of Sale
     const modules: HotelModule[] = ['restaurant', 'bar', 'carwash', 'accommodation', 'entertainment'];
     const moduleStats = await Promise.all(modules.map(async (m) => {
       const [mStats]: any = await pool.query(`
@@ -98,7 +104,7 @@ export async function GET() {
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Analytics Fetch Error:', error);
-    return NextResponse.json({ error: "Failed to generate report" }, { status: 500 });
+    console.error('Analytics Engine Error:', error);
+    return NextResponse.json({ error: "Internal Server Error in Analytics" }, { status: 500 });
   }
 }

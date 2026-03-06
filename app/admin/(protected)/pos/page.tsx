@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -6,7 +7,7 @@ import type { Product, HotelModule, SaleItem, Transaction } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ShoppingCart, Search, History, Printer, Plus, Minus, Loader2, Play } from "lucide-react";
-import { formatPrice, cn } from "@/lib/utils";
+import { formatPrice } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
@@ -159,7 +160,7 @@ export default function POSPage() {
             setAmountReceived("");
             setIsPaymentOpen(false);
             loadData();
-            toast({ title: status === 'paid' ? "Sale Complete" : "Order Held for Pay Later" });
+            toast({ title: status === 'paid' ? "Sale Complete" : "Order Saved (Pay Later)" });
         } catch (err) {
             toast({ variant: "destructive", title: "Transaction Failed" });
         } finally {
@@ -320,7 +321,7 @@ export default function POSPage() {
                 <DialogContent className="sm:max-w-[450px]">
                     <DialogHeader>
                         <DialogTitle>Payment Confirmation</DialogTitle>
-                        <DialogDescription>Process the final payment for the current order.</DialogDescription>
+                        <DialogDescription>Process final payment for the current cart.</DialogDescription>
                     </DialogHeader>
                     
                     <div className="bg-primary/5 p-6 rounded-xl border-2 border-primary/20 text-center space-y-2">
@@ -360,7 +361,7 @@ export default function POSPage() {
                 <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Pay Later Orders (Pending Bills)</DialogTitle>
-                        <DialogDescription>Review and resume orders that were saved for later payment.</DialogDescription>
+                        <DialogDescription>Review and resume orders saved for later payment.</DialogDescription>
                     </DialogHeader>
                     <div className="py-4">
                         <Table>
@@ -403,10 +404,10 @@ export default function POSPage() {
                 <DialogContent className="max-w-[400px] p-0 overflow-hidden bg-white text-black print-section">
                     <div className="p-8 space-y-4 text-center receipt-font text-sm leading-tight w-[80mm] mx-auto">
                         <DialogTitle className="sr-only">Order Receipt</DialogTitle>
-                        <DialogDescription className="sr-only">Printable summary of your order for your records.</DialogDescription>
+                        <DialogDescription className="sr-only">Official receipt for the transaction.</DialogDescription>
                         <div className="space-y-1">
                             <p className="font-bold text-[10px]">
-                                Wamaghach Kahua-ini Hotel, Along Othaya-Karatina Road, 500 metres from Kiahungu Town, Contact 0720 333 461, MPESA BUY GOODS TILL 4209898
+                                Wamaghach Kahua-ini Hotel, Othaya-Karatina Road, Contact 0720 333 461, MPESA TILL 4209898
                             </p>
                             <div className="mt-2 text-[10px]">
                                 <p>Order Ref: <b>{receiptData?.orderNumber}</b></p>

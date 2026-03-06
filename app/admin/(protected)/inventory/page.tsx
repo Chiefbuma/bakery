@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -436,7 +437,7 @@ export default function InventoryPage() {
                                     <TableRow className="bg-muted/50">
                                         <TableHead>Sellable Product</TableHead>
                                         <TableHead>Required Ingredients</TableHead>
-                                        <TableHead className="text-right">Total Production Cost</TableHead>
+                                        <TableHead className="text-right">Cost of Sale</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -502,7 +503,7 @@ export default function InventoryPage() {
                 <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
                         <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
-                        <DialogDescription>Manage your sellable hotel inventory.</DialogDescription>
+                        <DialogDescription>Manage sellable hotel products and services.</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={productForm.handleSubmit(onProductSubmit)} className="space-y-4">
                         <div className="space-y-2">
@@ -528,8 +529,8 @@ export default function InventoryPage() {
                             </RadioGroup>
                             <p className="text-[10px] text-muted-foreground">
                                 {hasRecipeValue 
-                                    ? "Cost is calculated dynamically from linked ingredients. The 'Cost Price' field is disabled." 
-                                    : "You must enter the purchase price for this item manually."}
+                                    ? "Cost is derived from ingredients. The manual 'Cost Price' is ignored." 
+                                    : "You must enter the manual purchase price for this item."}
                             </p>
                         </div>
 
@@ -545,7 +546,7 @@ export default function InventoryPage() {
                                     {...productForm.register('costPrice', { required: !hasRecipeValue, valueAsNumber: true })} 
                                     disabled={isSubmitting || !!hasRecipeValue} 
                                     className={hasRecipeValue ? "bg-muted" : ""}
-                                    placeholder={hasRecipeValue ? "Calculated from Ingredients" : "Enter purchase price"}
+                                    placeholder={hasRecipeValue ? "Auto-calculated" : "Purchase price"}
                                 />
                             </div>
                         </div>
@@ -556,8 +557,8 @@ export default function InventoryPage() {
                                 <Input type="number" step="0.01" {...productForm.register('stock', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
                             </div>
                             <div className="space-y-2">
-                                <Label>Measurement Unit</Label>
-                                <Input {...productForm.register('unit', { required: true })} placeholder="e.g. bottles, plates, KG" disabled={isSubmitting} />
+                                <Label>Unit</Label>
+                                <Input {...productForm.register('unit', { required: true })} placeholder="e.g. bottles, plates" disabled={isSubmitting} />
                             </div>
                         </div>
 
@@ -576,7 +577,7 @@ export default function InventoryPage() {
                                 </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label>Min Stock Level (Alert)</Label>
+                                <Label>Min Stock Level</Label>
                                 <Input type="number" {...productForm.register('minStockLevel', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
                             </div>
                         </div>
@@ -606,7 +607,7 @@ export default function InventoryPage() {
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle>{editingSupply ? 'Edit Supply' : 'Add New Supply'}</DialogTitle>
-                        <DialogDescription>Track your raw materials and consumables.</DialogDescription>
+                        <DialogDescription>Track raw material inventory and unit costs.</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={supplyForm.handleSubmit(onSupplySubmit)} className="space-y-4">
                         <div className="space-y-2">
@@ -620,7 +621,7 @@ export default function InventoryPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label>Unit</Label>
-                                <Input {...supplyForm.register('unit', { required: true })} placeholder="e.g. kg, liters, g" disabled={isSubmitting} />
+                                <Input {...supplyForm.register('unit', { required: true })} placeholder="e.g. kg, liters" disabled={isSubmitting} />
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
@@ -654,7 +655,7 @@ export default function InventoryPage() {
                 <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
                         <DialogTitle>Production Recipe: {recipeProduct?.name}</DialogTitle>
-                        <DialogDescription>Link this product to raw materials. Costs are calculated instantly.</DialogDescription>
+                        <DialogDescription>Map raw ingredients to this product for automatic cost calculation and stock deduction.</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                         <div className="space-y-3">
@@ -730,7 +731,7 @@ export default function InventoryPage() {
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
-                        <AlertDialogDescription>Are you sure you want to remove this item from inventory? This cannot be undone.</AlertDialogDescription>
+                        <AlertDialogDescription>Permanently remove this item from the system? This action cannot be undone.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>

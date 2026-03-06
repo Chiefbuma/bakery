@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
@@ -7,6 +8,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: Request, { params }: { params: Promise<{ filename: string }> }) {
   try {
     const { filename } = await params;
+    // Security: sanitize filename
     const safeFilename = filename.split('/').pop() || '';
     const filePath = join(process.cwd(), 'public', 'uploads', safeFilename);
     
@@ -22,7 +24,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ filename
       },
     });
   } catch (e) {
-    console.error(`Media fetch error for ${filename}:`, e);
     return new NextResponse(null, { status: 404 });
   }
 }

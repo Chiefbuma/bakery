@@ -1,7 +1,13 @@
+
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * @fileOverview Atomic POS Transaction Engine
+ * Calculates true COGS at sale time and handles parent-child DB insertion order.
+ */
 
 export async function POST(req: Request) {
   const connection = await pool.getConnection();
@@ -11,7 +17,7 @@ export async function POST(req: Request) {
     
     const { 
       orderNumber, 
-      module = 'general', 
+      module = 'restaurant', 
       items = [], 
       totalAmount = 0, 
       paymentMethod = 'none', 
@@ -23,24 +29,21 @@ export async function POST(req: Request) {
     
     const transactionId = `TX-${Date.now()}`;
     let calculatedTotalTransactionCost = 0;
+    const itemsToProcess = [];
 
-    // Process each item to calculate true COGS at moment of sale
+    // 1. Pre-calculate costs and fetch snapshots
     for (const item of items) {
       if (!item.productId) continue;
 
-      // Fetch product cost profile
       const [products]: any = await connection.query('SELECT hasRecipe, costPrice FROM products WHERE id = ?', [item.productId]);
       const product = products[0];
       
-      if (!product) {
-          console.error(`Product not found: ${item.productId}`);
-          continue;
-      }
+      if (!product) continue;
 
       let unitCostSnapshot = 0;
 
       if (product.hasRecipe === 1 || product.hasRecipe === true) {
-        // Calculate cost from current ingredient unit costs
+        // PRODUCTION ITEM: Sum ingredients cost
         const [ingredients]: any = await connection.query(`
           SELECT r.amount, s.unitCost 
           FROM recipes r 
@@ -52,45 +55,46 @@ export async function POST(req: Request) {
             return acc + (Number(ing.amount) * Number(ing.unitCost));
         }, 0);
       } else {
-        // Use fixed retail cost
+        // RETAIL ITEM: Use manual cost price
         unitCostSnapshot = Number(product.costPrice || 0);
       }
 
       const totalItemCost = Number((unitCostSnapshot * Number(item.quantity)).toFixed(2));
       calculatedTotalTransactionCost += totalItemCost;
 
-      // Record item with the cost snapshot
-      await connection.query(
-        'INSERT INTO transaction_items (transactionId, productId, name, quantity, price, costPrice, total) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [transactionId, item.productId, item.name, item.quantity, item.price, unitCostSnapshot, item.total]
-      );
-
-      // Inventory deduction (only if paid)
-      if (status === 'paid') {
-        // Master Stock
-        await connection.query(
-          'UPDATE products SET stock = GREATEST(0, stock - ?) WHERE id = ?',
-          [item.quantity, item.productId]
-        );
-
-        // Ingredient Stock
-        if (product.hasRecipe === 1 || product.hasRecipe === true) {
-          const [recipes]: any = await connection.query('SELECT supplyId, amount FROM recipes WHERE productId = ?', [item.productId]);
-          for (const recipe of recipes) {
-            await connection.query(
-              'UPDATE supplies SET quantity = GREATEST(0, quantity - ?) WHERE id = ?',
-              [Number(recipe.amount) * Number(item.quantity), recipe.supplyId]
-            );
-          }
-        }
-      }
+      itemsToProcess.push({
+        ...item,
+        unitCostSnapshot,
+        totalItemCost,
+        hasRecipe: !!product.hasRecipe
+      });
     }
 
-    // Record the main transaction with true calculated total cost
+    // 2. IMPORTANT: Insert Parent Transaction FIRST to satisfy Foreign Key
     await connection.query(
       'INSERT INTO transactions (id, orderNumber, module, totalAmount, totalCost, paymentMethod, status, customerName, amountReceived, balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [transactionId, orderNumber, module, totalAmount, calculatedTotalTransactionCost, paymentMethod, status, customerName, amountReceived, balance]
     );
+
+    // 3. Insert Children and Update Inventory
+    for (const processedItem of itemsToProcess) {
+      await connection.query(
+        'INSERT INTO transaction_items (transactionId, productId, name, quantity, price, costPrice, total) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [transactionId, processedItem.productId, processedItem.name, processedItem.quantity, processedItem.price, processedItem.unitCostSnapshot, processedItem.total]
+      );
+
+      if (status === 'paid') {
+        // Stock Deduction
+        await connection.query('UPDATE products SET stock = GREATEST(0, stock - ?) WHERE id = ?', [processedItem.quantity, processedItem.productId]);
+
+        if (processedItem.hasRecipe) {
+          const [recipes]: any = await connection.query('SELECT supplyId, amount FROM recipes WHERE productId = ?', [processedItem.productId]);
+          for (const recipe of recipes) {
+            await connection.query('UPDATE supplies SET quantity = GREATEST(0, quantity - ?) WHERE id = ?', [Number(recipe.amount) * Number(processedItem.quantity), recipe.supplyId]);
+          }
+        }
+      }
+    }
 
     await connection.commit();
     return NextResponse.json({ id: transactionId, orderNumber, status: 'success' });
