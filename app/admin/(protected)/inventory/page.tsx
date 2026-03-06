@@ -19,7 +19,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/badge";
+import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/utils";
 import { PlusCircle, Search, Trash2, Edit, ChevronLeft, ChevronRight, Upload, Loader2, UtensilsCrossed } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -722,7 +722,7 @@ export default function InventoryPage() {
 
             <AlertDialog open={!!targetItem} onOpenChange={() => setTargetItem(null)}>
                 <AlertDialogContent>
-                    <AlertDialogHeader><AlertDialogTitle>Confirm Delete</AlertDialogTitle></AlertDialogHeader>
+                    <AlertDialogHeader><DialogTitle>Confirm Delete</DialogTitle></AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={handleDeleteItem} className="bg-destructive text-white">Delete</AlertDialogAction>

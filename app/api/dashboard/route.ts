@@ -40,7 +40,7 @@ export async function GET() {
     const statsRow = (stats && stats[0]) || {};
     const expRow = (expenses && expenses[0]) || {};
 
-    // 3. Module Comparison with Multi-Period COGS
+    // 3. Module Comparison with Comparative Cost of Sale
     const modules: HotelModule[] = ['restaurant', 'bar', 'carwash', 'accommodation', 'entertainment'];
     const moduleStats = await Promise.all(modules.map(async (m) => {
       const [mStats]: any = await pool.query(`
@@ -57,7 +57,8 @@ export async function GET() {
       const cCogs = Number(mStats && mStats[0]?.currCogs || 0);
       const p = Number(mStats && mStats[0]?.prev || 0);
       const pCogs = Number(mStats && mStats[0]?.prevCogs || 0);
-      const diff = p === 0 ? (c > 0 ? 100 : 0) : ((c - p) / p) * 100;
+      
+      const growth = p === 0 ? (c > 0 ? 100 : 0) : ((c - p) / p) * 100;
 
       return {
         module: m,
@@ -65,7 +66,7 @@ export async function GET() {
         currentCogs: cCogs,
         previousSales: p,
         previousCogs: pCogs,
-        changePercent: diff
+        changePercent: growth
       };
     }));
 

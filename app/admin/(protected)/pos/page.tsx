@@ -10,7 +10,7 @@ import { formatPrice, cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import Image from "next/image";
+import Image from "image";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -40,9 +40,6 @@ export default function POSPage() {
     const resolveImageUrl = (url: string | null | undefined) => {
         if (!url) return 'https://picsum.photos/seed/hotel/400/300';
         if (url.startsWith('http')) return url;
-        if (url.startsWith('/uploads/')) {
-            return `/api/media/${url.replace('/uploads/', '')}`;
-        }
         return url;
     };
 
@@ -256,7 +253,7 @@ export default function POSPage() {
                         {filteredProducts.map(product => (
                             <button key={product.id} className="group relative flex flex-col bg-card rounded-xl border hover:border-primary hover:shadow-lg transition-all text-left overflow-hidden" onClick={() => addToCart(product)}>
                                 <div className="relative h-32 w-full bg-muted">
-                                    <Image src={resolveImageUrl(product.image_url)} alt={product.name} width={400} height={300} className="object-cover h-full w-full" />
+                                    <Image src={resolveImageUrl(product.image_url)} alt={product.name} fill className="object-cover" />
                                 </div>
                                 <div className="p-4">
                                     <h3 className="font-bold text-sm truncate">{product.name}</h3>
