@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -503,7 +502,7 @@ export default function InventoryPage() {
                 <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
                         <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
-                        <DialogDescription>Manage sellable hotel products and services.</DialogDescription>
+                        <DialogDescription>Manage sellable hotel products and services. Set pricing and stock levels.</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={productForm.handleSubmit(onProductSubmit)} className="space-y-4">
                         <div className="space-y-2">
@@ -607,7 +606,7 @@ export default function InventoryPage() {
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle>{editingSupply ? 'Edit Supply' : 'Add New Supply'}</DialogTitle>
-                        <DialogDescription>Track raw material inventory and unit costs.</DialogDescription>
+                        <DialogDescription>Track raw material inventory and unit costs for production items.</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={supplyForm.handleSubmit(onSupplySubmit)} className="space-y-4">
                         <div className="space-y-2">
@@ -655,7 +654,7 @@ export default function InventoryPage() {
                 <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
                         <DialogTitle>Production Recipe: {recipeProduct?.name}</DialogTitle>
-                        <DialogDescription>Map raw ingredients to this product for automatic cost calculation and stock deduction.</DialogDescription>
+                        <DialogDescription>Map raw ingredients to this product for automatic cost calculation and stock deduction during sale.</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                         <div className="space-y-3">
@@ -731,7 +730,7 @@ export default function InventoryPage() {
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
-                        <AlertDialogDescription>Permanently remove this item from the system? This action cannot be undone.</AlertDialogDescription>
+                        <AlertDialogDescription>Permanently remove this item from the system? This action cannot be undone and will affect historical data links.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>

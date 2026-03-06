@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -73,7 +72,6 @@ export default function POSPage() {
         setCart(prev => {
             const existing = prev.find(item => item.productId === product.id);
             const price = Number(product.price || 0);
-            const costPrice = Number(product.costPrice || 0);
             if (existing) {
                 return prev.map(item => {
                     if (item.productId === product.id) {
@@ -88,7 +86,7 @@ export default function POSPage() {
                 name: product.name, 
                 quantity: 1, 
                 price: price, 
-                costPrice: costPrice,
+                costPrice: Number(product.costPrice || 0),
                 total: price 
             }];
         });
@@ -96,7 +94,7 @@ export default function POSPage() {
 
     const updateQuantity = (id: string, delta: number) => {
         setCart(prev => {
-            const next = prev.map(item => {
+            return prev.map(item => {
                 if (item.productId === id) {
                     const newQty = Math.max(1, item.quantity + delta);
                     const price = Number(item.price || 0);
@@ -104,7 +102,6 @@ export default function POSPage() {
                 }
                 return item;
             });
-            return next;
         });
     };
 
@@ -130,7 +127,7 @@ export default function POSPage() {
                 module: activeModule,
                 items: itemsSnapshot,
                 totalAmount: cartTotal,
-                totalCost: 0, 
+                totalCost: 0,
                 paymentMethod: method,
                 status: status,
                 customerName: finalCustomerName,
@@ -161,8 +158,8 @@ export default function POSPage() {
             setIsPaymentOpen(false);
             loadData();
             toast({ title: status === 'paid' ? "Sale Complete" : "Order Saved (Pay Later)" });
-        } catch (err) {
-            toast({ variant: "destructive", title: "Transaction Failed" });
+        } catch (err: any) {
+            toast({ variant: "destructive", title: "Transaction Failed", description: err.message });
         } finally {
             setIsProcessing(false);
         }
@@ -321,7 +318,7 @@ export default function POSPage() {
                 <DialogContent className="sm:max-w-[450px]">
                     <DialogHeader>
                         <DialogTitle>Payment Confirmation</DialogTitle>
-                        <DialogDescription>Process final payment for the current cart.</DialogDescription>
+                        <DialogDescription>Process final payment for the current guest cart. Choose payment method and confirm details.</DialogDescription>
                     </DialogHeader>
                     
                     <div className="bg-primary/5 p-6 rounded-xl border-2 border-primary/20 text-center space-y-2">
@@ -361,7 +358,7 @@ export default function POSPage() {
                 <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Pay Later Orders (Pending Bills)</DialogTitle>
-                        <DialogDescription>Review and resume orders saved for later payment.</DialogDescription>
+                        <DialogDescription>Review and resume orders saved for later payment. Select an order to bring it back to the POS.</DialogDescription>
                     </DialogHeader>
                     <div className="py-4">
                         <Table>
@@ -404,7 +401,7 @@ export default function POSPage() {
                 <DialogContent className="max-w-[400px] p-0 overflow-hidden bg-white text-black print-section">
                     <div className="p-8 space-y-4 text-center receipt-font text-sm leading-tight w-[80mm] mx-auto">
                         <DialogTitle className="sr-only">Order Receipt</DialogTitle>
-                        <DialogDescription className="sr-only">Official receipt for the transaction.</DialogDescription>
+                        <DialogDescription>Official receipt for the transaction. Includes order summary and payment details.</DialogDescription>
                         <div className="space-y-1">
                             <p className="font-bold text-[10px]">
                                 Wamaghach Kahua-ini Hotel, Othaya-Karatina Road, Contact 0720 333 461, MPESA TILL 4209898

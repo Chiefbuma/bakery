@@ -1,4 +1,3 @@
-
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
@@ -6,7 +5,8 @@ export const dynamic = 'force-dynamic';
 
 /**
  * @fileOverview Atomic POS Transaction Engine
- * Calculates true COGS at sale time and handles parent-child DB insertion order.
+ * Resolves 500 errors by ensuring correct parent-child insertion order 
+ * and calculating true COGS (Ingredient Cost) at the moment of sale.
  */
 
 export async function POST(req: Request) {
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     let calculatedTotalTransactionCost = 0;
     const itemsToProcess = [];
 
-    // 1. Pre-calculate costs and fetch snapshots
+    // 1. Pre-calculate costs and fetch snapshots from DB
     for (const item of items) {
       if (!item.productId) continue;
 
@@ -42,8 +42,8 @@ export async function POST(req: Request) {
 
       let unitCostSnapshot = 0;
 
+      // If it's a production item, calculate cost from its recipe
       if (product.hasRecipe === 1 || product.hasRecipe === true) {
-        // PRODUCTION ITEM: Sum ingredients cost
         const [ingredients]: any = await connection.query(`
           SELECT r.amount, s.unitCost 
           FROM recipes r 
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
             return acc + (Number(ing.amount) * Number(ing.unitCost));
         }, 0);
       } else {
-        // RETAIL ITEM: Use manual cost price
+        // Retail item uses fixed cost price
         unitCostSnapshot = Number(product.costPrice || 0);
       }
 
@@ -70,21 +70,21 @@ export async function POST(req: Request) {
       });
     }
 
-    // 2. IMPORTANT: Insert Parent Transaction FIRST to satisfy Foreign Key
+    // 2. CRITICAL: Insert Parent Transaction FIRST to satisfy Foreign Key
     await connection.query(
       'INSERT INTO transactions (id, orderNumber, module, totalAmount, totalCost, paymentMethod, status, customerName, amountReceived, balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [transactionId, orderNumber, module, totalAmount, calculatedTotalTransactionCost, paymentMethod, status, customerName, amountReceived, balance]
     );
 
-    // 3. Insert Children and Update Inventory
+    // 3. Insert Children and Update Stock
     for (const processedItem of itemsToProcess) {
       await connection.query(
         'INSERT INTO transaction_items (transactionId, productId, name, quantity, price, costPrice, total) VALUES (?, ?, ?, ?, ?, ?, ?)',
         [transactionId, processedItem.productId, processedItem.name, processedItem.quantity, processedItem.price, processedItem.unitCostSnapshot, processedItem.total]
       );
 
+      // Only deduct stock if payment is completed
       if (status === 'paid') {
-        // Stock Deduction
         await connection.query('UPDATE products SET stock = GREATEST(0, stock - ?) WHERE id = ?', [processedItem.quantity, processedItem.productId]);
 
         if (processedItem.hasRecipe) {
