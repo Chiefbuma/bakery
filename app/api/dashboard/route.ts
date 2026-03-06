@@ -51,18 +51,21 @@ export async function GET() {
       const [mStats]: any = await pool.query(`
         SELECT 
           SUM(CASE WHEN MONTH(timestamp) = ? AND YEAR(timestamp) = ? THEN totalAmount ELSE 0 END) as curr,
+          SUM(CASE WHEN MONTH(timestamp) = ? AND YEAR(timestamp) = ? THEN totalCost ELSE 0 END) as currCogs,
           SUM(CASE WHEN MONTH(timestamp) = ? AND YEAR(timestamp) = ? THEN totalAmount ELSE 0 END) as prev
         FROM transactions 
         WHERE module = ? AND status = 'paid'
-      `, [currentMonth, currentYear, prevMonth, prevYear, m]);
+      `, [currentMonth, currentYear, currentMonth, currentYear, prevMonth, prevYear, m]);
       
       const c = Number(mStats && mStats[0]?.curr || 0);
+      const cCogs = Number(mStats && mStats[0]?.currCogs || 0);
       const p = Number(mStats && mStats[0]?.prev || 0);
       const diff = p === 0 ? (c > 0 ? 100 : 0) : ((c - p) / p) * 100;
 
       return {
         module: m,
         currentSales: c,
+        currentCogs: cCogs,
         previousSales: p,
         changePercent: diff
       };

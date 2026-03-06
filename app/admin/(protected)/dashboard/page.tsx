@@ -7,7 +7,7 @@ import type { DashboardData } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
 import { formatPrice, cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 
@@ -69,7 +69,7 @@ export default function DashboardPage() {
                                 <TableHead className="w-[300px] font-bold">Metric</TableHead>
                                 <TableHead className="text-right font-bold text-primary">{previousPeriodLabel} (Prev)</TableHead>
                                 <TableHead className="text-right font-bold text-primary">{currentPeriodLabel} (Current)</TableHead>
-                                <TableHead className="text-right font-bold w-[120px]">Variance</TableHead>
+                                <TableHead className="text-right font-bold w-[120px]">MTD Growth</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -112,9 +112,10 @@ export default function DashboardPage() {
                     <Table>
                         <TableHeader>
                             <TableRow className="hover:bg-transparent">
-                                <TableHead className="w-[300px] font-bold">Department / Module</TableHead>
+                                <TableHead className="w-[200px] font-bold">Department / Module</TableHead>
                                 <TableHead className="text-right font-bold text-muted-foreground">{previousPeriodLabel}</TableHead>
                                 <TableHead className="text-right font-bold">{currentPeriodLabel}</TableHead>
+                                <TableHead className="text-right font-bold">Cost of Sale</TableHead>
                                 <TableHead className="text-right font-bold w-[120px]">MTD Growth</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -127,6 +128,7 @@ export default function DashboardPage() {
                                     </TableCell>
                                     <TableCell className="text-right text-muted-foreground">{formatPrice(m.previousSales)}</TableCell>
                                     <TableCell className="text-right font-bold">{formatPrice(m.currentSales)}</TableCell>
+                                    <TableCell className="text-right text-orange-600 font-medium">{formatPrice(m.currentCogs)}</TableCell>
                                     <TableCell className="text-right">
                                         <Badge variant={m.changePercent >= 0 ? "secondary" : "destructive"} className="px-2 py-0">
                                             {m.changePercent > 0 ? "+" : ""}{Math.round(m.changePercent)}%

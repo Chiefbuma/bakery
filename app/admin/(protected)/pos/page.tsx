@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -124,7 +125,6 @@ export default function POSPage() {
         
         const itemsSnapshot = [...cart];
         const finalCustomerName = customerName || "Guest";
-        const totalCost = itemsSnapshot.reduce((acc, item) => acc + (Number(item.costPrice || 0) * item.quantity), 0);
 
         try {
             const response = await placeOrder({
@@ -132,7 +132,7 @@ export default function POSPage() {
                 module: activeModule,
                 items: itemsSnapshot,
                 totalAmount: cartTotal,
-                totalCost,
+                totalCost: 0, // Server now calculates true COGS dynamically
                 paymentMethod: method,
                 status: status,
                 customerName: finalCustomerName,
@@ -147,7 +147,7 @@ export default function POSPage() {
                     module: activeModule,
                     items: itemsSnapshot,
                     totalAmount: cartTotal,
-                    totalCost,
+                    totalCost: 0,
                     timestamp: new Date().toISOString(),
                     paymentMethod: method,
                     status: 'paid',
@@ -261,7 +261,10 @@ export default function POSPage() {
                                 </div>
                                 <div className="p-4">
                                     <h3 className="font-bold text-sm truncate">{product.name}</h3>
-                                    <span className="text-primary font-bold">{formatPrice(Number(product.price))}</span>
+                                    <div className="flex justify-between items-center mt-1">
+                                        <span className="text-primary font-bold">{formatPrice(Number(product.price))}</span>
+                                        <span className="text-[10px] text-muted-foreground font-medium uppercase">Stock: {product.stock}</span>
+                                    </div>
                                 </div>
                             </button>
                         ))}

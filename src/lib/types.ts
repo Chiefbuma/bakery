@@ -85,6 +85,7 @@ export interface ComparisonMetric {
 export interface ModuleComparison {
   module: HotelModule;
   currentSales: number;
+  currentCogs: number;
   previousSales: number;
   changePercent: number;
 }
