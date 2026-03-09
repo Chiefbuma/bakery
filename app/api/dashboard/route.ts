@@ -1,4 +1,3 @@
-
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import type { DashboardData, HotelModule, ModuleComparison } from '@/lib/types';
@@ -15,7 +14,7 @@ export async function GET() {
     const prevMonth = prevMonthDate.getMonth() + 1;
     const prevYear = prevMonthDate.getFullYear();
 
-    // 1. Fetch Revenue and COGS
+    // 1. Fetch Revenue and COGS (True Cost Tracking)
     const [stats]: any = await pool.query(`
       SELECT 
         SUM(CASE WHEN MONTH(timestamp) = ? AND YEAR(timestamp) = ? THEN totalAmount ELSE 0 END) as currRev,

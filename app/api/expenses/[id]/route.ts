@@ -1,9 +1,11 @@
-
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * @fileOverview Expense Detail API (Next.js 15 Async Params)
+ */
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;

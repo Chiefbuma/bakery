@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -131,7 +130,7 @@ export default function POSPage() {
                 module: activeModule,
                 items: itemsSnapshot,
                 totalAmount: cartTotal,
-                totalCost: 0, 
+                totalCost: 0, // Calculated by server snapshot
                 paymentMethod: method,
                 status: status,
                 customerName: finalCustomerName,

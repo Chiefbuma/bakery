@@ -325,7 +325,7 @@ export default function InventoryPage() {
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between border-b pb-6">
                             <div className="space-y-1">
-                                <CardTitle>Sellable Products</CardTitle>
+                                <CardTitle>Sellable Products Ledger</CardTitle>
                                 <CardDescription>Retail stock and hotel services catalog.</CardDescription>
                             </div>
                             <Button onClick={() => handleOpenProductDialog()}>

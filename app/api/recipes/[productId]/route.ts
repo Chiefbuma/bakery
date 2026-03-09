@@ -1,9 +1,11 @@
-
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * @fileOverview Recipe Persistence API (Next.js 15 Async Params)
+ */
 export async function POST(req: Request, { params }: { params: Promise<{ productId: string }> }) {
   const connection = await pool.getConnection();
   try {
@@ -25,7 +27,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ product
     return NextResponse.json({ success: true });
   } catch (error) {
     if (connection) await connection.rollback();
-    console.error('Save Recipe Error:', error);
     return NextResponse.json({ error: "Failed to save recipe" }, { status: 500 });
   } finally {
     if (connection) connection.release();

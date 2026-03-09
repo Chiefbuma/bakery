@@ -1,4 +1,3 @@
-
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
@@ -7,6 +6,7 @@ export const dynamic = 'force-dynamic';
 /**
  * @fileOverview Atomic POS Transaction Engine
  * Standardized for Next.js 15 and MySQL transaction integrity.
+ * Ensures Parent (transactions) is created before Children (transaction_items).
  */
 export async function POST(req: Request) {
   const connection = await pool.getConnection();
@@ -41,6 +41,7 @@ export async function POST(req: Request) {
 
       let unitCostSnapshot = 0;
 
+      // Check for boolean or numeric (1/0) hasRecipe
       if (product.hasRecipe === 1 || product.hasRecipe === true) {
         // Production: Sum ingredient costs
         const [ingredients]: any = await connection.query(`
@@ -65,11 +66,11 @@ export async function POST(req: Request) {
         ...item,
         unitCostSnapshot,
         totalItemCost,
-        hasRecipe: !!product.hasRecipe
+        hasRecipe: product.hasRecipe === 1 || product.hasRecipe === true
       });
     }
 
-    // 2. CRITICAL: Insert Parent record FIRST to satisfy Foreign Key constraints
+    // 2. CRITICAL: Insert Parent record FIRST to satisfy foreign key constraints
     await connection.query(
       'INSERT INTO transactions (id, orderNumber, module, totalAmount, totalCost, paymentMethod, status, customerName, amountReceived, balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [transactionId, orderNumber, module, totalAmount, calculatedTotalTransactionCost, paymentMethod, status, customerName, amountReceived, balance]

@@ -1,4 +1,3 @@
-
 import { NextResponse } from 'next/server';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
@@ -6,8 +5,8 @@ import { join } from 'path';
 export const dynamic = 'force-dynamic';
 
 /**
- * @fileOverview Secure Media Serving API
- * Next.js 15 requires awaiting params.
+ * @fileOverview Secure Media Serving API for Next.js 15
+ * Awaits params asynchronously as required by the latest Next.js versions.
  */
 export async function GET(req: Request, { params }: { params: Promise<{ filename: string }> }) {
   try {
@@ -37,7 +36,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ filename
       },
     });
   } catch (e) {
-    console.error('Media Access Failed:', e);
     return new NextResponse(null, { status: 404 });
   }
 }
