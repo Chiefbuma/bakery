@@ -6,10 +6,8 @@ export const dynamic = 'force-dynamic';
 
 /**
  * @fileOverview Atomic POS Transaction Engine
- * Resolve 500 errors by strictly ordering parent-child insertion
- * and calculating True COGS (Ingredient-based) at the point of sale.
+ * Standardized for Next.js 15 and MySQL transaction integrity.
  */
-
 export async function POST(req: Request) {
   const connection = await pool.getConnection();
   try {
@@ -32,7 +30,7 @@ export async function POST(req: Request) {
     let calculatedTotalTransactionCost = 0;
     const itemsToProcess = [];
 
-    // 1. Calculate true cost per item based on current inventory pricing
+    // 1. Snapshot costs and validate products
     for (const item of items) {
       if (!item.productId) continue;
 
@@ -43,8 +41,8 @@ export async function POST(req: Request) {
 
       let unitCostSnapshot = 0;
 
-      // For production items, pull ingredient costs
       if (product.hasRecipe === 1 || product.hasRecipe === true) {
+        // Production: Sum ingredient costs
         const [ingredients]: any = await connection.query(`
           SELECT r.amount, s.unitCost 
           FROM recipes r 
@@ -56,7 +54,7 @@ export async function POST(req: Request) {
             return acc + (Number(ing.amount) * Number(ing.unitCost));
         }, 0);
       } else {
-        // For retail, use fixed cost
+        // Retail: Use manual cost
         unitCostSnapshot = Number(product.costPrice || 0);
       }
 
@@ -71,29 +69,28 @@ export async function POST(req: Request) {
       });
     }
 
-    // 2. CRITICAL: Insert Parent Transaction FIRST (Resolves Foreign Key Error)
+    // 2. CRITICAL: Insert Parent record FIRST to satisfy Foreign Key constraints
     await connection.query(
       'INSERT INTO transactions (id, orderNumber, module, totalAmount, totalCost, paymentMethod, status, customerName, amountReceived, balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [transactionId, orderNumber, module, totalAmount, calculatedTotalTransactionCost, paymentMethod, status, customerName, amountReceived, balance]
     );
 
-    // 3. Insert Children and update inventory
+    // 3. Insert Child items and update stock
     for (const processedItem of itemsToProcess) {
       await connection.query(
         'INSERT INTO transaction_items (transactionId, productId, name, quantity, price, costPrice, total) VALUES (?, ?, ?, ?, ?, ?, ?)',
         [transactionId, processedItem.productId, processedItem.name, processedItem.quantity, processedItem.price, processedItem.unitCostSnapshot, processedItem.total]
       );
 
-      // Only deduct stock for completed sales
       if (status === 'paid') {
-        // Deduct direct product stock
-        await connection.query('UPDATE products SET stock = GREATEST(0, stock - ?) WHERE id = ?', [processedItem.quantity, processedItem.productId]);
+        // Deduct product stock
+        await connection.query('UPDATE products SET stock = stock - ? WHERE id = ?', [processedItem.quantity, processedItem.productId]);
 
-        // Deduct raw ingredients if production item
+        // Deduct ingredient stock if production item
         if (processedItem.hasRecipe) {
           const [recipes]: any = await connection.query('SELECT supplyId, amount FROM recipes WHERE productId = ?', [processedItem.productId]);
           for (const recipe of recipes) {
-            await connection.query('UPDATE supplies SET quantity = GREATEST(0, quantity - ?) WHERE id = ?', [Number(recipe.amount) * Number(processedItem.quantity), recipe.supplyId]);
+            await connection.query('UPDATE supplies SET quantity = quantity - ? WHERE id = ?', [Number(recipe.amount) * Number(processedItem.quantity), recipe.supplyId]);
           }
         }
       }
@@ -103,7 +100,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ id: transactionId, orderNumber, status: 'success' });
   } catch (error: any) {
     if (connection) await connection.rollback();
-    console.error('POS Engine Failure:', error);
+    console.error('POS Engine Error:', error);
     return NextResponse.json({ error: error.message || "Atomic transaction failed" }, { status: 500 });
   } finally {
     if (connection) connection.release();

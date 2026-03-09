@@ -6,7 +6,7 @@ import { getProducts, placeOrder, getPendingOrders } from "@/services/hotel-serv
 import type { Product, HotelModule, SaleItem, Transaction } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, Search, History, Printer, Plus, Minus, Loader2, Play } from "lucide-react";
+import { ShoppingCart, Search, History, Printer, Plus, Minus, Loader2, Play, CreditCard, Utensils, Beer, Car, Bed, Music } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -15,6 +15,7 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const PAYSTACK_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || 'pk_test_placeholder';
 
@@ -41,11 +42,9 @@ export default function POSPage() {
     const resolveImageUrl = (url: string | null | undefined) => {
         if (!url) return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=400';
         if (url.startsWith('/uploads/')) {
-            // Remove double slashes if any
             const filename = url.replace('/uploads/', '');
             return `/api/media/${filename}`;
         }
-        if (url.startsWith('http')) return url;
         return url;
     };
 
@@ -132,7 +131,7 @@ export default function POSPage() {
                 module: activeModule,
                 items: itemsSnapshot,
                 totalAmount: cartTotal,
-                totalCost: 0, // Server calculates true COGS from ingredients
+                totalCost: 0, 
                 paymentMethod: method,
                 status: status,
                 customerName: finalCustomerName,
@@ -162,9 +161,9 @@ export default function POSPage() {
             setAmountReceived("");
             setIsPaymentOpen(false);
             loadData();
-            toast({ title: status === 'paid' ? "Payment Success" : "Order Saved (Pay Later)" });
+            toast({ title: status === 'paid' ? "Sale Complete" : "Bill Saved for Later" });
         } catch (err: any) {
-            toast({ variant: "destructive", title: "Transaction Aborted", description: err.message });
+            toast({ variant: "destructive", title: "Checkout Error", description: err.message });
         } finally {
             setIsProcessing(false);
         }
@@ -174,7 +173,7 @@ export default function POSPage() {
         if (paymentMethod === 'cash') {
             const received = parseFloat(amountReceived);
             if (isNaN(received) || received < cartTotal) {
-                toast({ variant: "destructive", title: "Amount received is insufficient" });
+                toast({ variant: "destructive", title: "Insufficient cash provided" });
                 return;
             }
             finalizeOrder('cash', 'paid', received, balanceValue);
@@ -185,7 +184,7 @@ export default function POSPage() {
 
     const handleMpesaPayment = () => {
         if (!(window as any).PaystackPop) {
-            toast({ variant: "destructive", title: "Paystack gateway not loaded" });
+            toast({ variant: "destructive", title: "Payment gateway error" });
             return;
         }
         setIsProcessing(true);
@@ -209,7 +208,7 @@ export default function POSPage() {
         })));
         setCustomerName(order.customerName || "");
         setIsHistoryOpen(false);
-        toast({ title: "Pending Order Resumed" });
+        toast({ title: "Order Resumed" });
     };
 
     const filteredProducts = products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -241,30 +240,54 @@ export default function POSPage() {
             `}</style>
 
             <div className="flex-1 flex flex-col min-w-0 border-r">
-                <div className="p-4 border-b bg-card flex items-center justify-between gap-4">
-                    <div className="relative w-full max-w-md">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="Search items..." className="pl-9" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                <div className="p-4 border-b bg-card flex flex-col gap-4">
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="relative flex-1 max-w-md">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="Search catalog..." className="pl-9" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                        </div>
+                        <Button variant="outline" size="icon" onClick={() => setIsHistoryOpen(true)} className="relative">
+                            <History className="h-4 w-4" />
+                            {pendingOrders.length > 0 && <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center bg-primary text-[10px]">{pendingOrders.length}</Badge>}
+                        </Button>
                     </div>
-                    <Button variant="outline" size="icon" onClick={() => setIsHistoryOpen(true)} className="relative">
-                        <History className="h-4 w-4" />
-                        {pendingOrders.length > 0 && <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center bg-primary text-[10px]">{pendingOrders.length}</Badge>}
-                    </Button>
+
+                    <Tabs value={activeModule} onValueChange={(v) => setActiveModule(v as HotelModule)} className="w-full">
+                        <TabsList className="grid grid-cols-5 w-full bg-muted/50 p-1">
+                            <TabsTrigger value="restaurant" className="gap-2 text-xs">
+                                <Utensils className="h-3 w-3" /> <span className="hidden md:inline">Restaurant</span>
+                            </TabsTrigger>
+                            <TabsTrigger value="bar" className="gap-2 text-xs">
+                                <Beer className="h-3 w-3" /> <span className="hidden md:inline">Bar</span>
+                            </TabsTrigger>
+                            <TabsTrigger value="carwash" className="gap-2 text-xs">
+                                <Car className="h-3 w-3" /> <span className="hidden md:inline">Car Wash</span>
+                            </TabsTrigger>
+                            <TabsTrigger value="accommodation" className="gap-2 text-xs">
+                                <Bed className="h-3 w-3" /> <span className="hidden md:inline">Rooms</span>
+                            </TabsTrigger>
+                            <TabsTrigger value="entertainment" className="gap-2 text-xs">
+                                <Music className="h-3 w-3" /> <span className="hidden md:inline">Ent.</span>
+                            </TabsTrigger>
+                        </TabsList>
+                    </Tabs>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 overflow-y-auto p-6 bg-muted/20">
                     <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
                         {filteredProducts.map(product => (
                             <button key={product.id} className="group relative flex flex-col bg-card rounded-xl border hover:border-primary hover:shadow-lg transition-all text-left overflow-hidden" onClick={() => addToCart(product)}>
                                 <div className="relative h-32 w-full bg-muted">
                                     <Image src={resolveImageUrl(product.image_url)} alt={product.name} fill className="object-cover" />
+                                    <div className="absolute top-2 right-2">
+                                        <Badge variant={product.stock <= 5 ? "destructive" : "secondary"} className="text-[10px] backdrop-blur-md">
+                                            Stock: {product.stock}
+                                        </Badge>
+                                    </div>
                                 </div>
                                 <div className="p-4">
                                     <h3 className="font-bold text-sm truncate">{product.name}</h3>
-                                    <div className="flex justify-between items-center mt-1">
-                                        <span className="text-primary font-bold">{formatPrice(Number(product.price))}</span>
-                                        <span className="text-[10px] text-muted-foreground font-medium uppercase">Stock: {product.stock}</span>
-                                    </div>
+                                    <p className="text-primary font-black mt-1">{formatPrice(Number(product.price))}</p>
                                 </div>
                             </button>
                         ))}
@@ -273,33 +296,41 @@ export default function POSPage() {
             </div>
 
             <div className="w-[480px] flex flex-col bg-card shadow-xl border-l">
-                <div className="p-4 border-b flex items-center gap-2">
-                    <ShoppingCart className="h-5 w-5" />
-                    <h2 className="font-bold">Active Cart</h2>
+                <div className="p-4 border-b flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <ShoppingCart className="h-5 w-5" />
+                        <h2 className="font-bold uppercase tracking-tight">Active Cart</h2>
+                    </div>
+                    {cart.length > 0 && <Button variant="ghost" size="sm" className="text-destructive h-8 text-[10px]" onClick={() => setCart([])}>CLEAR ALL</Button>}
                 </div>
                 
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                    <Input placeholder="Guest Name / Table Reference" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+                    <Input placeholder="Guest Name / Table Ref" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="h-10" />
                     
                     <div className="space-y-2">
                         <div className="grid grid-cols-12 gap-2 text-[10px] uppercase font-black text-muted-foreground px-2">
-                            <div className="col-span-4">Item</div>
+                            <div className="col-span-5">Item Details</div>
                             <div className="col-span-3 text-center">Qty</div>
-                            <div className="col-span-5 text-right">Subtotal</div>
+                            <div className="col-span-4 text-right">Subtotal</div>
                         </div>
                         <Separator />
-                        {cart.map(item => (
+                        {cart.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
+                                <ShoppingCart className="h-12 w-12 opacity-10 mb-2" />
+                                <p className="text-xs italic">Cart is empty</p>
+                            </div>
+                        ) : cart.map(item => (
                             <div key={item.productId} className="grid grid-cols-12 gap-2 items-center bg-muted/30 p-2 rounded-lg border border-transparent hover:border-primary/20 transition-colors">
-                                <div className="col-span-4 min-w-0">
+                                <div className="col-span-5 min-w-0">
                                     <p className="text-xs font-bold truncate">{item.name}</p>
                                     <p className="text-[10px] text-muted-foreground">{formatPrice(item.price)}</p>
                                 </div>
                                 <div className="col-span-3 flex items-center justify-center gap-1">
-                                    <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full" onClick={() => updateQuantity(item.productId, -1)}><Minus className="h-2 w-2" /></Button>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={() => updateQuantity(item.productId, -1)}><Minus className="h-3 w-3" /></Button>
                                     <span className="text-xs font-bold w-4 text-center">{item.quantity}</span>
-                                    <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full" onClick={() => updateQuantity(item.productId, 1)}><Plus className="h-2 w-2" /></Button>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={() => updateQuantity(item.productId, 1)}><Plus className="h-3 w-3" /></Button>
                                 </div>
-                                <div className="col-span-5 text-right">
+                                <div className="col-span-4 text-right">
                                     <p className="text-xs font-black text-primary">{formatPrice(Number(item.total))}</p>
                                 </div>
                             </div>
@@ -309,12 +340,12 @@ export default function POSPage() {
 
                 <div className="p-6 border-t bg-muted/20 space-y-4">
                     <div className="flex justify-between items-end">
-                        <span className="text-muted-foreground font-medium uppercase tracking-tighter text-xs">Grand Total</span>
+                        <span className="text-muted-foreground font-bold uppercase tracking-widest text-[10px]">Grand Total</span>
                         <span className="text-3xl font-black text-primary leading-none">{formatPrice(cartTotal)}</span>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                        <Button variant="outline" onClick={() => finalizeOrder('none', 'pending')} disabled={cart.length === 0 || isProcessing}>Pay Later</Button>
-                        <Button onClick={() => setIsPaymentOpen(true)} disabled={cart.length === 0 || isProcessing}>Finalize Sale</Button>
+                        <Button variant="outline" className="h-12 font-bold" onClick={() => finalizeOrder('none', 'pending')} disabled={cart.length === 0 || isProcessing}>PAY LATER</Button>
+                        <Button className="h-12 font-bold" onClick={() => setIsPaymentOpen(true)} disabled={cart.length === 0 || isProcessing}>CHECKOUT</Button>
                     </div>
                 </div>
             </div>
@@ -322,28 +353,28 @@ export default function POSPage() {
             <Dialog open={isPaymentOpen} onOpenChange={setIsPaymentOpen}>
                 <DialogContent className="sm:max-w-[450px]">
                     <DialogHeader>
-                        <DialogTitle>Process Payment</DialogTitle>
-                        <DialogDescription>Choose a payment method to complete this transaction and update inventory levels.</DialogDescription>
+                        <DialogTitle>Finalize Settlement</DialogTitle>
+                        <DialogDescription>Process the payment for order WK-{Date.now()}. Inventory will be updated upon confirmation.</DialogDescription>
                     </DialogHeader>
                     
-                    <div className="bg-primary/5 p-6 rounded-xl border-2 border-primary/20 text-center space-y-2">
-                        <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">Amount Due</p>
+                    <div className="bg-primary/5 p-8 rounded-xl border-2 border-primary/20 text-center space-y-2">
+                        <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">Total Payable</p>
                         <p className="text-5xl font-black text-primary">{formatPrice(cartTotal)}</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 py-4">
-                        <Button variant={paymentMethod === 'cash' ? 'default' : 'outline'} className="h-16 text-lg font-bold" onClick={() => setPaymentMethod('cash')}>CASH</Button>
-                        <Button variant={paymentMethod === 'mpesa' ? 'default' : 'outline'} className="h-16 text-lg font-bold" onClick={() => setPaymentMethod('mpesa')}>M-PESA</Button>
+                        <Button variant={paymentMethod === 'cash' ? 'default' : 'outline'} className="h-20 text-xl font-black" onClick={() => setPaymentMethod('cash')}>CASH</Button>
+                        <Button variant={paymentMethod === 'mpesa' ? 'default' : 'outline'} className="h-20 text-xl font-black" onClick={() => setPaymentMethod('mpesa')}>M-PESA</Button>
                     </div>
 
                     {paymentMethod === 'cash' && (
-                        <div className="space-y-4">
+                        <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
                             <div className="space-y-2">
-                                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Amount Received (Ksh)</Label>
-                                <Input type="number" value={amountReceived} onChange={(e) => setAmountReceived(e.target.value)} className="text-3xl h-16 font-black text-center" autoFocus />
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Amount Received</Label>
+                                <Input type="number" value={amountReceived} onChange={(e) => setAmountReceived(e.target.value)} className="text-4xl h-20 font-black text-center border-2 border-primary/30" autoFocus />
                             </div>
                             <div className="flex justify-between items-center p-4 bg-muted/50 rounded-lg border border-dashed border-primary/30">
-                                <span className="font-bold text-sm">Change to give Guest</span>
+                                <span className="font-bold text-sm">Change Balance</span>
                                 <span className="text-2xl font-black text-primary">{formatPrice(Math.max(0, balanceValue))}</span>
                             </div>
                         </div>
@@ -351,8 +382,8 @@ export default function POSPage() {
 
                     <DialogFooter className="pt-4">
                         <Button variant="outline" onClick={() => setIsPaymentOpen(false)}>Cancel</Button>
-                        <Button onClick={handleCheckout} disabled={isProcessing} className="min-w-[150px] font-bold">
-                            {isProcessing ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : null}
+                        <Button onClick={handleCheckout} disabled={isProcessing} className="min-w-[150px] font-bold h-10">
+                            {isProcessing ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <CreditCard className="mr-2 h-4 w-4" />}
                             Confirm Payment
                         </Button>
                     </DialogFooter>
@@ -360,36 +391,36 @@ export default function POSPage() {
             </Dialog>
 
             <Dialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
-                <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
                     <DialogHeader>
                         <DialogTitle>Pending Bill Ledger</DialogTitle>
-                        <DialogDescription>Review and resume orders that were saved for later payment.</DialogDescription>
+                        <DialogDescription>Review orders saved for later payment. Click Resume to load back to cart.</DialogDescription>
                     </DialogHeader>
-                    <div className="py-4">
+                    <div className="flex-1 overflow-y-auto py-4">
                         <Table>
                             <TableHeader>
-                                <TableRow>
+                                <TableRow className="bg-muted/50">
                                     <TableHead>Time</TableHead>
-                                    <TableHead>Guest/Table</TableHead>
-                                    <TableHead>Qty</TableHead>
-                                    <TableHead className="text-right">Amount</TableHead>
+                                    <TableHead>Guest/Reference</TableHead>
+                                    <TableHead>Items</TableHead>
+                                    <TableHead className="text-right">Total</TableHead>
                                     <TableHead className="text-right">Action</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {pendingOrders.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="text-center py-10 text-muted-foreground italic">No pending bills recorded.</TableCell>
+                                        <TableCell colSpan={5} className="text-center py-16 text-muted-foreground italic">No pending bills found.</TableCell>
                                     </TableRow>
                                 ) : (
                                     pendingOrders.map(order => (
                                         <TableRow key={order.id}>
-                                            <TableCell className="text-xs">{new Date(order.timestamp).toLocaleTimeString()}</TableCell>
+                                            <TableCell className="text-xs font-mono">{new Date(order.timestamp).toLocaleTimeString()}</TableCell>
                                             <TableCell className="font-bold">{order.customerName || "Guest"}</TableCell>
-                                            <TableCell className="text-xs">{order.items.length} lines</TableCell>
-                                            <TableCell className="text-right font-bold text-primary">{formatPrice(order.totalAmount)}</TableCell>
+                                            <TableCell className="text-xs text-muted-foreground">{order.items.length} product(s)</TableCell>
+                                            <TableCell className="text-right font-black text-primary">{formatPrice(order.totalAmount)}</TableCell>
                                             <TableCell className="text-right">
-                                                <Button size="sm" onClick={() => resumeOrder(order)} className="gap-2">
+                                                <Button size="sm" onClick={() => resumeOrder(order)} className="gap-2 h-8">
                                                     <Play className="h-3 w-3" /> Resume
                                                 </Button>
                                             </TableCell>
@@ -403,36 +434,36 @@ export default function POSPage() {
             </Dialog>
 
             <Dialog open={!!receiptData} onOpenChange={() => setReceiptData(null)}>
-                <DialogContent className="max-w-[400px] p-0 overflow-hidden bg-white text-black print-section">
+                <DialogContent className="max-w-[400px] p-0 overflow-hidden bg-white text-black print-section border-none">
                     <div className="p-8 space-y-4 text-center receipt-font text-sm leading-tight w-[80mm] mx-auto">
-                        <DialogTitle className="sr-only">Official Receipt</DialogTitle>
-                        <DialogDescription>Wamaghach Hotel official transaction receipt.</DialogDescription>
+                        <DialogTitle className="sr-only">Receipt Preview</DialogTitle>
+                        <DialogDescription className="sr-only">Official transaction record for Wamaghach Hotel</DialogDescription>
+                        
                         <div className="space-y-1">
-                            <p className="font-bold text-[10px]">
-                                Wamaghach Kahua-ini Hotel, Othaya-Karatina Road, Contact 0720 333 461, MPESA TILL 4209898
-                            </p>
-                            <div className="mt-2 text-[10px]">
-                                <p>Order Ref: <b>{receiptData?.orderNumber}</b></p>
-                                <p>Time: <b>{new Date().toLocaleString()}</b></p>
-                                <p>Guest: <b>{receiptData?.customerName || 'Walk-in'}</b></p>
+                            <h2 className="font-black text-lg">WAMAGHACH HOTEL</h2>
+                            <p className="font-bold text-[9px] uppercase">Kahua-ini Othaya-Karatina Rd</p>
+                            <p className="text-[9px]">Contact: 0720 333 461</p>
+                            <p className="text-[9px]">MPESA TILL: 4209898</p>
+                            <div className="mt-4 text-[10px] space-y-0.5 border-y border-dashed border-black py-2">
+                                <p>REF: <b>{receiptData?.orderNumber}</b></p>
+                                <p>DATE: <b>{new Date().toLocaleString()}</b></p>
+                                <p>GUEST: <b>{receiptData?.customerName || 'Walk-in'}</b></p>
                             </div>
                         </div>
                         
-                        <Separator className="border-black border-dashed my-2" />
-                        
-                        <table className="w-full text-left text-[11px] border-collapse">
+                        <table className="w-full text-left text-[11px] border-collapse mt-2">
                             <thead>
                                 <tr className="border-b border-dashed border-black">
                                     <th className="py-1">QTY</th>
-                                    <th className="py-1">ITEM</th>
-                                    <th className="py-1 text-right">AMT</th>
+                                    <th className="py-1">DESCRIPTION</th>
+                                    <th className="py-1 text-right">PRICE</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {receiptData?.items?.map((item, idx) => (
                                     <tr key={idx}>
                                         <td className="py-1">{item.quantity}</td>
-                                        <td className="py-1">{item.name}</td>
+                                        <td className="py-1 uppercase">{item.name}</td>
                                         <td className="py-1 text-right">{item.total}</td>
                                     </tr>
                                 ))}
@@ -442,35 +473,36 @@ export default function POSPage() {
                         <Separator className="border-black border-dashed my-2" />
 
                         <div className="space-y-1 text-[11px]">
-                            <div className="flex justify-between font-black">
+                            <div className="flex justify-between font-black text-lg">
                                 <span>TOTAL</span>
                                 <span>{formatPrice(receiptData?.totalAmount || 0)}</span>
                             </div>
                             {receiptData?.paymentMethod === 'cash' && (
                                 <>
                                     <div className="flex justify-between">
-                                        <span>CASH REC.</span>
+                                        <span>CASH RECEIVED</span>
                                         <span>{formatPrice(receiptData?.amountReceived || 0)}</span>
                                     </div>
                                     <div className="flex justify-between font-bold">
-                                        <span>CHANGE</span>
+                                        <span>CHANGE DUE</span>
                                         <span>{formatPrice(receiptData?.balance || 0)}</span>
                                     </div>
                                 </>
                             )}
-                            <div className="flex justify-between italic">
-                                <span>METHOD</span>
+                            <div className="flex justify-between italic text-[10px] pt-1">
+                                <span>PAYMENT METHOD</span>
                                 <span className="uppercase">{receiptData?.paymentMethod}</span>
                             </div>
                         </div>
 
-                        <Separator className="border-black border-dashed my-2" />
-                        <p className="text-[9px] font-bold italic">Thank you for visiting Wamaghach!</p>
-                        <p className="text-[8px] text-muted-foreground uppercase">System: Firebase Studio</p>
+                        <div className="pt-6 text-[9px] uppercase font-bold">
+                            <p>Thank you for choosing Wamaghach!</p>
+                            <p className="mt-1">*** Welcome Again ***</p>
+                        </div>
 
-                        <div className="pt-4 no-print">
+                        <div className="pt-6 no-print">
                             <Button className="w-full" onClick={() => window.print()}>
-                                <Printer className="mr-2 h-4 w-4" /> Print Physical Receipt
+                                <Printer className="mr-2 h-4 w-4" /> Print Receipt
                             </Button>
                         </div>
                     </div>
