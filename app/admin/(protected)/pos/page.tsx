@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -39,7 +40,11 @@ export default function POSPage() {
 
     const resolveImageUrl = (url: string | null | undefined) => {
         if (!url) return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=400';
-        if (url.startsWith('/uploads/')) return `/api/media${url.replace('/uploads', '')}`;
+        if (url.startsWith('/uploads/')) {
+            // Remove double slashes if any
+            const filename = url.replace('/uploads/', '');
+            return `/api/media/${filename}`;
+        }
         if (url.startsWith('http')) return url;
         return url;
     };
@@ -127,7 +132,7 @@ export default function POSPage() {
                 module: activeModule,
                 items: itemsSnapshot,
                 totalAmount: cartTotal,
-                totalCost: 0,
+                totalCost: 0, // Server calculates true COGS from ingredients
                 paymentMethod: method,
                 status: status,
                 customerName: finalCustomerName,
@@ -157,9 +162,9 @@ export default function POSPage() {
             setAmountReceived("");
             setIsPaymentOpen(false);
             loadData();
-            toast({ title: status === 'paid' ? "Sale Complete" : "Order Saved (Pay Later)" });
+            toast({ title: status === 'paid' ? "Payment Success" : "Order Saved (Pay Later)" });
         } catch (err: any) {
-            toast({ variant: "destructive", title: "Transaction Failed", description: err.message });
+            toast({ variant: "destructive", title: "Transaction Aborted", description: err.message });
         } finally {
             setIsProcessing(false);
         }
@@ -180,7 +185,7 @@ export default function POSPage() {
 
     const handleMpesaPayment = () => {
         if (!(window as any).PaystackPop) {
-            toast({ variant: "destructive", title: "Payment system unavailable" });
+            toast({ variant: "destructive", title: "Paystack gateway not loaded" });
             return;
         }
         setIsProcessing(true);
@@ -204,7 +209,7 @@ export default function POSPage() {
         })));
         setCustomerName(order.customerName || "");
         setIsHistoryOpen(false);
-        toast({ title: "Order Resumed" });
+        toast({ title: "Pending Order Resumed" });
     };
 
     const filteredProducts = products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -274,7 +279,7 @@ export default function POSPage() {
                 </div>
                 
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                    <Input placeholder="Guest Name / Table" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+                    <Input placeholder="Guest Name / Table Reference" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
                     
                     <div className="space-y-2">
                         <div className="grid grid-cols-12 gap-2 text-[10px] uppercase font-black text-muted-foreground px-2">
@@ -309,7 +314,7 @@ export default function POSPage() {
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                         <Button variant="outline" onClick={() => finalizeOrder('none', 'pending')} disabled={cart.length === 0 || isProcessing}>Pay Later</Button>
-                        <Button onClick={() => setIsPaymentOpen(true)} disabled={cart.length === 0 || isProcessing}>Checkout</Button>
+                        <Button onClick={() => setIsPaymentOpen(true)} disabled={cart.length === 0 || isProcessing}>Finalize Sale</Button>
                     </div>
                 </div>
             </div>
@@ -317,12 +322,12 @@ export default function POSPage() {
             <Dialog open={isPaymentOpen} onOpenChange={setIsPaymentOpen}>
                 <DialogContent className="sm:max-w-[450px]">
                     <DialogHeader>
-                        <DialogTitle>Payment Confirmation</DialogTitle>
-                        <DialogDescription>Process final payment for the current guest cart. Choose payment method and confirm details.</DialogDescription>
+                        <DialogTitle>Process Payment</DialogTitle>
+                        <DialogDescription>Choose a payment method to complete this transaction and update inventory levels.</DialogDescription>
                     </DialogHeader>
                     
                     <div className="bg-primary/5 p-6 rounded-xl border-2 border-primary/20 text-center space-y-2">
-                        <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">Total Amount Due</p>
+                        <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">Amount Due</p>
                         <p className="text-5xl font-black text-primary">{formatPrice(cartTotal)}</p>
                     </div>
 
@@ -334,11 +339,11 @@ export default function POSPage() {
                     {paymentMethod === 'cash' && (
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Cash Amount Received (Ksh)</Label>
+                                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Amount Received (Ksh)</Label>
                                 <Input type="number" value={amountReceived} onChange={(e) => setAmountReceived(e.target.value)} className="text-3xl h-16 font-black text-center" autoFocus />
                             </div>
                             <div className="flex justify-between items-center p-4 bg-muted/50 rounded-lg border border-dashed border-primary/30">
-                                <span className="font-bold text-sm">Change Due</span>
+                                <span className="font-bold text-sm">Change to give Guest</span>
                                 <span className="text-2xl font-black text-primary">{formatPrice(Math.max(0, balanceValue))}</span>
                             </div>
                         </div>
@@ -348,7 +353,7 @@ export default function POSPage() {
                         <Button variant="outline" onClick={() => setIsPaymentOpen(false)}>Cancel</Button>
                         <Button onClick={handleCheckout} disabled={isProcessing} className="min-w-[150px] font-bold">
                             {isProcessing ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : null}
-                            Complete Sale
+                            Confirm Payment
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -357,31 +362,31 @@ export default function POSPage() {
             <Dialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
                 <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Pay Later Orders (Pending Bills)</DialogTitle>
-                        <DialogDescription>Review and resume orders saved for later payment. Select an order to bring it back to the POS.</DialogDescription>
+                        <DialogTitle>Pending Bill Ledger</DialogTitle>
+                        <DialogDescription>Review and resume orders that were saved for later payment.</DialogDescription>
                     </DialogHeader>
                     <div className="py-4">
                         <Table>
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Time</TableHead>
-                                    <TableHead>Guest/Reference</TableHead>
-                                    <TableHead>Items</TableHead>
-                                    <TableHead className="text-right">Total</TableHead>
+                                    <TableHead>Guest/Table</TableHead>
+                                    <TableHead>Qty</TableHead>
+                                    <TableHead className="text-right">Amount</TableHead>
                                     <TableHead className="text-right">Action</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {pendingOrders.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="text-center py-10 text-muted-foreground italic">No pending bills found.</TableCell>
+                                        <TableCell colSpan={5} className="text-center py-10 text-muted-foreground italic">No pending bills recorded.</TableCell>
                                     </TableRow>
                                 ) : (
                                     pendingOrders.map(order => (
                                         <TableRow key={order.id}>
                                             <TableCell className="text-xs">{new Date(order.timestamp).toLocaleTimeString()}</TableCell>
                                             <TableCell className="font-bold">{order.customerName || "Guest"}</TableCell>
-                                            <TableCell className="text-xs">{order.items.length} items</TableCell>
+                                            <TableCell className="text-xs">{order.items.length} lines</TableCell>
                                             <TableCell className="text-right font-bold text-primary">{formatPrice(order.totalAmount)}</TableCell>
                                             <TableCell className="text-right">
                                                 <Button size="sm" onClick={() => resumeOrder(order)} className="gap-2">
@@ -400,8 +405,8 @@ export default function POSPage() {
             <Dialog open={!!receiptData} onOpenChange={() => setReceiptData(null)}>
                 <DialogContent className="max-w-[400px] p-0 overflow-hidden bg-white text-black print-section">
                     <div className="p-8 space-y-4 text-center receipt-font text-sm leading-tight w-[80mm] mx-auto">
-                        <DialogTitle className="sr-only">Order Receipt</DialogTitle>
-                        <DialogDescription>Official receipt for the transaction. Includes order summary and payment details.</DialogDescription>
+                        <DialogTitle className="sr-only">Official Receipt</DialogTitle>
+                        <DialogDescription>Wamaghach Hotel official transaction receipt.</DialogDescription>
                         <div className="space-y-1">
                             <p className="font-bold text-[10px]">
                                 Wamaghach Kahua-ini Hotel, Othaya-Karatina Road, Contact 0720 333 461, MPESA TILL 4209898
@@ -444,7 +449,7 @@ export default function POSPage() {
                             {receiptData?.paymentMethod === 'cash' && (
                                 <>
                                     <div className="flex justify-between">
-                                        <span>CASH RECEIVED</span>
+                                        <span>CASH REC.</span>
                                         <span>{formatPrice(receiptData?.amountReceived || 0)}</span>
                                     </div>
                                     <div className="flex justify-between font-bold">
@@ -454,18 +459,18 @@ export default function POSPage() {
                                 </>
                             )}
                             <div className="flex justify-between italic">
-                                <span>MODE</span>
+                                <span>METHOD</span>
                                 <span className="uppercase">{receiptData?.paymentMethod}</span>
                             </div>
                         </div>
 
                         <Separator className="border-black border-dashed my-2" />
-                        <p className="text-[9px] font-bold">Thank you for visiting Wamaghach!</p>
-                        <p className="text-[8px] text-muted-foreground">System by Firebase Studio</p>
+                        <p className="text-[9px] font-bold italic">Thank you for visiting Wamaghach!</p>
+                        <p className="text-[8px] text-muted-foreground uppercase">System: Firebase Studio</p>
 
                         <div className="pt-4 no-print">
                             <Button className="w-full" onClick={() => window.print()}>
-                                <Printer className="mr-2 h-4 w-4" /> Print Receipt
+                                <Printer className="mr-2 h-4 w-4" /> Print Physical Receipt
                             </Button>
                         </div>
                     </div>

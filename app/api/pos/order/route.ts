@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
@@ -31,7 +32,7 @@ export async function POST(req: Request) {
     let calculatedTotalTransactionCost = 0;
     const itemsToProcess = [];
 
-    // 1. Pre-calculate costs and fetch snapshots from DB
+    // 1. Pre-calculate true costs from DB snapshots
     for (const item of items) {
       if (!item.productId) continue;
 
@@ -42,7 +43,7 @@ export async function POST(req: Request) {
 
       let unitCostSnapshot = 0;
 
-      // If it's a production item, calculate cost from its recipe
+      // Production items calculate cost from current ingredients unit prices
       if (product.hasRecipe === 1 || product.hasRecipe === true) {
         const [ingredients]: any = await connection.query(`
           SELECT r.amount, s.unitCost 
@@ -55,7 +56,7 @@ export async function POST(req: Request) {
             return acc + (Number(ing.amount) * Number(ing.unitCost));
         }, 0);
       } else {
-        // Retail item uses fixed cost price
+        // Retail items use fixed cost price
         unitCostSnapshot = Number(product.costPrice || 0);
       }
 
@@ -83,10 +84,12 @@ export async function POST(req: Request) {
         [transactionId, processedItem.productId, processedItem.name, processedItem.quantity, processedItem.price, processedItem.unitCostSnapshot, processedItem.total]
       );
 
-      // Only deduct stock if payment is completed
+      // Inventory reduction logic (only for completed sales)
       if (status === 'paid') {
+        // Deduct product stock
         await connection.query('UPDATE products SET stock = GREATEST(0, stock - ?) WHERE id = ?', [processedItem.quantity, processedItem.productId]);
 
+        // Deduct raw supply quantities if it's a production item
         if (processedItem.hasRecipe) {
           const [recipes]: any = await connection.query('SELECT supplyId, amount FROM recipes WHERE productId = ?', [processedItem.productId]);
           for (const recipe of recipes) {

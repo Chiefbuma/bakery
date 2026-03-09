@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -159,7 +160,7 @@ export default function InventoryPage() {
 
     const onProductSubmit = async (data: any) => {
         if (!data.hasRecipe && Number(data.costPrice) <= 0) {
-            toast({ variant: "destructive", title: "Validation Error", description: "Cost price must be greater than 0 for retail items." });
+            toast({ variant: "destructive", title: "Direct Cost Price Required", description: "Retail items must have a purchase price > 0." });
             return;
         }
 
@@ -210,11 +211,11 @@ export default function InventoryPage() {
         setIsSubmitting(true);
         try {
             await saveProductRecipe(recipeProduct.id, currentRecipe.filter(r => r.supplyId && r.amount > 0));
-            toast({ title: "Recipe Saved" });
+            toast({ title: "Recipe Configuration Saved" });
             setIsRecipeDialogOpen(false);
             loadData();
         } catch (err) {
-            toast({ variant: "destructive", title: "Failed to save recipe" });
+            toast({ variant: "destructive", title: "Failed to update recipe" });
         } finally {
             setIsSubmitting(false);
         }
@@ -228,10 +229,10 @@ export default function InventoryPage() {
             } else {
                 await deleteSupplies([targetItem.id]);
             }
-            toast({ title: "Item Removed" });
+            toast({ title: "Item Purged" });
             await loadData();
         } catch (error) {
-            toast({ variant: "destructive", title: "Action Failed" });
+            toast({ variant: "destructive", title: "Action Blocked" });
         } finally {
             setTargetItem(null);
         }
@@ -285,7 +286,7 @@ export default function InventoryPage() {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
             <div className="flex flex-col gap-2">
                 <h1 className="text-3xl font-bold tracking-tight font-headline">Inventory Control</h1>
-                <p className="text-muted-foreground">Manage products, stock levels and raw supplies.</p>
+                <p className="text-muted-foreground">Manage sellable products, master stock, and raw production supplies.</p>
             </div>
 
             <Tabs defaultValue="products" value={activeTab} onValueChange={(v) => { setActiveTab(v); setCurrentPage(1); }}>
@@ -321,7 +322,7 @@ export default function InventoryPage() {
                         <CardHeader className="flex flex-row items-center justify-between border-b pb-6">
                             <div className="space-y-1">
                                 <CardTitle>Sellable Products</CardTitle>
-                                <CardDescription>Retail items and hotel services.</CardDescription>
+                                <CardDescription>Retail stock and hotel services catalog.</CardDescription>
                             </div>
                             <Button onClick={() => handleOpenProductDialog()}>
                                 <PlusCircle className="mr-2 h-4 w-4" /> Add Product
@@ -344,7 +345,7 @@ export default function InventoryPage() {
                                             <TableRow key={i}><TableCell colSpan={5} className="h-12 animate-pulse bg-muted/10" /></TableRow>
                                         ))
                                     ) : paginatedProducts.length === 0 ? (
-                                        <TableRow><TableCell colSpan={5} className="text-center py-10 text-muted-foreground italic">No products found.</TableCell></TableRow>
+                                        <TableRow><TableCell colSpan={5} className="text-center py-10 text-muted-foreground italic">No products matched your search.</TableCell></TableRow>
                                     ) : paginatedProducts.map((p) => (
                                         <TableRow key={p.id}>
                                             <TableCell className="font-bold">
@@ -364,7 +365,7 @@ export default function InventoryPage() {
                                             </TableCell>
                                             <TableCell className="text-right space-x-2">
                                                 {p.hasRecipe && (
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-600 hover:bg-amber-50" title="Manage Recipe" onClick={() => handleOpenRecipeDialog(p)}>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-600 hover:bg-amber-50" title="Configure Recipe" onClick={() => handleOpenRecipeDialog(p)}>
                                                         <UtensilsCrossed className="h-4 w-4" />
                                                     </Button>
                                                 )}
@@ -384,7 +385,7 @@ export default function InventoryPage() {
                         <CardHeader className="flex flex-row items-center justify-between border-b pb-6">
                             <div className="space-y-1">
                                 <CardTitle>Raw Supplies Ledger</CardTitle>
-                                <CardDescription>Consumables used in production.</CardDescription>
+                                <CardDescription>Inventory of ingredients and consumables.</CardDescription>
                             </div>
                             <Button onClick={() => handleOpenSupplyDialog()}>
                                 <PlusCircle className="mr-2 h-4 w-4" /> Add Supply
@@ -428,14 +429,14 @@ export default function InventoryPage() {
                     <Card>
                         <CardHeader className="border-b pb-6">
                             <CardTitle>Production Ingredients Mapping</CardTitle>
-                            <CardDescription>View links between sellable products and their raw ingredients with cost contribution.</CardDescription>
+                            <CardDescription>Visual breakdown of product cost contributions from raw supplies.</CardDescription>
                         </CardHeader>
                         <CardContent className="pt-6">
                             <Table>
                                 <TableHeader>
                                     <TableRow className="bg-muted/50">
                                         <TableHead>Sellable Product</TableHead>
-                                        <TableHead>Required Ingredients</TableHead>
+                                        <TableHead>Ingredients Map</TableHead>
                                         <TableHead className="text-right">Cost of Sale</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
@@ -446,7 +447,7 @@ export default function InventoryPage() {
                                             <TableRow key={i}><TableCell colSpan={4} className="h-12 animate-pulse bg-muted/10" /></TableRow>
                                         ))
                                     ) : paginatedRecipes.length === 0 ? (
-                                        <TableRow><TableCell colSpan={4} className="text-center py-10 text-muted-foreground italic">No recipes defined yet.</TableCell></TableRow>
+                                        <TableRow><TableCell colSpan={4} className="text-center py-10 text-muted-foreground italic">No recipes defined.</TableCell></TableRow>
                                     ) : paginatedRecipes.map((p) => {
                                         const prodRecipe = recipes[p.id] || [];
                                         const totalCost = prodRecipe.reduce((acc, rcp) => {
@@ -502,7 +503,7 @@ export default function InventoryPage() {
                 <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
                         <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
-                        <DialogDescription>Manage sellable hotel products and services. Set pricing and stock levels.</DialogDescription>
+                        <DialogDescription>Manage hotel products and pricing. Choose between retail stock or production items.</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={productForm.handleSubmit(onProductSubmit)} className="space-y-4">
                         <div className="space-y-2">
@@ -511,7 +512,7 @@ export default function InventoryPage() {
                         </div>
 
                         <div className="space-y-3 p-4 bg-muted/30 rounded-lg border">
-                            <Label className="text-xs font-bold uppercase tracking-wider">Product Cost Type</Label>
+                            <Label className="text-xs font-bold uppercase tracking-wider">Inventory Type</Label>
                             <RadioGroup 
                                 value={hasRecipeValue ? "production" : "retail"} 
                                 onValueChange={(v) => productForm.setValue('hasRecipe', v === 'production')}
@@ -523,14 +524,9 @@ export default function InventoryPage() {
                                 </div>
                                 <div className="flex items-center space-x-2">
                                     <RadioGroupItem value="production" id="production" />
-                                    <Label htmlFor="production" className="cursor-pointer">Production (Uses Ingredients)</Label>
+                                    <Label htmlFor="production" className="cursor-pointer">Production (Recipe)</Label>
                                 </div>
                             </RadioGroup>
-                            <p className="text-[10px] text-muted-foreground">
-                                {hasRecipeValue 
-                                    ? "Cost is derived from ingredients. The manual 'Cost Price' is ignored." 
-                                    : "You must enter the manual purchase price for this item."}
-                            </p>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
@@ -545,7 +541,7 @@ export default function InventoryPage() {
                                     {...productForm.register('costPrice', { required: !hasRecipeValue, valueAsNumber: true })} 
                                     disabled={isSubmitting || !!hasRecipeValue} 
                                     className={hasRecipeValue ? "bg-muted" : ""}
-                                    placeholder={hasRecipeValue ? "Auto-calculated" : "Purchase price"}
+                                    placeholder={hasRecipeValue ? "Derived from Recipe" : "Enter purchase price"}
                                 />
                             </div>
                         </div>
@@ -557,13 +553,13 @@ export default function InventoryPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label>Unit</Label>
-                                <Input {...productForm.register('unit', { required: true })} placeholder="e.g. bottles, plates" disabled={isSubmitting} />
+                                <Input {...productForm.register('unit', { required: true })} placeholder="bottles, kg, etc." disabled={isSubmitting} />
                             </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label>Module</Label>
+                                <Label>Department</Label>
                                 <Select value={productForm.watch('module')} onValueChange={(v) => productForm.setValue('module', v as any)}>
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
@@ -576,13 +572,13 @@ export default function InventoryPage() {
                                 </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label>Min Stock Level</Label>
+                                <Label>Reorder Level</Label>
                                 <Input type="number" {...productForm.register('minStockLevel', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <Label>Image URL / Upload</Label>
+                            <Label>Product Image</Label>
                             <div className="flex gap-2">
                                 <Input {...productForm.register('image_url')} disabled={isSubmitting || isUploading} className="flex-1" />
                                 <div className="relative">
@@ -596,55 +592,7 @@ export default function InventoryPage() {
 
                         <DialogFooter>
                             <Button variant="outline" type="button" onClick={() => setIsProductDialogOpen(false)}>Cancel</Button>
-                            <Button type="submit" disabled={isSubmitting}>Save Product</Button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={isSupplyDialogOpen} onOpenChange={(open) => { if(!isSubmitting) setIsSupplyDialogOpen(open); }}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>{editingSupply ? 'Edit Supply' : 'Add New Supply'}</DialogTitle>
-                        <DialogDescription>Track raw material inventory and unit costs for production items.</DialogDescription>
-                    </DialogHeader>
-                    <form onSubmit={supplyForm.handleSubmit(onSupplySubmit)} className="space-y-4">
-                        <div className="space-y-2">
-                            <Label>Supply Name</Label>
-                            <Input {...supplyForm.register('name', { required: true })} disabled={isSubmitting} />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label>Quantity</Label>
-                                <Input type="number" step="0.001" {...supplyForm.register('quantity', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Unit</Label>
-                                <Input {...supplyForm.register('unit', { required: true })} placeholder="e.g. kg, liters" disabled={isSubmitting} />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label>Unit Cost (Ksh)</Label>
-                                <Input type="number" {...supplyForm.register('unitCost', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Module</Label>
-                                <Select value={supplyForm.watch('module') || 'restaurant'} onValueChange={(v) => supplyForm.setValue('module', v)}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="restaurant">Restaurant</SelectItem>
-                                        <SelectItem value="bar">Bar</SelectItem>
-                                        <SelectItem value="carwash">Car Wash</SelectItem>
-                                        <SelectItem value="accommodation">Rooms</SelectItem>
-                                        <SelectItem value="entertainment">Entertainment</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <DialogFooter>
-                            <Button variant="outline" type="button" onClick={() => setIsSupplyDialogOpen(false)}>Cancel</Button>
-                            <Button type="submit" disabled={isSubmitting}>Save Supply</Button>
+                            <Button type="submit" disabled={isSubmitting}>Commit Record</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -653,8 +601,8 @@ export default function InventoryPage() {
             <Dialog open={isRecipeDialogOpen} onOpenChange={setIsRecipeDialogOpen}>
                 <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
-                        <DialogTitle>Production Recipe: {recipeProduct?.name}</DialogTitle>
-                        <DialogDescription>Map raw ingredients to this product for automatic cost calculation and stock deduction during sale.</DialogDescription>
+                        <DialogTitle>Recipe Construction: {recipeProduct?.name}</DialogTitle>
+                        <DialogDescription>Map raw ingredients to this product. The system will auto-calculate COGS and deduct ingredients during sale.</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                         <div className="space-y-3">
@@ -700,7 +648,7 @@ export default function InventoryPage() {
                                             }}><Trash2 className="h-4 w-4" /></Button>
                                         </div>
                                         <div className="flex justify-end pr-12">
-                                            <span className="text-[10px] font-bold text-primary">Line Cost: {formatPrice(lineCost)}</span>
+                                            <span className="text-[10px] font-bold text-primary">Ingredient Contribution: {formatPrice(lineCost)}</span>
                                         </div>
                                     </div>
                                 );
@@ -712,7 +660,7 @@ export default function InventoryPage() {
                         </Button>
 
                         <div className="p-4 bg-primary/5 rounded-lg border-2 border-primary/20 flex justify-between items-center">
-                            <span className="font-black uppercase tracking-tighter text-xs">Total Production Cost</span>
+                            <span className="font-black uppercase tracking-tighter text-xs">Total Production Cost (COGS)</span>
                             <span className="text-xl font-black text-primary">{formatPrice(recipeTotalCost)}</span>
                         </div>
                     </div>
@@ -726,15 +674,63 @@ export default function InventoryPage() {
                 </DialogContent>
             </Dialog>
 
+            <Dialog open={isSupplyDialogOpen} onOpenChange={(open) => { if(!isSubmitting) setIsSupplyDialogOpen(open); }}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>{editingSupply ? 'Edit Supply' : 'Add New Supply'}</DialogTitle>
+                        <DialogDescription>Record raw material inventory levels and procurement costs.</DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={supplyForm.handleSubmit(onSupplySubmit)} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label>Supply Name</Label>
+                            <Input {...supplyForm.register('name', { required: true })} disabled={isSubmitting} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Quantity</Label>
+                                <Input type="number" step="0.001" {...supplyForm.register('quantity', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Unit</Label>
+                                <Input {...supplyForm.register('unit', { required: true })} placeholder="kg, L, etc." disabled={isSubmitting} />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Unit Cost (Ksh)</Label>
+                                <Input type="number" {...supplyForm.register('unitCost', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Department</Label>
+                                <Select value={supplyForm.watch('module') || 'restaurant'} onValueChange={(v) => supplyForm.setValue('module', v)}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="restaurant">Restaurant</SelectItem>
+                                        <SelectItem value="bar">Bar</SelectItem>
+                                        <SelectItem value="carwash">Car Wash</SelectItem>
+                                        <SelectItem value="accommodation">Rooms</SelectItem>
+                                        <SelectItem value="entertainment">Entertainment</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" type="button" onClick={() => setIsSupplyDialogOpen(false)}>Cancel</Button>
+                            <Button type="submit" disabled={isSubmitting}>Update Supply</Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
             <AlertDialog open={!!targetItem} onOpenChange={() => setTargetItem(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
-                        <AlertDialogDescription>Permanently remove this item from the system? This action cannot be undone and will affect historical data links.</AlertDialogDescription>
+                        <AlertDialogTitle>Delete Inventory Record?</AlertDialogTitle>
+                        <AlertDialogDescription>Are you sure you want to permanently remove this item? This may affect historical data links in reports.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteItem} className="bg-destructive text-white">Delete</AlertDialogAction>
+                        <AlertDialogAction onClick={handleDeleteItem} className="bg-destructive text-white">Confirm Delete</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
