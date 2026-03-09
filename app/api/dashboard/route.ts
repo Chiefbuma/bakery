@@ -1,14 +1,9 @@
 
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
-import type { DashboardData, HotelModule } from '@/lib/types';
+import type { DashboardData, HotelModule, ModuleComparison } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
-
-/**
- * @fileOverview Analytics Engine
- * Calculates departmental sales and true COGS (Cost of Sale) across periods.
- */
 
 export async function GET() {
   try {
@@ -20,7 +15,7 @@ export async function GET() {
     const prevMonth = prevMonthDate.getMonth() + 1;
     const prevYear = prevMonthDate.getFullYear();
 
-    // 1. Consolidated Financial Metrics
+    // 1. Consolidated Financial Metrics (Transactions)
     const [stats]: any = await pool.query(`
       SELECT 
         SUM(CASE WHEN MONTH(timestamp) = ? AND YEAR(timestamp) = ? THEN totalAmount ELSE 0 END) as currRev,
@@ -28,27 +23,23 @@ export async function GET() {
         SUM(CASE WHEN MONTH(timestamp) = ? AND YEAR(timestamp) = ? THEN totalAmount ELSE 0 END) as prevRev,
         SUM(CASE WHEN MONTH(timestamp) = ? AND YEAR(timestamp) = ? THEN totalCost ELSE 0 END) as prevCogs
       FROM transactions 
-      WHERE status = 'paid' AND (
-        (MONTH(timestamp) = ? AND YEAR(timestamp) = ?) OR 
-        (MONTH(timestamp) = ? AND YEAR(timestamp) = ?)
-      )
-    `, [currentMonth, currentYear, currentMonth, currentYear, prevMonth, prevYear, prevMonth, prevYear, currentMonth, currentYear, prevMonth, prevYear]);
+      WHERE status = 'paid'
+    `, [currentMonth, currentYear, currentMonth, currentYear, prevMonth, prevYear, prevMonth, prevYear]);
 
-    // 2. Operating Expenses
+    // 2. Operating Expenses (OpEx)
     const [expenses]: any = await pool.query(`
       SELECT 
         SUM(CASE WHEN MONTH(date) = ? AND YEAR(date) = ? THEN amount ELSE 0 END) as currOpex,
         SUM(CASE WHEN MONTH(date) = ? AND YEAR(date) = ? THEN amount ELSE 0 END) as prevOpex
       FROM expenses
-      WHERE (MONTH(date) = ? AND YEAR(date) = ?) OR (MONTH(date) = ? AND YEAR(date) = ?)
-    `, [currentMonth, currentYear, prevMonth, prevYear, currentMonth, currentYear, prevMonth, prevYear]);
+    `, [currentMonth, currentYear, prevMonth, prevYear]);
 
-    const statsRow = (stats && stats[0]) || {};
-    const expRow = (expenses && expenses[0]) || {};
+    const statsRow = (stats && stats[0]) || { currRev: 0, currCogs: 0, prevRev: 0, prevCogs: 0 };
+    const expRow = (expenses && expenses[0]) || { currOpex: 0, prevOpex: 0 };
 
-    // 3. Module Comparison with Period-Specific Cost of Sale
+    // 3. Module Comparison with Multi-Period Cost of Sale
     const modules: HotelModule[] = ['restaurant', 'bar', 'carwash', 'accommodation', 'entertainment'];
-    const moduleStats = await Promise.all(modules.map(async (m) => {
+    const moduleStats: ModuleComparison[] = await Promise.all(modules.map(async (m) => {
       const [mStats]: any = await pool.query(`
         SELECT 
           SUM(CASE WHEN MONTH(timestamp) = ? AND YEAR(timestamp) = ? THEN totalAmount ELSE 0 END) as curr,
@@ -105,6 +96,6 @@ export async function GET() {
     return NextResponse.json(data);
   } catch (error) {
     console.error('Analytics Engine Error:', error);
-    return NextResponse.json({ error: "Internal Server Error in Analytics" }, { status: 500 });
+    return NextResponse.json({ error: "Internal Server Error in Analytics Engine" }, { status: 500 });
   }
 }

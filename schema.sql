@@ -1,45 +1,45 @@
 
--- Wamaghach Kahua-ini Hotel | Full Production Schema
+-- Wamaghach Hotel Management System Schema
 
--- 1. Personnel Management
+-- User & Personnel Management
 CREATE TABLE IF NOT EXISTS `users` (
   `id` VARCHAR(255) PRIMARY KEY,
   `name` VARCHAR(255) NOT NULL,
   `email` VARCHAR(255) NOT NULL UNIQUE,
-  `role` ENUM('admin', 'staff') DEFAULT 'staff',
   `password` VARCHAR(255) NOT NULL,
+  `role` ENUM('admin', 'staff') DEFAULT 'staff',
   `createdAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. Master Product Stock
+-- Master Stock (Sellable Items)
 CREATE TABLE IF NOT EXISTS `products` (
   `id` VARCHAR(255) PRIMARY KEY,
   `name` VARCHAR(255) NOT NULL,
   `description` TEXT,
   `category` VARCHAR(100),
-  `module` ENUM('restaurant', 'bar', 'carwash', 'accommodation', 'entertainment', 'general') DEFAULT 'restaurant',
-  `price` DECIMAL(10, 2) NOT NULL DEFAULT 0,
-  `costPrice` DECIMAL(10, 2) NOT NULL DEFAULT 0, -- Used for Retail items
-  `stock` DECIMAL(10, 2) NOT NULL DEFAULT 0,
+  `module` ENUM('restaurant', 'bar', 'carwash', 'accommodation', 'entertainment') DEFAULT 'restaurant',
+  `price` DECIMAL(10, 2) NOT NULL,
+  `costPrice` DECIMAL(10, 2) DEFAULT 0,
+  `stock` DECIMAL(10, 2) DEFAULT 0,
   `minStockLevel` DECIMAL(10, 2) DEFAULT 5,
   `unit` VARCHAR(50) DEFAULT 'units',
   `image_url` TEXT,
-  `hasRecipe` TINYINT(1) DEFAULT 0 -- 1 for Production items, 0 for Retail
+  `hasRecipe` BOOLEAN DEFAULT FALSE
 );
 
--- 3. Raw Supplies (Ingredients)
+-- Raw Supplies (Ingredients)
 CREATE TABLE IF NOT EXISTS `supplies` (
   `id` VARCHAR(255) PRIMARY KEY,
   `name` VARCHAR(255) NOT NULL,
   `category` VARCHAR(100),
-  `module` VARCHAR(100),
-  `quantity` DECIMAL(10, 3) NOT NULL DEFAULT 0,
+  `module` VARCHAR(100) DEFAULT 'restaurant',
+  `quantity` DECIMAL(10, 3) DEFAULT 0,
   `unit` VARCHAR(50) NOT NULL,
-  `unitCost` DECIMAL(10, 2) NOT NULL DEFAULT 0,
+  `unitCost` DECIMAL(10, 2) NOT NULL,
   `lastPurchased` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 4. Production Recipes
+-- Production Recipes (Bill of Materials)
 CREATE TABLE IF NOT EXISTS `recipes` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `productId` VARCHAR(255) NOT NULL,
@@ -49,22 +49,33 @@ CREATE TABLE IF NOT EXISTS `recipes` (
   FOREIGN KEY (`supplyId`) REFERENCES `supplies`(`id`) ON DELETE CASCADE
 );
 
--- 5. Transaction Ledger (Parent)
+-- Operating Expenses (OpEx Ledger)
+CREATE TABLE IF NOT EXISTS `expenses` (
+  `id` VARCHAR(255) PRIMARY KEY,
+  `category` ENUM('salary', 'utility', 'maintenance', 'rent', 'garbage', 'miscellaneous') NOT NULL,
+  `amount` DECIMAL(10, 2) NOT NULL,
+  `description` TEXT,
+  `date` DATE NOT NULL,
+  `module` ENUM('restaurant', 'bar', 'carwash', 'accommodation', 'entertainment', 'general') DEFAULT 'general',
+  `createdAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- POS Transactions (Revenue Ledger)
 CREATE TABLE IF NOT EXISTS `transactions` (
   `id` VARCHAR(255) PRIMARY KEY,
-  `orderNumber` VARCHAR(100) NOT NULL UNIQUE,
-  `module` VARCHAR(50) NOT NULL,
+  `orderNumber` VARCHAR(255) NOT NULL UNIQUE,
+  `module` ENUM('restaurant', 'bar', 'carwash', 'accommodation', 'entertainment') NOT NULL,
   `totalAmount` DECIMAL(10, 2) NOT NULL,
-  `totalCost` DECIMAL(10, 2) NOT NULL DEFAULT 0, -- Captured True COGS
+  `totalCost` DECIMAL(10, 2) DEFAULT 0,
   `paymentMethod` ENUM('cash', 'mpesa', 'card', 'none') DEFAULT 'none',
   `status` ENUM('paid', 'pending') DEFAULT 'pending',
   `customerName` VARCHAR(255),
-  `amountReceived` DECIMAL(10, 2) DEFAULT 0,
-  `balance` DECIMAL(10, 2) DEFAULT 0,
+  `amountReceived` DECIMAL(10, 2),
+  `balance` DECIMAL(10, 2),
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 6. Transaction Items (Children)
+-- Transaction Line Items (Sales Detail)
 CREATE TABLE IF NOT EXISTS `transaction_items` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `transactionId` VARCHAR(255) NOT NULL,
@@ -72,23 +83,12 @@ CREATE TABLE IF NOT EXISTS `transaction_items` (
   `name` VARCHAR(255) NOT NULL,
   `quantity` DECIMAL(10, 2) NOT NULL,
   `price` DECIMAL(10, 2) NOT NULL,
-  `costPrice` DECIMAL(10, 2) NOT NULL, -- Captured Unit COGS at sale
+  `costPrice` DECIMAL(10, 2) NOT NULL,
   `total` DECIMAL(10, 2) NOT NULL,
   FOREIGN KEY (`transactionId`) REFERENCES `transactions`(`id`) ON DELETE CASCADE
 );
 
--- 7. Operating Expenses
-CREATE TABLE IF NOT EXISTS `expenses` (
-  `id` VARCHAR(255) PRIMARY KEY,
-  `category` ENUM('salary', 'utility', 'maintenance', 'rent', 'garbage', 'miscellaneous') DEFAULT 'miscellaneous',
-  `amount` DECIMAL(10, 2) NOT NULL,
-  `description` TEXT,
-  `module` ENUM('restaurant', 'bar', 'carwash', 'accommodation', 'entertainment', 'general') DEFAULT 'general',
-  `date` DATE NOT NULL,
-  `createdAt` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Initial Admin Seed
-INSERT INTO `users` (`id`, `name`, `email`, `role`, `password`) 
-VALUES ('U-ADMIN', 'Super Admin', 'admin@wamaghach.com', 'admin', 'admin123')
-ON DUPLICATE KEY UPDATE id=id;
+-- Initial Admin Setup
+INSERT INTO `users` (`id`, `name`, `email`, `password`, `role`) 
+VALUES ('U-ADMIN', 'System Administrator', 'admin@wamaghach.com', 'admin123', 'admin')
+ON DUPLICATE KEY UPDATE name=name;

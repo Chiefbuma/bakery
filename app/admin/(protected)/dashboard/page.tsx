@@ -7,30 +7,58 @@ import type { DashboardData } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Minus, AlertCircle } from 'lucide-react';
 import { formatPrice, cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 export const dynamic = 'force-dynamic';
 
 export default function DashboardPage() {
     const [data, setData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
-            const result = await getDashboardData();
-            setData(result);
-            setLoading(false);
+            try {
+                setLoading(true);
+                setError(null);
+                const result = await getDashboardData();
+                setData(result);
+            } catch (err: any) {
+                console.error('Dashboard Data Fetch Error:', err);
+                setError(err.message || 'Failed to connect to analytics engine.');
+            } finally {
+                setLoading(false);
+            }
         };
         fetchData();
     }, []);
 
-    if (loading || !data) {
+    if (loading) {
         return (
             <div className="p-8 space-y-8">
-                <Skeleton className="h-[200px] w-full" />
+                <div className="space-y-2">
+                    <Skeleton className="h-10 w-64" />
+                    <Skeleton className="h-4 w-96" />
+                </div>
+                <Skeleton className="h-[300px] w-full" />
                 <Skeleton className="h-[400px] w-full" />
+            </div>
+        );
+    }
+
+    if (error || !data) {
+        return (
+            <div className="p-8">
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>System Error</AlertTitle>
+                    <AlertDescription>
+                        {error || "The analytics dashboard is currently unavailable. Please verify your database connection."}
+                    </AlertDescription>
+                </Alert>
             </div>
         );
     }

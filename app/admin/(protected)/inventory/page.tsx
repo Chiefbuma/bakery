@@ -150,9 +150,9 @@ export default function InventoryPage() {
         try {
             const url = await uploadImage(file);
             productForm.setValue('image_url', url);
-            toast({ title: "Image Uploaded" });
+            toast({ title: "Image Uploaded Successfully" });
         } catch (err) {
-            toast({ variant: "destructive", title: "Upload Failed" });
+            toast({ variant: "destructive", title: "Image Upload Failed" });
         } finally {
             setIsUploading(false);
         }
@@ -160,7 +160,11 @@ export default function InventoryPage() {
 
     const onProductSubmit = async (data: any) => {
         if (!data.hasRecipe && Number(data.costPrice) <= 0) {
-            toast({ variant: "destructive", title: "Direct Cost Price Required", description: "Retail items must have a purchase price > 0." });
+            toast({ 
+                variant: "destructive", 
+                title: "Cost Price Required", 
+                description: "Retail items must have a purchase price greater than zero." 
+            });
             return;
         }
 
@@ -176,12 +180,12 @@ export default function InventoryPage() {
                 toast({ title: "Product Updated" });
             } else {
                 await addProduct(finalData);
-                toast({ title: "Product Added" });
+                toast({ title: "Product Created" });
             }
             setIsProductDialogOpen(false);
             setTimeout(() => loadData(), 100);
         } catch (error) {
-            toast({ variant: "destructive", title: "Operation Failed" });
+            toast({ variant: "destructive", title: "Product Operation Failed" });
         } finally {
             setIsSubmitting(false);
         }
@@ -192,15 +196,15 @@ export default function InventoryPage() {
         try {
             if (editingSupply) {
                 await updateSupply(editingSupply.id, data);
-                toast({ title: "Supply Updated" });
+                toast({ title: "Supply Record Updated" });
             } else {
                 await addSupply(data);
-                toast({ title: "Supply Added" });
+                toast({ title: "New Supply Added" });
             }
             setIsSupplyDialogOpen(false);
             setTimeout(() => loadData(), 100);
         } catch (error) {
-            toast({ variant: "destructive", title: "Operation Failed" });
+            toast({ variant: "destructive", title: "Supply Operation Failed" });
         } finally {
             setIsSubmitting(false);
         }
@@ -211,11 +215,11 @@ export default function InventoryPage() {
         setIsSubmitting(true);
         try {
             await saveProductRecipe(recipeProduct.id, currentRecipe.filter(r => r.supplyId && r.amount > 0));
-            toast({ title: "Recipe Configuration Saved" });
+            toast({ title: "Production Recipe Saved" });
             setIsRecipeDialogOpen(false);
             loadData();
         } catch (err) {
-            toast({ variant: "destructive", title: "Failed to update recipe" });
+            toast({ variant: "destructive", title: "Recipe Save Failed" });
         } finally {
             setIsSubmitting(false);
         }
@@ -229,10 +233,10 @@ export default function InventoryPage() {
             } else {
                 await deleteSupplies([targetItem.id]);
             }
-            toast({ title: "Item Purged" });
+            toast({ title: "Item Successfully Deleted" });
             await loadData();
         } catch (error) {
-            toast({ variant: "destructive", title: "Action Blocked" });
+            toast({ variant: "destructive", title: "Deletion Failed", description: "This item may be linked to historical transactions." });
         } finally {
             setTargetItem(null);
         }
@@ -286,14 +290,14 @@ export default function InventoryPage() {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
             <div className="flex flex-col gap-2">
                 <h1 className="text-3xl font-bold tracking-tight font-headline">Inventory Control</h1>
-                <p className="text-muted-foreground">Manage sellable products, master stock, and raw production supplies.</p>
+                <p className="text-muted-foreground">Manage sellable products, master stock, and production ingredients.</p>
             </div>
 
             <Tabs defaultValue="products" value={activeTab} onValueChange={(v) => { setActiveTab(v); setCurrentPage(1); }}>
                 <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
                     <TabsList className="bg-muted/50 p-1">
                         <TabsTrigger value="products">Master Stock</TabsTrigger>
-                        <TabsTrigger value="supplies">Raw Supplies Ledger</TabsTrigger>
+                        <TabsTrigger value="supplies">Raw Supplies</TabsTrigger>
                         <TabsTrigger value="recipes">Product Ingredients</TabsTrigger>
                     </TabsList>
                     <div className="flex items-center gap-2">
@@ -429,7 +433,7 @@ export default function InventoryPage() {
                     <Card>
                         <CardHeader className="border-b pb-6">
                             <CardTitle>Production Ingredients Mapping</CardTitle>
-                            <CardDescription>Visual breakdown of product cost contributions from raw supplies.</CardDescription>
+                            <CardDescription>Breakdown of product cost contributions from raw supplies.</CardDescription>
                         </CardHeader>
                         <CardContent className="pt-6">
                             <Table>
@@ -462,10 +466,9 @@ export default function InventoryPage() {
                                                     <div className="flex flex-wrap gap-1">
                                                         {prodRecipe.map((rcp, idx) => {
                                                             const supply = supplies.find(s => s.id === rcp.supplyId);
-                                                            const lineCost = Number(rcp.amount) * Number(supply?.unitCost || 0);
                                                             return (
                                                                 <Badge key={idx} variant="secondary" className="text-[10px]">
-                                                                    {supply?.name || 'Unknown'}: {rcp.amount} {supply?.unit} ({formatPrice(lineCost)})
+                                                                    {supply?.name || 'Unknown'}: {rcp.amount} {supply?.unit}
                                                                 </Badge>
                                                             );
                                                         })}
@@ -524,7 +527,7 @@ export default function InventoryPage() {
                                 </div>
                                 <div className="flex items-center space-x-2">
                                     <RadioGroupItem value="production" id="production" />
-                                    <Label htmlFor="production" className="cursor-pointer">Production (Recipe)</Label>
+                                    <Label htmlFor="production" className="cursor-pointer">Production (Recipe-based)</Label>
                                 </div>
                             </RadioGroup>
                         </div>
@@ -541,7 +544,7 @@ export default function InventoryPage() {
                                     {...productForm.register('costPrice', { required: !hasRecipeValue, valueAsNumber: true })} 
                                     disabled={isSubmitting || !!hasRecipeValue} 
                                     className={hasRecipeValue ? "bg-muted" : ""}
-                                    placeholder={hasRecipeValue ? "Derived from Recipe" : "Enter purchase price"}
+                                    placeholder={hasRecipeValue ? "From Recipe" : "Enter purchase cost"}
                                 />
                             </div>
                         </div>
@@ -553,7 +556,7 @@ export default function InventoryPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label>Unit</Label>
-                                <Input {...productForm.register('unit', { required: true })} placeholder="bottles, kg, etc." disabled={isSubmitting} />
+                                <Input {...productForm.register('unit', { required: true })} placeholder="e.g. bottles, kg" disabled={isSubmitting} />
                             </div>
                         </div>
 
@@ -592,7 +595,7 @@ export default function InventoryPage() {
 
                         <DialogFooter>
                             <Button variant="outline" type="button" onClick={() => setIsProductDialogOpen(false)}>Cancel</Button>
-                            <Button type="submit" disabled={isSubmitting}>Commit Record</Button>
+                            <Button type="submit" disabled={isSubmitting}>Save Product</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -601,8 +604,8 @@ export default function InventoryPage() {
             <Dialog open={isRecipeDialogOpen} onOpenChange={setIsRecipeDialogOpen}>
                 <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
-                        <DialogTitle>Recipe Construction: {recipeProduct?.name}</DialogTitle>
-                        <DialogDescription>Map raw ingredients to this product. The system will auto-calculate COGS and deduct ingredients during sale.</DialogDescription>
+                        <DialogTitle>Production Recipe: {recipeProduct?.name}</DialogTitle>
+                        <DialogDescription>Link this product to raw materials consumed during production. The system will auto-calculate COGS.</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                         <div className="space-y-3">
@@ -647,9 +650,11 @@ export default function InventoryPage() {
                                                 setCurrentRecipe(prev => prev.filter((_, i) => i !== idx));
                                             }}><Trash2 className="h-4 w-4" /></Button>
                                         </div>
-                                        <div className="flex justify-end pr-12">
-                                            <span className="text-[10px] font-bold text-primary">Ingredient Contribution: {formatPrice(lineCost)}</span>
-                                        </div>
+                                        {lineCost > 0 && (
+                                            <div className="flex justify-end pr-12">
+                                                <span className="text-[10px] font-bold text-primary">Contribution: {formatPrice(lineCost)}</span>
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })}
@@ -716,7 +721,7 @@ export default function InventoryPage() {
                         </div>
                         <DialogFooter>
                             <Button variant="outline" type="button" onClick={() => setIsSupplyDialogOpen(false)}>Cancel</Button>
-                            <Button type="submit" disabled={isSubmitting}>Update Supply</Button>
+                            <Button type="submit" disabled={isSubmitting}>Save Record</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -730,7 +735,7 @@ export default function InventoryPage() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteItem} className="bg-destructive text-white">Confirm Delete</AlertDialogAction>
+                        <AlertDialogAction onClick={handleDeleteItem} className="bg-destructive text-white">Confirm Removal</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

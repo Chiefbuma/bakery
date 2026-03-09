@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 /**
  * @fileOverview Secure Media Serving API
- * Correctly awaits params for Next.js 15 compatibility.
+ * Resolve 500 errors by awaiting params for Next.js 15 compatibility.
  */
 export async function GET(req: Request, { params }: { params: Promise<{ filename: string }> }) {
   try {
@@ -29,7 +29,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ filename
       },
     });
   } catch (e) {
-    console.error('Media fetch error:', e);
+    console.error('Media fetch failure:', e);
     return new NextResponse(null, { status: 404 });
   }
 }
