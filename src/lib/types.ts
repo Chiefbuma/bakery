@@ -85,8 +85,12 @@ export interface ModuleComparison {
   module: HotelModule;
   currentSales: number;
   currentCogs: number;
+  currentOpex: number;
+  currentNet: number;
   previousSales: number;
   previousCogs: number;
+  previousOpex: number;
+  previousNet: number;
   changePercent: number;
 }
 

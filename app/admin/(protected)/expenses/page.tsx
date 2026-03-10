@@ -7,12 +7,13 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/utils";
-import { PlusCircle, Trash2, Edit, ChevronLeft, ChevronRight } from "lucide-react";
+import { PlusCircle, Trash2, Edit, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
+import { motion } from "framer-motion";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -40,9 +41,9 @@ export default function ExpensesPage() {
     const { toast } = useToast();
     const { register, handleSubmit, reset, setValue, watch } = useForm<Omit<Expense, 'id'>>();
 
-    const load = useCallback(async () => {
+    const load = useCallback(async (silent = false) => {
         try {
-            setLoading(true);
+            if (!silent) setLoading(true);
             const data = await getExpenses();
             setExpenses(data);
         } catch (error) {
@@ -82,8 +83,7 @@ export default function ExpensesPage() {
                 toast({ title: "Expense Recorded" });
             }
             setIsDialogOpen(false);
-            setEditingExpense(null);
-            setTimeout(() => load(), 100);
+            load(true);
         } catch (error) {
             toast({ variant: "destructive", title: "Operation Failed" });
         } finally {
@@ -95,7 +95,7 @@ export default function ExpensesPage() {
         if (!targetExpense) return;
         try {
             await deleteExpenses([targetExpense.id]);
-            await load();
+            load(true);
             toast({ title: "Expense Cleared" });
         } catch (error) {
             toast({ variant: "destructive", title: "Action Failed" });
@@ -111,114 +111,117 @@ export default function ExpensesPage() {
     }, [expenses, currentPage]);
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col gap-2">
-                <h1 className="text-3xl font-bold tracking-tight">Operating Expenses</h1>
-                <p className="text-muted-foreground">Track salaries, utilities, and other overhead costs.</p>
+        <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+            <div className="flex flex-col gap-1">
+                <h1 className="text-2xl font-bold tracking-tight font-headline">Operating Expenses</h1>
+                <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Track salaries, utilities, and overhead classification.</p>
             </div>
 
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between border-b pb-6">
+            <Card className="shadow-sm border-primary/10">
+                <CardHeader className="flex flex-row items-center justify-between py-4 border-b">
                     <div className="space-y-1">
-                        <CardTitle>Overhead Ledger</CardTitle>
-                        <CardDescription>Daily and recurring operational costs.</CardDescription>
+                        <CardTitle className="text-sm font-bold uppercase">Overhead Ledger</CardTitle>
+                        <CardDescription className="text-[10px] font-bold uppercase">Departmental Operational Costs</CardDescription>
                     </div>
-                    <Button onClick={() => handleOpenDialog()}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Record Expense
+                    <Button size="sm" onClick={() => handleOpenDialog()} className="h-8 text-[10px] font-bold uppercase">
+                        <PlusCircle className="mr-1.5 h-3 w-3" /> Record Expense
                     </Button>
                 </CardHeader>
-                <CardContent className="pt-6">
-                    <div className="rounded-md border overflow-hidden">
-                        <Table>
-                            <TableHeader>
-                                <TableRow className="bg-muted/50">
-                                    <TableHead>Date</TableHead>
-                                    <TableHead>Description</TableHead>
-                                    <TableHead>Module</TableHead>
-                                    <TableHead className="text-right">Amount</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                <CardContent className="p-0">
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="bg-muted/30 h-10">
+                                <TableHead className="text-[10px] font-black uppercase">Date</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase">Description</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase">Module</TableHead>
+                                <TableHead className="text-right text-[10px] font-black uppercase">Amount</TableHead>
+                                <TableHead className="text-right text-[10px] font-black uppercase">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {loading ? (
+                                Array.from({ length: 5 }).map((_, i) => <TableRow key={i}><TableCell colSpan={5} className="h-10 animate-pulse bg-muted/10" /></TableRow>)
+                            ) : paginatedExpenses.length === 0 ? (
+                                <TableRow><TableCell colSpan={5} className="h-24 text-center text-[10px] font-bold uppercase text-muted-foreground italic">No expense records found.</TableCell></TableRow>
+                            ) : paginatedExpenses.map((e) => (
+                                <TableRow key={e.id} className="h-12">
+                                    <TableCell className="text-[10px] font-mono">{new Date(e.date).toLocaleDateString()}</TableCell>
+                                    <TableCell className="font-bold text-xs truncate max-w-[200px]">{e.description}</TableCell>
+                                    <TableCell className="capitalize text-[10px] font-bold text-muted-foreground">{e.module}</TableCell>
+                                    <TableCell className="text-right font-black text-destructive text-xs">-{formatPrice(e.amount)}</TableCell>
+                                    <TableCell className="text-right space-x-1">
+                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" onClick={() => handleOpenDialog(e)}><Edit className="h-3 w-3" /></Button>
+                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setTargetExpense({id: e.id, description: e.description})}><Trash2 className="h-3 w-3" /></Button>
+                                    </TableCell>
                                 </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {loading ? (
-                                    Array.from({ length: 5 }).map((_, i) => (
-                                        <TableRow key={i}><TableCell colSpan={5} className="h-12 animate-pulse bg-muted/10" /></TableRow>
-                                    ))
-                                ) : paginatedExpenses.length === 0 ? (
-                                    <TableRow><TableCell colSpan={5} className="h-24 text-center text-muted-foreground">No records found.</TableCell></TableRow>
-                                ) : paginatedExpenses.map((e) => (
-                                    <TableRow key={e.id}>
-                                        <TableCell className="text-xs">{new Date(e.date).toLocaleDateString()}</TableCell>
-                                        <TableCell className="font-medium">{e.description}</TableCell>
-                                        <TableCell className="capitalize text-muted-foreground">{e.module}</TableCell>
-                                        <TableCell className="text-right font-bold text-destructive">-{formatPrice(e.amount)}</TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => handleOpenDialog(e)}><Edit className="h-4 w-4" /></Button>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setTargetExpense({id: e.id, description: e.description})}><Trash2 className="h-4 w-4" /></Button>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
-                    <div className="flex items-center justify-end space-x-2 py-4">
-                        <span className="text-xs text-muted-foreground">Page {currentPage} of {totalPages || 1}</span>
-                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1}><ChevronLeft className="h-4 w-4" /></Button>
-                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages || totalPages === 0}><ChevronRight className="h-4 w-4" /></Button>
+                            ))}
+                        </TableBody>
+                    </Table>
+                    <div className="flex items-center justify-between px-4 py-3 border-t bg-muted/10">
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Page {currentPage} of {totalPages || 1}</span>
+                        <div className="flex gap-1">
+                            <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1}><ChevronLeft className="h-3 w-3" /></Button>
+                            <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages || totalPages === 0}><ChevronRight className="h-3 w-3" /></Button>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
 
             <Dialog open={isDialogOpen} onOpenChange={(open) => { if(!isSubmitting) setIsDialogOpen(open); }}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>{editingExpense ? 'Edit Expense' : 'Record New Expense'}</DialogTitle>
-                        <DialogDescription>Log operational costs classified by module.</DialogDescription>
+                <DialogContent className="sm:max-w-[380px] p-0 overflow-hidden">
+                    <DialogHeader className="p-4 border-b bg-muted/10">
+                        <DialogTitle className="text-sm font-bold uppercase">{editingExpense ? 'Edit Expense' : 'Record Expense'}</DialogTitle>
+                        <DialogDescription className="text-[10px] font-bold uppercase">Operating Cost Classification</DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4 pt-4">
-                        <div className="space-y-2">
-                            <Label>Description</Label>
-                            <input {...register('description', { required: true })} disabled={isSubmitting} placeholder="e.g. Water Bill Jan" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
+                    <form onSubmit={handleSubmit(onFormSubmit)} className="p-4 space-y-3">
+                        <div className="space-y-1">
+                            <Label className="text-[10px] font-bold uppercase">Description</Label>
+                            <input {...register('description', { required: true })} disabled={isSubmitting} placeholder="e.g. Water Bill Jan" className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-2 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50" />
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label>Amount (Ksh)</Label>
-                                <input type="number" {...register('amount', { required: true, valueAsNumber: true })} disabled={isSubmitting} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                                <Label className="text-[10px] font-bold uppercase">Amount (Ksh)</Label>
+                                <input type="number" {...register('amount', { required: true, valueAsNumber: true })} disabled={isSubmitting} className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-2 text-xs ring-offset-background disabled:opacity-50" />
                             </div>
-                            <div className="space-y-2">
-                                <Label>Category</Label>
+                            <div className="space-y-1">
+                                <Label className="text-[10px] font-bold uppercase">Category</Label>
                                 <Select value={watch('category') || 'miscellaneous'} onValueChange={(v) => setValue('category', v as any)}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectTrigger className="h-8 text-[11px] font-bold uppercase"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="salary">Salary</SelectItem>
-                                        <SelectItem value="utility">Utility</SelectItem>
-                                        <SelectItem value="maintenance">Maintenance</SelectItem>
-                                        <SelectItem value="rent">Rent</SelectItem>
-                                        <SelectItem value="garbage">Garbage</SelectItem>
-                                        <SelectItem value="miscellaneous">Miscellaneous</SelectItem>
+                                        <SelectItem value="salary">SALARY</SelectItem>
+                                        <SelectItem value="utility">UTILITY</SelectItem>
+                                        <SelectItem value="maintenance">MAINTENANCE</SelectItem>
+                                        <SelectItem value="rent">RENT</SelectItem>
+                                        <SelectItem value="garbage">GARBAGE</SelectItem>
+                                        <SelectItem value="miscellaneous">MISC</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <Label>Module Classification</Label>
+                        <div className="space-y-1">
+                            <Label className="text-[10px] font-bold uppercase">Department</Label>
                             <Select value={watch('module') || 'general'} onValueChange={(v) => setValue('module', v as HotelModule)}>
-                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectTrigger className="h-8 text-[11px] font-bold uppercase"><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="restaurant">Restaurant</SelectItem>
-                                    <SelectItem value="bar">Bar</SelectItem>
-                                    <SelectItem value="carwash">Car Wash</SelectItem>
-                                    <SelectItem value="accommodation">Rooms</SelectItem>
-                                    <SelectItem value="entertainment">Entertainment</SelectItem>
-                                    <SelectItem value="general">General/Administrative</SelectItem>
+                                    <SelectItem value="restaurant">RESTAURANT</SelectItem>
+                                    <SelectItem value="bar">BAR</SelectItem>
+                                    <SelectItem value="carwash">CAR WASH</SelectItem>
+                                    <SelectItem value="accommodation">ROOMS</SelectItem>
+                                    <SelectItem value="entertainment">ENT.</SelectItem>
+                                    <SelectItem value="general">GENERAL/ADMIN</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
-                        <DialogFooter className="pt-4">
-                            <Button variant="outline" type="button" onClick={() => setIsDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
-                            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Saving..." : "Save Record"}</Button>
+                        <div className="space-y-1">
+                            <Label className="text-[10px] font-bold uppercase">Date</Label>
+                            <input type="date" {...register('date', { required: true })} disabled={isSubmitting} className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-2 text-xs ring-offset-background disabled:opacity-50" />
+                        </div>
+                        <DialogFooter className="pt-2 gap-2">
+                            <Button variant="outline" size="sm" type="button" onClick={() => setIsDialogOpen(false)} className="text-[10px] font-bold">CANCEL</Button>
+                            <Button size="sm" type="submit" disabled={isSubmitting} className="flex-1 text-[10px] font-bold uppercase">
+                                {isSubmitting ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : null}
+                                Save Record
+                            </Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -227,15 +230,15 @@ export default function ExpensesPage() {
             <AlertDialog open={!!targetExpense} onOpenChange={(open) => !open && setTargetExpense(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Delete record?</AlertDialogTitle>
-                        <AlertDialogDescription>Are you sure you want to permanently delete this expense record? This action cannot be undone.</AlertDialogDescription>
+                        <AlertDialogTitle className="text-sm font-bold uppercase">Delete Expense Record?</AlertDialogTitle>
+                        <AlertDialogDescription className="text-xs">Are you sure you want to permanently remove this financial record? This action cannot be undone.</AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteExpense} className="bg-destructive text-white">Confirm Removal</AlertDialogAction>
+                    <AlertDialogFooter className="gap-2">
+                        <AlertDialogCancel className="text-[10px] font-bold uppercase h-8">CANCEL</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteExpense} className="bg-destructive text-white text-[10px] font-bold uppercase h-8 hover:bg-destructive/90">CONFIRM REMOVAL</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </div>
+        </motion.div>
     );
 }

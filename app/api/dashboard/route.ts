@@ -14,7 +14,6 @@ export async function GET() {
     const prevMonth = prevMonthDate.getMonth() + 1;
     const prevYear = prevMonthDate.getFullYear();
 
-    // 1. Fetch Revenue and COGS (True Cost Tracking)
     const [stats]: any = await pool.query(`
       SELECT 
         SUM(CASE WHEN MONTH(timestamp) = ? AND YEAR(timestamp) = ? THEN totalAmount ELSE 0 END) as currRev,
@@ -25,7 +24,6 @@ export async function GET() {
       WHERE status = 'paid'
     `, [currentMonth, currentYear, currentMonth, currentYear, prevMonth, prevYear, prevMonth, prevYear]);
 
-    // 2. Fetch Operating Expenses
     const [expenses]: any = await pool.query(`
       SELECT 
         SUM(CASE WHEN MONTH(date) = ? AND YEAR(date) = ? THEN amount ELSE 0 END) as currOpex,
@@ -36,32 +34,48 @@ export async function GET() {
     const statsRow = (stats && stats[0]) || { currRev: 0, currCogs: 0, prevRev: 0, prevCogs: 0 };
     const expRow = (expenses && expenses[0]) || { currOpex: 0, prevOpex: 0 };
 
-    // 3. Departmental Breakdown
     const modules: HotelModule[] = ['restaurant', 'bar', 'carwash', 'accommodation', 'entertainment'];
     const moduleStats: ModuleComparison[] = await Promise.all(modules.map(async (m) => {
       const [mStats]: any = await pool.query(`
         SELECT 
-          SUM(CASE WHEN MONTH(timestamp) = ? AND YEAR(timestamp) = ? THEN totalAmount ELSE 0 END) as curr,
-          SUM(CASE WHEN MONTH(timestamp) = ? AND YEAR(timestamp) = ? THEN totalCost ELSE 0 END) as currCogs,
-          SUM(CASE WHEN MONTH(timestamp) = ? AND YEAR(timestamp) = ? THEN totalAmount ELSE 0 END) as prev,
-          SUM(CASE WHEN MONTH(timestamp) = ? AND YEAR(timestamp) = ? THEN totalCost ELSE 0 END) as prevCogs
+          SUM(CASE WHEN MONTH(timestamp) = ? AND YEAR(timestamp) = ? THEN totalAmount ELSE 0 END) as currS,
+          SUM(CASE WHEN MONTH(timestamp) = ? AND YEAR(timestamp) = ? THEN totalCost ELSE 0 END) as currC,
+          SUM(CASE WHEN MONTH(timestamp) = ? AND YEAR(timestamp) = ? THEN totalAmount ELSE 0 END) as prevS,
+          SUM(CASE WHEN MONTH(timestamp) = ? AND YEAR(timestamp) = ? THEN totalCost ELSE 0 END) as prevC
         FROM transactions 
         WHERE module = ? AND status = 'paid'
       `, [currentMonth, currentYear, currentMonth, currentYear, prevMonth, prevYear, prevMonth, prevYear, m]);
+
+      const [mExp]: any = await pool.query(`
+        SELECT 
+          SUM(CASE WHEN MONTH(date) = ? AND YEAR(date) = ? THEN amount ELSE 0 END) as currE,
+          SUM(CASE WHEN MONTH(date) = ? AND YEAR(date) = ? THEN amount ELSE 0 END) as prevE
+        FROM expenses
+        WHERE module = ?
+      `, [currentMonth, currentYear, prevMonth, prevYear, m]);
       
-      const c = Number(mStats && mStats[0]?.curr || 0);
-      const cCogs = Number(mStats && mStats[0]?.currCogs || 0);
-      const p = Number(mStats && mStats[0]?.prev || 0);
-      const pCogs = Number(mStats && mStats[0]?.prevCogs || 0);
+      const currS = Number(mStats && mStats[0]?.currS || 0);
+      const currC = Number(mStats && mStats[0]?.currC || 0);
+      const currE = Number(mExp && mExp[0]?.currE || 0);
+      const currNet = currS - currC - currE;
+
+      const prevS = Number(mStats && mStats[0]?.prevS || 0);
+      const prevC = Number(mStats && mStats[0]?.prevC || 0);
+      const prevE = Number(mExp && mExp[0]?.prevE || 0);
+      const prevNet = prevS - prevC - prevE;
       
-      const growth = p === 0 ? (c > 0 ? 100 : 0) : ((c - p) / p) * 100;
+      const growth = prevNet === 0 ? (currNet > 0 ? 100 : 0) : ((currNet - prevNet) / Math.abs(prevNet)) * 100;
 
       return {
         module: m,
-        currentSales: c,
-        currentCogs: cCogs,
-        previousSales: p,
-        previousCogs: pCogs,
+        currentSales: currS,
+        currentCogs: currC,
+        currentOpex: currE,
+        currentNet: currNet,
+        previousSales: prevS,
+        previousCogs: prevC,
+        previousOpex: prevE,
+        previousNet: prevNet,
         changePercent: growth
       };
     }));
@@ -69,7 +83,7 @@ export async function GET() {
     const calculateMetrics = (curr: number, prev: number) => ({
       current: curr,
       previous: prev,
-      changePercent: prev === 0 ? (curr > 0 ? 100 : 0) : ((curr - prev) / prev) * 100
+      changePercent: prev === 0 ? (curr > 0 ? 100 : 0) : ((curr - prev) / Math.abs(prev)) * 100
     });
 
     const currRev = Number(statsRow.currRev || 0);
