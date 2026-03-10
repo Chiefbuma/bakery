@@ -101,7 +101,7 @@ export default function DashboardPage() {
                 <CardHeader className="bg-primary/5 py-3 border-b">
                     <CardTitle className="text-xs font-bold uppercase tracking-tight">Consolidated Financial Statement</CardTitle>
                     <CardDescription className="text-[9px] uppercase font-bold">Total Operational Performance comparison</CardDescription>
-                </CardHeader>
+                </Header>
                 <CardContent className="p-0">
                     <Table>
                         <TableHeader>
@@ -134,35 +134,48 @@ export default function DashboardPage() {
             <Card className="shadow-sm border-primary/10 overflow-hidden">
                 <CardHeader className="bg-primary/5 py-3 border-b">
                     <CardTitle className="text-xs font-bold uppercase tracking-tight">Departmental Contribution Analysis</CardTitle>
-                    <CardDescription className="text-[9px] uppercase font-bold">Granular performance and cost breakdown by module.</CardDescription>
+                    <CardDescription className="text-[9px] uppercase font-bold">Granular P&L breakdown per department.</CardDescription>
                 </CardHeader>
-                <CardContent className="p-0">
+                <CardContent className="p-0 overflow-x-auto">
                     <Table>
                         <TableHeader>
-                            <TableRow className="hover:bg-transparent bg-muted/20 h-9">
-                                <TableHead className="w-[120px] font-bold text-[10px] uppercase">Department</TableHead>
-                                <TableHead className="text-right font-bold text-muted-foreground text-[10px] uppercase">{previousPeriodLabel} COGS</TableHead>
-                                <TableHead className="text-right font-bold text-[10px] uppercase">{currentPeriodLabel} COGS</TableHead>
-                                <TableHead className="text-right font-bold text-[10px] uppercase">{currentPeriodLabel} Sales</TableHead>
-                                <TableHead className="text-right font-bold w-[110px] text-[10px] uppercase">MTD Growth</TableHead>
+                            <TableRow className="hover:bg-transparent bg-muted/20 h-8 border-b-2">
+                                <TableHead rowSpan={2} className="w-[100px] font-bold text-[10px] uppercase border-r">Dept</TableHead>
+                                <TableHead colSpan={4} className="text-center font-bold text-muted-foreground text-[9px] uppercase border-r">{previousPeriodLabel}</TableHead>
+                                <TableHead colSpan={4} className="text-center font-bold text-primary text-[9px] uppercase border-r">{currentPeriodLabel}</TableHead>
+                                <TableHead rowSpan={2} className="text-right font-bold w-[90px] text-[10px] uppercase">MTD Growth</TableHead>
+                            </TableRow>
+                            <TableRow className="hover:bg-transparent bg-muted/10 h-8">
+                                <TableHead className="text-right font-bold text-[8px] uppercase">Sales</TableHead>
+                                <TableHead className="text-right font-bold text-[8px] uppercase">COGS</TableHead>
+                                <TableHead className="text-right font-bold text-[8px] uppercase">OpEx</TableHead>
+                                <TableHead className="text-right font-bold text-[8px] uppercase border-r">Net</TableHead>
+                                <TableHead className="text-right font-bold text-[8px] uppercase">Sales</TableHead>
+                                <TableHead className="text-right font-bold text-[8px] uppercase">COGS</TableHead>
+                                <TableHead className="text-right font-bold text-[8px] uppercase">OpEx</TableHead>
+                                <TableHead className="text-right font-bold text-[8px] uppercase border-r">Net</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {moduleStats.map((m) => (
-                                <TableRow key={m.module} className="group h-11">
-                                    <TableCell className="capitalize font-bold text-[11px] flex items-center gap-1.5">
-                                        <div className="w-1 h-1 rounded-full bg-primary/40 group-hover:bg-primary transition-colors" />
+                                <TableRow key={m.module} className="group h-10">
+                                    <TableCell className="capitalize font-bold text-[10px] border-r">
                                         {m.module === 'accommodation' ? 'Rooms' : m.module}
                                     </TableCell>
-                                    <TableCell className="text-right text-[10px] text-muted-foreground">{formatPrice(m.previousCogs)}</TableCell>
-                                    <TableCell className="text-right text-[10px] text-orange-600 font-bold">{formatPrice(m.currentCogs)}</TableCell>
-                                    <TableCell className="text-right text-[10px] font-black">{formatPrice(m.currentSales)}</TableCell>
+                                    {/* Previous Period */}
+                                    <TableCell className="text-right text-[9px] text-muted-foreground">{formatPrice(m.previousSales)}</TableCell>
+                                    <TableCell className="text-right text-[9px] text-muted-foreground">{formatPrice(m.previousCogs)}</TableCell>
+                                    <TableCell className="text-right text-[9px] text-muted-foreground">{formatPrice(m.previousOpex)}</TableCell>
+                                    <TableCell className="text-right text-[9px] text-muted-foreground font-bold border-r">{formatPrice(m.previousNet)}</TableCell>
+                                    {/* Current Period */}
+                                    <TableCell className="text-right text-[9px] font-black">{formatPrice(m.currentSales)}</TableCell>
+                                    <TableCell className="text-right text-[9px] text-orange-600 font-bold">{formatPrice(m.currentCogs)}</TableCell>
+                                    <TableCell className="text-right text-[9px] text-destructive font-bold">{formatPrice(m.currentOpex)}</TableCell>
+                                    <TableCell className="text-right text-[9px] font-black text-green-600 border-r">{formatPrice(m.currentNet)}</TableCell>
+                                    {/* Growth */}
                                     <TableCell className="text-right">
-                                        <div className="flex justify-end items-center gap-2">
+                                        <div className="flex justify-end items-center gap-1.5">
                                             {renderChange(m.changePercent)}
-                                            <Badge variant={m.currentNet >= 0 ? "secondary" : "destructive"} className="px-1 py-0 text-[8px] h-3.5 rounded-sm tabular-nums min-w-[50px] justify-center">
-                                                {formatPrice(m.currentNet)}
-                                            </Badge>
                                         </div>
                                     </TableCell>
                                 </TableRow>

@@ -253,7 +253,7 @@ export default function InventoryPage() {
                     </TabsList>
                     <div className="flex items-center gap-1.5">
                         <div className="relative w-40">
-                            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                             <Input placeholder="Search..." className="h-7 pl-7 text-[10px]" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} />
                         </div>
                         <Select value={activeModule} onValueChange={(v) => { setActiveModule(v as any); setCurrentPage(1); }}>
