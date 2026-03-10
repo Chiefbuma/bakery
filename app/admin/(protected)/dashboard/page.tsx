@@ -6,7 +6,7 @@ import type { DashboardData } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowUpRight, ArrowDownRight, Minus, AlertCircle, RefreshCw } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Minus, AlertCircle, RefreshCw, Loader2 } from 'lucide-react';
 import { formatPrice, cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -43,9 +43,9 @@ export default function DashboardPage() {
 
     if (loading) {
         return (
-            <div className="p-4 md:p-8 space-y-6">
+            <div className="p-4 space-y-4">
                 <div className="space-y-2">
-                    <Skeleton className="h-10 w-64" />
+                    <Skeleton className="h-8 w-64" />
                     <Skeleton className="h-4 w-96" />
                 </div>
                 <Skeleton className="h-[200px] w-full" />
@@ -56,7 +56,7 @@ export default function DashboardPage() {
 
     if (error || !data) {
         return (
-            <div className="p-8">
+            <div className="p-6">
                 <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>System Error</AlertTitle>
@@ -64,7 +64,9 @@ export default function DashboardPage() {
                         {error || "The analytics dashboard is currently unavailable. Please verify your database connection."}
                     </AlertDescription>
                 </Alert>
-                <Button onClick={() => fetchData()} className="mt-4">Retry Connection</Button>
+                <Button onClick={() => fetchData()} className="mt-4 gap-2">
+                    <RefreshCw className="h-4 w-4" /> Retry Connection
+                </Button>
             </div>
         );
     }
@@ -83,68 +85,85 @@ export default function DashboardPage() {
     };
 
     return (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
             <div className="flex items-center justify-between">
-                <div className="flex flex-col gap-1">
-                    <h1 className="text-2xl font-bold tracking-tight font-headline text-primary">Executive P&L Overview</h1>
-                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Comparative Analytics: {previousPeriodLabel} vs {currentPeriodLabel}</p>
+                <div className="flex flex-col gap-0.5">
+                    <h1 className="text-xl font-bold tracking-tight font-headline text-primary">Executive P&L Overview</h1>
+                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Comparative Analytics: {previousPeriodLabel} vs {currentPeriodLabel}</p>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => fetchData(true)} disabled={isRefreshing} className="h-8 gap-2">
-                    <RefreshCw className={cn("h-3 w-3", isRefreshing && "animate-spin")} />
+                    {isRefreshing ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
                     <span className="text-[10px] font-bold">RECALCULATE</span>
                 </Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                {[
-                    { label: 'Gross Revenue', val: summary.revenue, color: 'text-primary' },
-                    { label: 'Total COGS', val: summary.cogs, color: 'text-orange-600' },
-                    { label: 'Operating Cost', val: summary.operatingCost, color: 'text-destructive' },
-                    { label: 'Net Operational Profit', val: summary.netProfit, color: 'text-green-600' }
-                ].map((item, i) => (
-                    <Card key={i} className="shadow-sm border-primary/5">
-                        <CardContent className="p-4 flex flex-col gap-1">
-                            <span className="text-[10px] font-black uppercase text-muted-foreground tracking-tighter">{item.label}</span>
-                            <div className="flex items-baseline justify-between">
-                                <span className={cn("text-xl font-black tabular-nums", item.color)}>{formatPrice(item.val.current)}</span>
-                                {renderChange(item.val.changePercent)}
-                            </div>
-                            <span className="text-[9px] text-muted-foreground italic">Prev: {formatPrice(item.val.previous)}</span>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
-
-            <Card className="shadow-lg border-primary/10 overflow-hidden">
-                <CardHeader className="bg-primary/5 py-4">
-                    <CardTitle className="text-base">Departmental Contribution Analysis</CardTitle>
-                    <CardDescription className="text-[10px] uppercase font-bold">Comparative performance and cost breakdown by department.</CardDescription>
+            <Card className="shadow-sm border-primary/10 overflow-hidden">
+                <CardHeader className="bg-primary/5 py-3 border-b">
+                    <CardTitle className="text-xs font-bold uppercase tracking-tight">Consolidated Financial Statement</CardTitle>
+                    <CardDescription className="text-[9px] uppercase font-bold">Total Operational Performance comparison</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                     <Table>
                         <TableHeader>
-                            <TableRow className="hover:bg-transparent bg-muted/20">
-                                <TableHead className="w-[150px] font-bold text-[10px] uppercase">Department</TableHead>
+                            <TableRow className="hover:bg-transparent bg-muted/20 h-9">
+                                <TableHead className="font-bold text-[10px] uppercase">Financial Metric</TableHead>
+                                <TableHead className="text-right font-bold text-muted-foreground text-[10px] uppercase">{previousPeriodLabel}</TableHead>
+                                <TableHead className="text-right font-bold text-[10px] uppercase">{currentPeriodLabel}</TableHead>
+                                <TableHead className="text-right font-bold text-[10px] uppercase w-[100px]">MTD Growth</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {[
+                                { label: 'Gross Revenue', val: summary.revenue, color: 'text-primary' },
+                                { label: 'Total COGS', val: summary.cogs, color: 'text-orange-600' },
+                                { label: 'Operating Cost', val: summary.operatingCost, color: 'text-destructive' },
+                                { label: 'Net Operational Profit', val: summary.netProfit, color: 'text-green-600' }
+                            ].map((item, i) => (
+                                <TableRow key={i} className="h-9">
+                                    <TableCell className="text-[10px] font-black uppercase tracking-tight">{item.label}</TableCell>
+                                    <TableCell className="text-right text-[10px] font-medium text-muted-foreground">{formatPrice(item.val.previous)}</TableCell>
+                                    <TableCell className={cn("text-right text-[10px] font-black", item.color)}>{formatPrice(item.val.current)}</TableCell>
+                                    <TableCell className="text-right">{renderChange(item.val.changePercent)}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+
+            <Card className="shadow-sm border-primary/10 overflow-hidden">
+                <CardHeader className="bg-primary/5 py-3 border-b">
+                    <CardTitle className="text-xs font-bold uppercase tracking-tight">Departmental Contribution Analysis</CardTitle>
+                    <CardDescription className="text-[9px] uppercase font-bold">Granular performance and cost breakdown by module.</CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="hover:bg-transparent bg-muted/20 h-9">
+                                <TableHead className="w-[120px] font-bold text-[10px] uppercase">Department</TableHead>
                                 <TableHead className="text-right font-bold text-muted-foreground text-[10px] uppercase">{previousPeriodLabel} COGS</TableHead>
-                                <TableHead className="text-right font-bold text-muted-foreground text-[10px] uppercase">{currentPeriodLabel} COGS</TableHead>
+                                <TableHead className="text-right font-bold text-[10px] uppercase">{currentPeriodLabel} COGS</TableHead>
                                 <TableHead className="text-right font-bold text-[10px] uppercase">{currentPeriodLabel} Sales</TableHead>
-                                <TableHead className="text-right font-bold w-[100px] text-[10px] uppercase">MTD Growth</TableHead>
+                                <TableHead className="text-right font-bold w-[110px] text-[10px] uppercase">MTD Growth</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {moduleStats.map((m) => (
-                                <TableRow key={m.module} className="group h-12">
-                                    <TableCell className="capitalize font-bold text-xs flex items-center gap-2">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-primary/40 group-hover:bg-primary transition-colors" />
+                                <TableRow key={m.module} className="group h-11">
+                                    <TableCell className="capitalize font-bold text-[11px] flex items-center gap-1.5">
+                                        <div className="w-1 h-1 rounded-full bg-primary/40 group-hover:bg-primary transition-colors" />
                                         {m.module === 'accommodation' ? 'Rooms' : m.module}
                                     </TableCell>
-                                    <TableCell className="text-right text-[11px] text-muted-foreground">{formatPrice(m.previousCogs)}</TableCell>
-                                    <TableCell className="text-right text-[11px] text-orange-600 font-bold">{formatPrice(m.currentCogs)}</TableCell>
-                                    <TableCell className="text-right text-[11px] font-black">{formatPrice(m.currentSales)}</TableCell>
+                                    <TableCell className="text-right text-[10px] text-muted-foreground">{formatPrice(m.previousCogs)}</TableCell>
+                                    <TableCell className="text-right text-[10px] text-orange-600 font-bold">{formatPrice(m.currentCogs)}</TableCell>
+                                    <TableCell className="text-right text-[10px] font-black">{formatPrice(m.currentSales)}</TableCell>
                                     <TableCell className="text-right">
-                                        <Badge variant={m.changePercent >= 0 ? "secondary" : "destructive"} className="px-1.5 py-0 text-[9px] h-4 rounded-sm">
-                                            {m.changePercent > 0 ? "+" : ""}{Math.round(m.changePercent)}%
-                                        </Badge>
+                                        <div className="flex justify-end items-center gap-2">
+                                            {renderChange(m.changePercent)}
+                                            <Badge variant={m.currentNet >= 0 ? "secondary" : "destructive"} className="px-1 py-0 text-[8px] h-3.5 rounded-sm tabular-nums min-w-[50px] justify-center">
+                                                {formatPrice(m.currentNet)}
+                                            </Badge>
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ))}
