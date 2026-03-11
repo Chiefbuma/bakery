@@ -2,6 +2,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import pool from '@/lib/db';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +24,9 @@ export async function POST(req: NextRequest) {
 
         const user = rows[0];
 
-        if (password !== user.password) {
+        // Compare hashed password
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
             return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
         }
 

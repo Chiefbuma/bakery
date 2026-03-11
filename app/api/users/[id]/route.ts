@@ -1,5 +1,7 @@
+
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
+import bcrypt from 'bcryptjs';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,12 +12,22 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   try {
     const { id } = await params;
     const body = await req.json();
-    const { name, email, role } = body;
+    const { name, email, role, password } = body;
     
-    await pool.query(
-      'UPDATE users SET name = ?, email = ?, role = ? WHERE id = ?',
-      [name, email, role, id]
-    );
+    let query = 'UPDATE users SET name = ?, email = ?, role = ?';
+    const queryParams: any[] = [name, email, role];
+
+    // Optionally update password if provided
+    if (password && password.trim() !== '') {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        query += ', password = ?';
+        queryParams.push(hashedPassword);
+    }
+
+    query += ' WHERE id = ?';
+    queryParams.push(id);
+    
+    await pool.query(query, queryParams);
     
     return NextResponse.json({ message: 'Personnel profile updated' });
   } catch (error) {

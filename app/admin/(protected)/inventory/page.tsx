@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -41,8 +40,6 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
-export const dynamic = 'force-dynamic';
 
 export default function InventoryPage() {
     const [products, setProducts] = useState<Product[]>([]);

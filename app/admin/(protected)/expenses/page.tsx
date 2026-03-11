@@ -25,8 +25,6 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-export const dynamic = 'force-dynamic';
-
 export default function ExpensesPage() {
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [loading, setLoading] = useState(true);

@@ -25,8 +25,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useForm } from "react-hook-form";
 
-export const dynamic = 'force-dynamic';
-
 export default function UsersPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
