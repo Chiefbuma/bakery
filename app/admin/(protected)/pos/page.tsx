@@ -1,8 +1,7 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { getProducts, placeOrder, getPendingOrders } from "@/services/hotel-service";
+import { getProducts, placeOrder, getPendingOrders, deleteTransactions } from "@/services/hotel-service";
 import type { Product, HotelModule, SaleItem, Transaction } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,8 +19,6 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const PAYSTACK_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || 'pk_test_placeholder';
 
-export const dynamic = 'force-dynamic';
-
 export default function POSPage() {
     const [activeModule, setActiveModule] = useState<HotelModule>('restaurant');
     const [products, setProducts] = useState<Product[]>([]);
@@ -38,6 +35,7 @@ export default function POSPage() {
     
     const [pendingOrders, setPendingOrders] = useState<Transaction[]>([]);
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+    const [resumingOrderId, setResumingOrderId] = useState<string | null>(null);
 
     const { toast } = useToast();
 
@@ -136,6 +134,7 @@ export default function POSPage() {
         const finalCustomerName = customerName || "Guest";
 
         try {
+            // First place the new order
             const response = await placeOrder({
                 orderNumber: `WK-${Date.now()}`,
                 module: activeModule,
@@ -148,6 +147,15 @@ export default function POSPage() {
                 amountReceived: received,
                 balance: bal
             });
+
+            // If this was a resumed order, immediately clean up the old pending record
+            if (resumingOrderId) {
+                try {
+                    await deleteTransactions([resumingOrderId]);
+                } catch (e) {
+                    console.error('Failed to cleanup old pending order:', e);
+                }
+            }
 
             if (status === 'paid') {
                 setReceiptData({
@@ -166,9 +174,11 @@ export default function POSPage() {
                 });
             }
 
+            // Reset state
             setCart([]);
             setCustomerName("");
             setAmountReceived("");
+            setResumingOrderId(null);
             setIsPaymentOpen(false);
             loadData(true);
             toast({ title: status === 'paid' ? "Sale Complete" : "Bill Saved for Later" });
@@ -211,8 +221,17 @@ export default function POSPage() {
     };
 
     const resumeOrder = (order: Transaction) => {
-        setCart(order.items.map(item => ({ ...item, price: Number(item.price), total: Number(item.total) })));
+        setCart(order.items.map(item => ({ 
+            ...item, 
+            productId: item.productId,
+            name: item.name,
+            quantity: item.quantity,
+            price: Number(item.price), 
+            costPrice: Number(item.costPrice),
+            total: Number(item.total) 
+        })));
         setCustomerName(order.customerName || "");
+        setResumingOrderId(order.id);
         setIsHistoryOpen(false);
         toast({ title: "Order Resumed" });
     };
@@ -318,7 +337,7 @@ export default function POSPage() {
                         <ShoppingCart className="h-3.5 w-3.5 text-primary" />
                         <h2 className="font-black uppercase tracking-tight text-[11px]">Active Bill</h2>
                     </div>
-                    {cart.length > 0 && <Button variant="ghost" size="sm" className="text-destructive h-6 text-[8px] font-bold uppercase" onClick={() => setCart([])}>EMPTY</Button>}
+                    {cart.length > 0 && <Button variant="ghost" size="sm" className="text-destructive h-6 text-[8px] font-bold uppercase" onClick={() => { setCart([]); setResumingOrderId(null); }}>EMPTY</Button>}
                 </div>
                 
                 <div className="flex-1 overflow-y-auto p-2.5 space-y-2.5">
@@ -386,7 +405,7 @@ export default function POSPage() {
                 <DialogContent className="sm:max-w-[360px] p-0 overflow-hidden">
                     <DialogHeader className="p-3 border-b bg-muted/10">
                         <DialogTitle className="text-[11px] uppercase font-black">Final Settlement</DialogTitle>
-                        <DialogDescription className="text-[9px] uppercase font-bold">Process payment for order WK-{Date.now()}</DialogDescription>
+                        <DialogDescription className="text-[9px] uppercase font-bold">Process payment for order</DialogDescription>
                     </DialogHeader>
                     <div className="p-3 space-y-3">
                         <div className="bg-primary/5 p-4 rounded-lg border border-primary/20 text-center">

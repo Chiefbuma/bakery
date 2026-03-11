@@ -27,8 +27,6 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-export const dynamic = 'force-dynamic';
-
 export default function OrdersPage() {
     const [orders, setOrders] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
