@@ -5,7 +5,7 @@ import { getProducts, placeOrder, getPendingOrders } from "@/services/hotel-serv
 import type { Product, HotelModule, SaleItem, Transaction } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, Search, History, Printer, Plus, Minus, Loader2, Play, CreditCard, Utensils, Beer, Car, Bed, Music, RefreshCw, Trash2 } from "lucide-react";
+import { ShoppingCart, Search, History, Printer, Plus, Minus, Loader2, CreditCard, Utensils, Beer, Car, Bed, Music, RefreshCw, Trash2 } from "lucide-react";
 import { formatPrice, cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -77,26 +77,27 @@ export default function POSPage() {
     useEffect(() => { loadData(); }, [loadData]);
 
     const addToCart = (product: Product) => {
+        if (product.stock <= 0) {
+            toast({ variant: "destructive", title: "Out of Stock", description: `${product.name} is currently unavailable.` });
+            return;
+        }
+
+        const existingItem = cart.find(item => item.productId === product.id);
+        const currentQtyInCart = existingItem ? existingItem.quantity : 0;
+
+        if (currentQtyInCart + 1 > product.stock) {
+            toast({ variant: "destructive", title: "Insufficient Stock", description: `Only ${product.stock} ${product.unit} available.` });
+            return;
+        }
+
         setCart(prev => {
             const existing = prev.find(item => item.productId === product.id);
             const price = Number(product.price || 0);
             if (existing) {
-                return prev.map(item => {
-                    if (item.productId === product.id) {
-                        const newQty = item.quantity + 1;
-                        return { ...item, quantity: newQty, total: Number((newQty * price).toFixed(2)) };
-                    }
-                    return item;
-                });
+                const newQty = existing.quantity + 1;
+                return prev.map(item => item.productId === product.id ? { ...item, quantity: newQty, total: Number((newQty * price).toFixed(2)) } : item);
             }
-            return [...prev, { 
-                productId: product.id, 
-                name: product.name, 
-                quantity: 1, 
-                price: price, 
-                costPrice: Number(product.costPrice || 0),
-                total: price 
-            }];
+            return [...prev, { productId: product.id, name: product.name, quantity: 1, price: price, costPrice: Number(product.costPrice || 0), total: price }];
         });
     };
 
@@ -104,7 +105,12 @@ export default function POSPage() {
         setCart(prev => {
             return prev.map(item => {
                 if (item.productId === id) {
+                    const product = products.find(p => p.id === id);
                     const newQty = Math.max(1, item.quantity + delta);
+                    if (product && newQty > product.stock) {
+                        toast({ variant: "destructive", title: "Insufficient Stock", description: `Available stock: ${product.stock}` });
+                        return item;
+                    }
                     const price = Number(item.price || 0);
                     return { ...item, quantity: newQty, total: Number((newQty * price).toFixed(2)) };
                 }
@@ -118,19 +124,13 @@ export default function POSPage() {
         toast({ title: "Item removed from bill" });
     };
 
-    const cartTotal = useMemo(() => {
-        return cart.reduce((acc, curr) => acc + (Number(curr.total) || 0), 0);
-    }, [cart]);
+    const cartTotal = useMemo(() => cart.reduce((acc, curr) => acc + (Number(curr.total) || 0), 0), [cart]);
 
-    const balanceValue = useMemo(() => {
-        const received = parseFloat(amountReceived) || 0;
-        return received - cartTotal;
-    }, [amountReceived, cartTotal]);
+    const balanceValue = useMemo(() => (parseFloat(amountReceived) || 0) - cartTotal, [amountReceived, cartTotal]);
 
     const finalizeOrder = async (method: 'cash' | 'mpesa' | 'card' | 'none', status: 'paid' | 'pending', received?: number, bal?: number) => {
         if (cart.length === 0) return;
         setIsProcessing(true);
-        
         const itemsSnapshot = [...cart];
         const finalCustomerName = customerName || "Guest";
 
@@ -187,7 +187,7 @@ export default function POSPage() {
             }
             finalizeOrder('cash', 'paid', received, balanceValue);
         } else {
-            handleMpesaPayment();
+                            handleMpesaPayment();
         }
     };
 
@@ -210,11 +210,7 @@ export default function POSPage() {
     };
 
     const resumeOrder = (order: Transaction) => {
-        setCart(order.items.map(item => ({
-            ...item,
-            price: Number(item.price),
-            total: Number(item.total)
-        })));
+        setCart(order.items.map(item => ({ ...item, price: Number(item.price), total: Number(item.total) })));
         setCustomerName(order.customerName || "");
         setIsHistoryOpen(false);
         toast({ title: "Order Resumed" });
@@ -279,29 +275,37 @@ export default function POSPage() {
 
                 <div className="flex-1 overflow-y-auto p-3 bg-muted/20">
                     <AnimatePresence mode="wait">
-                        <motion.div 
-                            key={activeModule}
-                            initial={{ opacity: 0, y: 5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -5 }}
-                            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
-                        >
-                            {filteredProducts.map(product => (
-                                <button key={product.id} className="group relative flex flex-col bg-card rounded-lg border hover:border-primary hover:shadow-sm transition-all text-left overflow-hidden h-fit" onClick={() => addToCart(product)}>
-                                    <div className="relative h-20 w-full bg-muted">
-                                        <Image src={resolveImageUrl(product.image_url)} alt={product.name} fill className="object-cover" />
-                                        <div className="absolute top-1 right-1">
-                                            <Badge variant={product.stock <= 5 ? "destructive" : "secondary"} className="text-[8px] px-1 h-3.5 backdrop-blur-md border-white/20">
-                                                {product.stock} {product.unit}
-                                            </Badge>
+                        <motion.div key={activeModule} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                            {filteredProducts.map(product => {
+                                const isOutOfStock = product.stock <= 0;
+                                return (
+                                    <button 
+                                        key={product.id} 
+                                        disabled={isOutOfStock}
+                                        className={cn("group relative flex flex-col bg-card rounded-lg border hover:border-primary hover:shadow-sm transition-all text-left overflow-hidden h-fit", isOutOfStock && "opacity-60 cursor-not-allowed grayscale")} 
+                                        onClick={() => addToCart(product)}
+                                    >
+                                        <div className="relative h-20 w-full bg-muted">
+                                            <Image src={resolveImageUrl(product.image_url)} alt={product.name} fill className="object-cover" />
+                                            {isOutOfStock ? (
+                                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10">
+                                                    <Badge variant="destructive" className="font-bold text-[8px] uppercase tracking-tighter">SOLD OUT</Badge>
+                                                </div>
+                                            ) : (
+                                                <div className="absolute top-1 right-1">
+                                                    <Badge variant={product.stock <= 5 ? "destructive" : "secondary"} className="text-[8px] px-1 h-3.5 backdrop-blur-md border-white/20">
+                                                        {product.stock} {product.unit}
+                                                    </Badge>
+                                                </div>
+                                            )}
                                         </div>
-                                    </div>
-                                    <div className="p-2">
-                                        <h3 className="font-bold text-[10px] truncate leading-tight">{product.name}</h3>
-                                        <p className="text-primary font-black text-xs mt-0.5">{formatPrice(Number(product.price))}</p>
-                                    </div>
-                                </button>
-                            ))}
+                                        <div className="p-2">
+                                            <h3 className="font-bold text-[10px] truncate leading-tight">{product.name}</h3>
+                                            <p className="text-primary font-black text-xs mt-0.5">{formatPrice(Number(product.price))}</p>
+                                        </div>
+                                    </button>
+                                );
+                            })}
                         </motion.div>
                     </AnimatePresence>
                 </div>
@@ -383,18 +387,15 @@ export default function POSPage() {
                         <DialogTitle className="text-[11px] uppercase font-black">Final Settlement</DialogTitle>
                         <DialogDescription className="text-[9px] uppercase font-bold">Process payment for order WK-{Date.now()}</DialogDescription>
                     </DialogHeader>
-                    
                     <div className="p-3 space-y-3">
                         <div className="bg-primary/5 p-4 rounded-lg border border-primary/20 text-center">
                             <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest mb-1">Total Payable</p>
                             <p className="text-3xl font-black text-primary tabular-nums">{formatPrice(cartTotal)}</p>
                         </div>
-
                         <div className="grid grid-cols-2 gap-2">
                             <Button variant={paymentMethod === 'cash' ? 'default' : 'outline'} className="h-10 text-[10px] font-black uppercase" onClick={() => setPaymentMethod('cash')}>CASH</Button>
                             <Button variant={paymentMethod === 'mpesa' ? 'default' : 'outline'} className="h-10 text-[10px] font-black uppercase" onClick={() => setPaymentMethod('mpesa')}>M-PESA</Button>
                         </div>
-
                         {paymentMethod === 'cash' && (
                             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-2">
                                 <div className="space-y-0.5">
@@ -408,7 +409,6 @@ export default function POSPage() {
                             </motion.div>
                         )}
                     </div>
-
                     <DialogFooter className="p-3 bg-muted/10 border-t gap-1.5">
                         <Button variant="outline" size="sm" onClick={() => setIsPaymentOpen(false)} className="text-[9px] font-bold">CANCEL</Button>
                         <Button onClick={handleCheckout} disabled={isProcessing} className="flex-1 font-black h-8 text-[9px] uppercase">
@@ -463,7 +463,6 @@ export default function POSPage() {
                     <div className="p-4 space-y-2 text-center receipt-font text-[10px] leading-tight w-[70mm] mx-auto">
                         <DialogTitle className="sr-only">Receipt Preview</DialogTitle>
                         <DialogDescription className="sr-only">Official transaction record.</DialogDescription>
-                        
                         <div className="space-y-0.5">
                             <h2 className="font-black text-sm uppercase">WAMAGHACH HOTEL</h2>
                             <p className="font-bold text-[7px] uppercase tracking-tighter">Kahua-ini Othaya-Karatina Rd</p>
@@ -473,7 +472,6 @@ export default function POSPage() {
                                 <p>DATE: <b>{new Date().toLocaleString()}</b></p>
                             </div>
                         </div>
-                        
                         <table className="w-full text-left text-[9px] border-collapse mt-1.5">
                             <thead>
                                 <tr className="border-b border-dashed border-black">
@@ -492,7 +490,6 @@ export default function POSPage() {
                                 ))}
                             </tbody>
                         </table>
-
                         <div className="space-y-0.5 text-[9px] border-t border-dashed border-black pt-1">
                             <div className="flex justify-between font-black text-sm">
                                 <span>TOTAL</span>
@@ -505,11 +502,9 @@ export default function POSPage() {
                                 </div>
                             )}
                         </div>
-
                         <div className="pt-2 text-[7px] uppercase font-bold">
                             <p>Thank you for choosing Wamaghach!</p>
                         </div>
-
                         <div className="pt-3 no-print">
                             <Button className="w-full h-7 text-[9px] font-bold" onClick={() => window.print()}>
                                 <Printer className="mr-1 h-3 w-3" /> PRINT

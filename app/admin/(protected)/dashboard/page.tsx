@@ -101,7 +101,7 @@ export default function DashboardPage() {
             </div>
 
             <Card className="shadow-sm border-primary/10 overflow-hidden">
-                <CardHeader className="bg-muted/30 py-4">
+                <CardHeader className="bg-muted/30 py-4 border-b">
                     <CardTitle className="text-lg">Consolidated Financial Statement</CardTitle>
                     <CardDescription>Overall performance summary across all departments</CardDescription>
                 </CardHeader>
@@ -135,7 +135,7 @@ export default function DashboardPage() {
             </Card>
 
             <Card className="shadow-sm border-primary/10 overflow-hidden">
-                <CardHeader className="bg-muted/30 py-4">
+                <CardHeader className="bg-muted/30 py-4 border-b">
                     <CardTitle className="text-lg">Departmental Contribution Analysis</CardTitle>
                     <CardDescription>Granular breakdown of Sales, COGS, and Expenses by department.</CardDescription>
                 </CardHeader>
