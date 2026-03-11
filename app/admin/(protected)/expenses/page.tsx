@@ -124,7 +124,8 @@ export default function ExpensesPage() {
                         <CardDescription className="text-[8px] font-bold uppercase">Departmental Costs</CardDescription>
                     </div>
                     <Button size="sm" onClick={() => handleOpenDialog()} className="h-7 text-[9px] font-bold uppercase">
-                        <PlusCircle className="mr-1 h-3 w-3" /> Record Expense
+                        {loading ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> : <PlusCircle className="mr-1 h-3 w-3" />}
+                        Record Expense
                     </Button>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -144,7 +145,7 @@ export default function ExpensesPage() {
                             ) : paginatedExpenses.length === 0 ? (
                                 <TableRow><TableCell colSpan={5} className="h-20 text-center text-[9px] font-bold uppercase text-muted-foreground italic">No records.</TableCell></TableRow>
                             ) : paginatedExpenses.map((e) => (
-                                <TableRow key={e.id} className="h-10">
+                                <TableRow key={e.id} className="h-9">
                                     <TableCell className="text-[9px] font-mono">{new Date(e.date).toLocaleDateString()}</TableCell>
                                     <TableCell className="font-bold text-[10px] truncate max-w-[150px]">{e.description}</TableCell>
                                     <TableCell className="capitalize text-[9px] font-bold text-muted-foreground">{e.module}</TableCell>
@@ -173,7 +174,7 @@ export default function ExpensesPage() {
                         <DialogTitle className="text-[11px] font-bold uppercase">{editingExpense ? 'Edit Expense' : 'Record Expense'}</DialogTitle>
                         <DialogDescription className="text-[8px] font-bold uppercase">Classify operational overhead.</DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={handleSubmit(onFormSubmit)} className="p-3 space-y-2">
+                    <form onSubmit={handleSubmit(onFormSubmit)} className="p-3 space-y-1.5">
                         <div className="space-y-0.5">
                             <Label className="text-[9px] font-bold uppercase">Description</Label>
                             <input {...register('description', { required: true })} disabled={isSubmitting} placeholder="e.g. Water Bill" className="flex h-7 w-full rounded-md border border-input bg-background px-3 py-1 text-[10px] placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50" />

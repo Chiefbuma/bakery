@@ -10,7 +10,6 @@ import {
     addSupply, 
     updateProduct, 
     updateSupply,
-    uploadImage,
     getProductRecipes,
     saveProductRecipe
 } from "@/services/hotel-service";
@@ -21,9 +20,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, Search, Trash2, Edit, ChevronLeft, ChevronRight, Upload, Loader2, UtensilsCrossed, PackageSearch } from "lucide-react";
+import { PlusCircle, Search, Trash2, Edit, ChevronLeft, ChevronRight, Loader2, UtensilsCrossed } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -64,7 +63,6 @@ export default function InventoryPage() {
     const [recipeProduct, setRecipeProduct] = useState<Product | null>(null);
     
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isUploading, setIsUploading] = useState(false);
     const [targetItem, setTargetItem] = useState<{id: string, name: string, type: 'product' | 'supply' } | null>(null);
 
     const { toast } = useToast();
@@ -247,9 +245,18 @@ export default function InventoryPage() {
             <Tabs defaultValue="products" value={activeTab} onValueChange={(v) => { setActiveTab(v); setCurrentPage(1); }}>
                 <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
                     <TabsList className="bg-muted/50 p-0.5 h-8">
-                        <TabsTrigger value="products" className="text-[9px] font-bold uppercase px-3">Master Stock</TabsTrigger>
-                        <TabsTrigger value="supplies" className="text-[9px] font-bold uppercase px-3">Raw Supplies</TabsTrigger>
-                        <TabsTrigger value="recipes" className="text-[9px] font-bold uppercase px-3">Recipes</TabsTrigger>
+                        <TabsTrigger value="products" className="text-[9px] font-bold uppercase px-3 flex items-center gap-1.5">
+                            {loading && activeTab === 'products' ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : null}
+                            Master Stock
+                        </TabsTrigger>
+                        <TabsTrigger value="supplies" className="text-[9px] font-bold uppercase px-3 flex items-center gap-1.5">
+                            {loading && activeTab === 'supplies' ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : null}
+                            Raw Supplies
+                        </TabsTrigger>
+                        <TabsTrigger value="recipes" className="text-[9px] font-bold uppercase px-3 flex items-center gap-1.5">
+                            {loading && activeTab === 'recipes' ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : null}
+                            Recipes
+                        </TabsTrigger>
                     </TabsList>
                     <div className="flex items-center gap-1.5">
                         <div className="relative w-40">
@@ -355,13 +362,13 @@ export default function InventoryPage() {
                         <DialogTitle className="text-[11px] font-bold uppercase">{editingProduct ? 'Edit Product' : 'Add Product'}</DialogTitle>
                         <DialogDescription className="text-[8px] font-bold uppercase">Configure sellable item and cost type.</DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={productForm.handleSubmit(onProductSubmit)} className="p-3 space-y-2">
+                    <form onSubmit={productForm.handleSubmit(onProductSubmit)} className="p-3 space-y-1.5">
                         <div className="grid grid-cols-2 gap-2">
                             <div className="col-span-2 space-y-0.5">
                                 <Label className="text-[9px] font-bold uppercase">Product Name</Label>
                                 <Input {...productForm.register('name', { required: true })} disabled={isSubmitting} className="h-7 text-[10px]" />
                             </div>
-                            <div className="col-span-2 space-y-1 p-2 bg-muted/20 rounded border">
+                            <div className="col-span-2 space-y-1 p-1.5 bg-muted/20 rounded border">
                                 <Label className="text-[8px] font-black uppercase">Cost Structure</Label>
                                 <RadioGroup value={hasRecipeValue ? "production" : "retail"} onValueChange={(v) => productForm.setValue('hasRecipe', v === 'production')} className="flex gap-4">
                                     <div className="flex items-center space-x-1.5">
@@ -426,13 +433,13 @@ export default function InventoryPage() {
                         <DialogTitle className="text-[11px] font-bold uppercase">Recipe: {recipeProduct?.name}</DialogTitle>
                         <DialogDescription className="text-[8px] font-bold uppercase">Map raw ingredients for production items.</DialogDescription>
                     </DialogHeader>
-                    <div className="p-3 space-y-2">
+                    <div className="p-3 space-y-1.5">
                         <div className="max-h-[200px] overflow-y-auto space-y-1 pr-1 custom-scrollbar">
                             {currentRecipe.map((rcp, idx) => {
                                 const supply = supplies.find(s => s.id === rcp.supplyId);
                                 const lineCost = Number(rcp.amount || 0) * Number(supply?.unitCost || 0);
                                 return (
-                                    <div key={idx} className="flex flex-col gap-1 p-1.5 bg-muted/10 rounded border border-dashed">
+                                    <div key={idx} className="flex flex-col gap-0.5 p-1 bg-muted/10 rounded border border-dashed">
                                         <div className="flex items-center gap-1.5">
                                             <Select value={rcp.supplyId} onValueChange={(v) => {
                                                 const next = [...currentRecipe];
@@ -451,17 +458,17 @@ export default function InventoryPage() {
                                             }} />
                                             <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => setCurrentRecipe(prev => prev.filter((_, i) => i !== idx))}><Trash2 className="h-3 w-3" /></Button>
                                         </div>
-                                        {lineCost > 0 && <div className="text-[8px] font-black text-primary text-right uppercase">Line Cost: {formatPrice(lineCost)}</div>}
+                                        {lineCost > 0 && <div className="text-[8px] font-black text-primary text-right uppercase px-1">Line Cost: {formatPrice(lineCost)}</div>}
                                     </div>
                                 );
                             })}
                         </div>
-                        <Button variant="outline" size="sm" className="w-full border-dashed text-[9px] font-bold uppercase h-8" onClick={() => setCurrentRecipe([...currentRecipe, { supplyId: '', amount: 0 }])}>
+                        <Button variant="outline" size="sm" className="w-full border-dashed text-[9px] font-bold uppercase h-7" onClick={() => setCurrentRecipe([...currentRecipe, { supplyId: '', amount: 0 }])}>
                             <PlusCircle className="mr-1 h-3 w-3" /> Add Ingredient
                         </Button>
-                        <div className="p-2 bg-primary/5 rounded border border-primary/20 flex justify-between items-center">
+                        <div className="p-1.5 bg-primary/5 rounded border border-primary/20 flex justify-between items-center">
                             <span className="font-black uppercase text-[9px]">Production COGS</span>
-                            <span className="text-sm font-black text-primary">{formatPrice(recipeTotalCost)}</span>
+                            <span className="text-xs font-black text-primary">{formatPrice(recipeTotalCost)}</span>
                         </div>
                     </div>
                     <DialogFooter className="p-3 bg-muted/10 border-t gap-1.5">
@@ -481,7 +488,7 @@ export default function InventoryPage() {
                         <DialogTitle className="text-[11px] font-bold uppercase">{editingSupply ? 'Edit Supply' : 'Add Supply'}</DialogTitle>
                         <DialogDescription className="text-[8px] font-bold uppercase">Record raw material unit cost and level.</DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={supplyForm.handleSubmit(onSupplySubmit)} className="p-3 space-y-2">
+                    <form onSubmit={supplyForm.handleSubmit(onSupplySubmit)} className="p-3 space-y-1.5">
                         <div className="space-y-0.5">
                             <Label className="text-[9px] font-bold uppercase">Supply Name</Label>
                             <Input {...supplyForm.register('name', { required: true })} disabled={isSubmitting} className="h-7 text-[10px]" />

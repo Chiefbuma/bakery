@@ -8,7 +8,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowUpRight, ArrowDownRight, Minus, AlertCircle, RefreshCw, Loader2 } from 'lucide-react';
 import { formatPrice, cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
@@ -101,7 +100,7 @@ export default function DashboardPage() {
                 <CardHeader className="bg-primary/5 py-3 border-b">
                     <CardTitle className="text-xs font-bold uppercase tracking-tight">Consolidated Financial Statement</CardTitle>
                     <CardDescription className="text-[9px] uppercase font-bold">Total Operational Performance comparison</CardDescription>
-                </Header>
+                </CardHeader>
                 <CardContent className="p-0">
                     <Table>
                         <TableHeader>
