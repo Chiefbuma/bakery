@@ -11,7 +11,8 @@ import {
     updateProduct, 
     updateSupply,
     getProductRecipes,
-    saveProductRecipe
+    saveProductRecipe,
+    uploadImage
 } from "@/services/hotel-service";
 import type { Product, HotelModule, Supply, SupplyConsumption } from "@/lib/types";
 import { formatPrice, cn } from "@/lib/utils";
@@ -20,7 +21,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, Search, Trash2, Edit, ChevronLeft, ChevronRight, Loader2, UtensilsCrossed } from "lucide-react";
+import { PlusCircle, Search, Trash2, Edit, ChevronLeft, ChevronRight, Loader2, UtensilsCrossed, ImageIcon, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -63,6 +64,7 @@ export default function InventoryPage() {
     const [recipeProduct, setRecipeProduct] = useState<Product | null>(null);
     
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
     const [targetItem, setTargetItem] = useState<{id: string, name: string, type: 'product' | 'supply' } | null>(null);
 
     const { toast } = useToast();
@@ -114,6 +116,22 @@ export default function InventoryPage() {
         setIsProductDialogOpen(true);
     };
 
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsUploading(true);
+        try {
+            const url = await uploadImage(file);
+            productForm.setValue('image_url', url);
+            toast({ title: "Image uploaded successfully" });
+        } catch (error) {
+            toast({ variant: "destructive", title: "Image upload failed" });
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
     const handleOpenSupplyDialog = (supply?: Supply) => {
         if (supply) {
             setEditingSupply(supply);
@@ -137,6 +155,20 @@ export default function InventoryPage() {
         setRecipeProduct(product);
         setCurrentRecipe(recipes[product.id] || []);
         setIsRecipeDialogOpen(true);
+    };
+
+    const addRecipeLine = () => {
+        setCurrentRecipe([...currentRecipe, { supplyId: '', amount: 0 }]);
+    };
+
+    const updateRecipeLine = (index: number, field: keyof SupplyConsumption, value: string | number) => {
+        const updated = [...currentRecipe];
+        updated[index] = { ...updated[index], [field]: value };
+        setCurrentRecipe(updated);
+    };
+
+    const removeRecipeLine = (index: number) => {
+        setCurrentRecipe(currentRecipe.filter((_, i) => i !== index));
     };
 
     const onProductSubmit = async (data: any) => {
@@ -342,16 +374,23 @@ export default function InventoryPage() {
 
             {/* Product Dialog */}
             <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
                         <DialogDescription>Configure details for a sellable item.</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={productForm.handleSubmit(onProductSubmit)} className="space-y-4 pt-4">
-                        <div className="space-y-2">
-                            <Label>Product Name</Label>
-                            <Input {...productForm.register('name', { required: true })} disabled={isSubmitting} />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="col-span-2 space-y-2">
+                                <Label>Product Name</Label>
+                                <Input {...productForm.register('name', { required: true })} disabled={isSubmitting} />
+                            </div>
+                            <div className="col-span-2 space-y-2">
+                                <Label>Description</Label>
+                                <Input {...productForm.register('description')} disabled={isSubmitting} />
+                            </div>
                         </div>
+
                         <div className="space-y-2 p-3 bg-muted/30 rounded-lg border">
                             <Label className="text-xs font-bold uppercase text-muted-foreground block mb-2">Costing Method</Label>
                             <RadioGroup value={hasRecipeValue ? "production" : "retail"} onValueChange={(v) => productForm.setValue('hasRecipe', v === 'production')} className="flex gap-4">
@@ -365,6 +404,7 @@ export default function InventoryPage() {
                                 </div>
                             </RadioGroup>
                         </div>
+
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label>Sale Price (Ksh)</Label>
@@ -375,6 +415,7 @@ export default function InventoryPage() {
                                 <Input type="number" {...productForm.register('costPrice', { required: !hasRecipeValue, valueAsNumber: true })} disabled={isSubmitting || !!hasRecipeValue} className={cn(hasRecipeValue && "bg-muted")} placeholder={hasRecipeValue ? "Auto-calculated" : "0"} />
                             </div>
                         </div>
+
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label>Opening Stock</Label>
@@ -385,6 +426,7 @@ export default function InventoryPage() {
                                 <Input {...productForm.register('unit', { required: true })} placeholder="e.g. pcs, kgs, ml" disabled={isSubmitting} />
                             </div>
                         </div>
+
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label>Department</Label>
@@ -404,14 +446,168 @@ export default function InventoryPage() {
                                 <Input type="number" {...productForm.register('minStockLevel', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
                             </div>
                         </div>
+
+                        <div className="space-y-2">
+                            <Label>Product Image</Label>
+                            <div className="flex items-center gap-4">
+                                <div className="relative h-20 w-20 rounded-md border bg-muted flex items-center justify-center overflow-hidden">
+                                    {productForm.watch('image_url') ? (
+                                        <img src={productForm.watch('image_url')} alt="Preview" className="h-full w-full object-cover" />
+                                    ) : (
+                                        <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                                    )}
+                                </div>
+                                <div className="flex-1">
+                                    <Label htmlFor="image-upload" className="cursor-pointer flex items-center gap-2 border rounded-md px-3 py-2 bg-background hover:bg-muted transition-colors">
+                                        {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                                        <span className="text-sm font-medium">{isUploading ? 'Uploading...' : 'Upload Image'}</span>
+                                    </Label>
+                                    <input id="image-upload" type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isUploading} />
+                                </div>
+                            </div>
+                        </div>
+
                         <DialogFooter className="pt-4">
-                            <Button variant="outline" type="button" onClick={() => setIsProductDialogOpen(false)} className="gap-2">Cancel</Button>
-                            <Button type="submit" disabled={isSubmitting} className="gap-2">
+                            <Button variant="outline" type="button" onClick={() => setIsProductDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
+                            <Button type="submit" disabled={isSubmitting || isUploading} className="gap-2">
                                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                                 Save Product
                             </Button>
                         </DialogFooter>
                     </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Supply Dialog */}
+            <Dialog open={isSupplyDialogOpen} onOpenChange={setIsSupplyDialogOpen}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>{editingSupply ? 'Edit Supply' : 'Add New Supply'}</DialogTitle>
+                        <DialogDescription>Configure raw materials or ingredients.</DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={supplyForm.handleSubmit(onSupplySubmit)} className="space-y-4 pt-4">
+                        <div className="space-y-2">
+                            <Label>Supply Name</Label>
+                            <Input {...supplyForm.register('name', { required: true })} disabled={isSubmitting} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Category</Label>
+                                <Input {...supplyForm.register('category')} disabled={isSubmitting} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Department</Label>
+                                <Select value={supplyForm.watch('module')} onValueChange={(v) => supplyForm.setValue('module', v as any)}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="restaurant">Restaurant</SelectItem>
+                                        <SelectItem value="bar">Bar</SelectItem>
+                                        <SelectItem value="carwash">Car Wash</SelectItem>
+                                        <SelectItem value="accommodation">Accommodation</SelectItem>
+                                        <SelectItem value="entertainment">Entertainment</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Quantity</Label>
+                                <Input type="number" step="0.01" {...supplyForm.register('quantity', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Unit</Label>
+                                <Input {...supplyForm.register('unit', { required: true })} placeholder="kg, ltr, box" disabled={isSubmitting} />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Unit Cost (Ksh)</Label>
+                            <Input type="number" step="0.01" {...supplyForm.register('unitCost', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
+                        </div>
+                        <DialogFooter className="pt-4">
+                            <Button variant="outline" type="button" onClick={() => setIsSupplyDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
+                            <Button type="submit" disabled={isSubmitting} className="gap-2">
+                                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                                Save Supply
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Recipe Dialog */}
+            <Dialog open={isRecipeDialogOpen} onOpenChange={setIsRecipeDialogOpen}>
+                <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle>Recipe Editor: {recipeProduct?.name}</DialogTitle>
+                        <DialogDescription>Link raw supplies to this product to calculate accurate production costs.</DialogDescription>
+                    </DialogHeader>
+                    <div className="flex-1 overflow-y-auto py-4 space-y-4">
+                        <div className="bg-primary/5 p-4 rounded-lg border border-primary/20 flex justify-between items-center">
+                            <div>
+                                <p className="text-xs font-bold uppercase text-muted-foreground">Estimated Production Cost</p>
+                                <p className="text-2xl font-black text-primary">{formatPrice(recipeTotalCost)}</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-xs font-bold uppercase text-muted-foreground">Retail Price</p>
+                                <p className="text-xl font-bold">{formatPrice(recipeProduct?.price || 0)}</p>
+                            </div>
+                        </div>
+                        
+                        <div className="space-y-3">
+                            {currentRecipe.map((rcp, idx) => {
+                                const supply = supplies.find(s => s.id === rcp.supplyId);
+                                const lineCost = Number(rcp.amount || 0) * Number(supply?.unitCost || 0);
+                                
+                                return (
+                                    <div key={idx} className="grid grid-cols-12 gap-3 items-end bg-muted/20 p-3 rounded-lg border border-dashed">
+                                        <div className="col-span-6 space-y-1.5">
+                                            <Label className="text-[10px] uppercase font-bold">Ingredient / Supply</Label>
+                                            <Select value={rcp.supplyId} onValueChange={(v) => updateRecipeLine(idx, 'supplyId', v)}>
+                                                <SelectTrigger className="h-9">
+                                                    <SelectValue placeholder="Select ingredient..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {supplies.map(s => (
+                                                        <SelectItem key={s.id} value={s.id}>{s.name} ({s.unit})</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="col-span-3 space-y-1.5">
+                                            <Label className="text-[10px] uppercase font-bold">Qty ({supply?.unit || 'unit'})</Label>
+                                            <Input 
+                                                type="number" 
+                                                step="0.001" 
+                                                className="h-9" 
+                                                value={rcp.amount} 
+                                                onChange={(e) => updateRecipeLine(idx, 'amount', parseFloat(e.target.value))} 
+                                            />
+                                        </div>
+                                        <div className="col-span-2 text-right self-center">
+                                            <p className="text-[10px] uppercase font-bold text-muted-foreground">Cost</p>
+                                            <p className="text-sm font-bold">{formatPrice(lineCost)}</p>
+                                        </div>
+                                        <div className="col-span-1 text-right">
+                                            <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive" onClick={() => removeRecipeLine(idx)}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        <Button variant="outline" className="w-full border-dashed" onClick={addRecipeLine}>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Add Ingredient
+                        </Button>
+                    </div>
+                    <DialogFooter className="pt-4 border-t">
+                        <Button variant="outline" onClick={() => setIsRecipeDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
+                        <Button onClick={onRecipeSubmit} disabled={isSubmitting} className="gap-2">
+                            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                            Save Recipe
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
 
