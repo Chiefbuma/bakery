@@ -5,7 +5,7 @@ import { getProducts, placeOrder, getPendingOrders } from "@/services/hotel-serv
 import type { Product, HotelModule, SaleItem, Transaction } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, Search, History, Printer, Plus, Minus, Loader2, Play, CreditCard, Utensils, Beer, Car, Bed, Music, RefreshCw } from "lucide-react";
+import { ShoppingCart, Search, History, Printer, Plus, Minus, Loader2, Play, CreditCard, Utensils, Beer, Car, Bed, Music, RefreshCw, Trash2 } from "lucide-react";
 import { formatPrice, cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -111,6 +111,11 @@ export default function POSPage() {
                 return item;
             });
         });
+    };
+
+    const removeFromCart = (id: string) => {
+        setCart(prev => prev.filter(item => item.productId !== id));
+        toast({ title: "Item removed from bill" });
     };
 
     const cartTotal = useMemo(() => {
@@ -319,9 +324,10 @@ export default function POSPage() {
                     
                     <div className="space-y-1">
                         <div className="grid grid-cols-12 gap-1 text-[8px] uppercase font-black text-muted-foreground px-2">
-                            <div className="col-span-6">Item</div>
+                            <div className="col-span-5">Item</div>
                             <div className="col-span-3 text-center">Qty</div>
                             <div className="col-span-3 text-right">Total</div>
+                            <div className="col-span-1"></div>
                         </div>
                         <Separator />
                         {cart.length === 0 ? (
@@ -331,7 +337,7 @@ export default function POSPage() {
                             </div>
                         ) : cart.map(item => (
                             <motion.div initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }} key={item.productId} className="grid grid-cols-12 gap-1 items-center bg-muted/30 p-1 rounded-md border border-transparent hover:border-primary/10 transition-colors">
-                                <div className="col-span-6 min-w-0">
+                                <div className="col-span-5 min-w-0">
                                     <p className="text-[10px] font-bold truncate leading-tight">{item.name}</p>
                                     <p className="text-[8px] text-muted-foreground">{formatPrice(item.price)}</p>
                                 </div>
@@ -342,6 +348,11 @@ export default function POSPage() {
                                 </div>
                                 <div className="col-span-3 text-right">
                                     <p className="text-[10px] font-black text-primary">{formatPrice(Number(item.total))}</p>
+                                </div>
+                                <div className="col-span-1 text-right">
+                                    <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive/50 hover:text-destructive" onClick={() => removeFromCart(item.productId)}>
+                                        <Trash2 className="h-3 w-3" />
+                                    </Button>
                                 </div>
                             </motion.div>
                         ))}

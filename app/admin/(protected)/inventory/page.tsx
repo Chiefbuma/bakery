@@ -274,12 +274,14 @@ export default function InventoryPage() {
                     <h1 className="text-3xl font-bold tracking-tight font-headline text-primary">Inventory Management</h1>
                     <p className="text-muted-foreground">Manage products, supplies and manufacturing recipes.</p>
                 </div>
-                <div className="flex items-center gap-2">
-                    <Button onClick={() => activeTab === 'supplies' ? handleOpenSupplyDialog() : handleOpenProductDialog()}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        {activeTab === 'supplies' ? 'Add Supply' : 'Add Product'}
-                    </Button>
-                </div>
+                {activeTab !== 'recipes' && (
+                    <div className="flex items-center gap-2">
+                        <Button onClick={() => activeTab === 'supplies' ? handleOpenSupplyDialog() : handleOpenProductDialog()}>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            {activeTab === 'supplies' ? 'Add Supply' : 'Add Product'}
+                        </Button>
+                    </div>
+                )}
             </div>
 
             <Tabs defaultValue="products" value={activeTab} onValueChange={(v) => { setActiveTab(v); setCurrentPage(1); }}>
@@ -320,15 +322,16 @@ export default function InventoryPage() {
                                             <TableHead className="font-bold">Item</TableHead>
                                             <TableHead className="font-bold">{activeTab === 'supplies' ? 'Stock Level' : 'Cost Type'}</TableHead>
                                             <TableHead className="font-bold">{activeTab === 'supplies' ? 'Unit Cost' : 'Sale Price'}</TableHead>
+                                            {activeTab === 'recipes' && <TableHead className="font-bold">Ingredients</TableHead>}
                                             <TableHead className="font-bold">{activeTab === 'recipes' ? 'Est. COGS' : 'Stock Status'}</TableHead>
                                             <TableHead className="text-right font-bold">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {loading ? (
-                                            Array.from({ length: 5 }).map((_, i) => <TableRow key={i}><TableCell colSpan={5} className="h-16 animate-pulse bg-muted/20" /></TableRow>)
+                                            Array.from({ length: 5 }).map((_, i) => <TableRow key={i}><TableCell colSpan={activeTab === 'recipes' ? 6 : 5} className="h-16 animate-pulse bg-muted/20" /></TableRow>)
                                         ) : paginatedItems.length === 0 ? (
-                                            <TableRow><TableCell colSpan={5} className="text-center py-10 text-muted-foreground">No items found.</TableCell></TableRow>
+                                            <TableRow><TableCell colSpan={activeTab === 'recipes' ? 6 : 5} className="text-center py-10 text-muted-foreground">No items found.</TableCell></TableRow>
                                         ) : paginatedItems.map((item: any) => (
                                             <TableRow key={item.id}>
                                                 <TableCell className="font-semibold">
@@ -343,6 +346,20 @@ export default function InventoryPage() {
                                                     )}
                                                 </TableCell>
                                                 <TableCell>{formatPrice(activeTab === 'supplies' ? item.unitCost : item.price)}</TableCell>
+                                                {activeTab === 'recipes' && (
+                                                    <TableCell className="max-w-xs">
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {(recipes[item.id] || []).length === 0 ? (
+                                                                <span className="text-xs text-muted-foreground italic">No ingredients linked</span>
+                                                            ) : (
+                                                                (recipes[item.id] || []).map((rcp, i) => {
+                                                                    const s = supplies.find(sup => sup.id === rcp.supplyId);
+                                                                    return <Badge key={i} variant="outline" className="text-[10px] px-1.5 py-0 h-4">{s?.name || 'Unknown'}</Badge>;
+                                                                })
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                )}
                                                 <TableCell>
                                                     {activeTab === 'recipes' ? (
                                                         <span className="font-bold text-primary">{formatPrice((recipes[item.id] || []).reduce((acc, rcp) => {
