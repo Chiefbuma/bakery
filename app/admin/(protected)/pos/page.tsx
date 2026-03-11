@@ -40,7 +40,7 @@ export default function POSPage() {
     const { toast } = useToast();
 
     const resolveImageUrl = (url: string | null | undefined) => {
-        if (!url) return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=400';
+        if (!url) return 'https://picsum.photos/seed/restaurant/600/400';
         if (url.startsWith('/uploads/')) {
             const filename = url.replace('/uploads/', '');
             return `/api/media/${filename}`;
@@ -134,7 +134,6 @@ export default function POSPage() {
         const finalCustomerName = customerName || "Guest";
 
         try {
-            // First place the new order
             const response = await placeOrder({
                 orderNumber: `WK-${Date.now()}`,
                 module: activeModule,
@@ -148,7 +147,6 @@ export default function POSPage() {
                 balance: bal
             });
 
-            // If this was a resumed order, immediately clean up the old pending record
             if (resumingOrderId) {
                 try {
                     await deleteTransactions([resumingOrderId]);
@@ -174,7 +172,6 @@ export default function POSPage() {
                 });
             }
 
-            // Reset state
             setCart([]);
             setCustomerName("");
             setAmountReceived("");
@@ -293,7 +290,7 @@ export default function POSPage() {
                     </Tabs>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-3 bg-muted/20">
+                <div className="flex-1 overflow-y-auto p-3 bg-muted/20 custom-scrollbar max-h-full">
                     <AnimatePresence mode="wait">
                         <motion.div key={activeModule} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                             {filteredProducts.map(product => {
@@ -306,7 +303,13 @@ export default function POSPage() {
                                         onClick={() => addToCart(product)}
                                     >
                                         <div className="relative h-20 w-full bg-muted">
-                                            <Image src={resolveImageUrl(product.image_url)} alt={product.name} fill className="object-cover" />
+                                            <Image 
+                                                src={resolveImageUrl(product.image_url)} 
+                                                alt={product.name} 
+                                                fill 
+                                                className="object-cover"
+                                                data-ai-hint="food dish"
+                                            />
                                             {isOutOfStock ? (
                                                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10">
                                                     <Badge variant="destructive" className="font-bold text-[8px] uppercase tracking-tighter">SOLD OUT</Badge>

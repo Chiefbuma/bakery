@@ -33,8 +33,13 @@ export default function OrdersPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [isRefreshing, setIsRefreshing] = useState(false);
     
+    // Master Ledger Pagination
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 5;
+
+    // Line Item Modal Pagination
+    const [itemPage, setItemPage] = useState(1);
+    const ITEMS_PER_ITEM_PAGE = 5;
 
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [editingOrder, setEditingOrder] = useState<Transaction | null>(null);
@@ -124,6 +129,14 @@ export default function OrdersPage() {
         const start = (currentPage - 1) * ITEMS_PER_PAGE;
         return filteredOrders.slice(start, start + ITEMS_PER_PAGE);
     }, [filteredOrders, currentPage]);
+
+    const paginatedItems = useMemo(() => {
+        if (!viewingOrder?.items) return [];
+        const start = (itemPage - 1) * ITEMS_PER_ITEM_PAGE;
+        return viewingOrder.items.slice(start, start + ITEMS_PER_ITEM_PAGE);
+    }, [viewingOrder, itemPage]);
+
+    const totalItemPages = Math.ceil((viewingOrder?.items?.length || 0) / ITEMS_PER_ITEM_PAGE);
 
     const toggleAllOnPage = () => {
         const pageIds = paginatedOrders.map(o => o.id);
@@ -223,7 +236,7 @@ export default function OrdersPage() {
                                             {new Date(o.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                                         </TableCell>
                                         <TableCell className="text-right space-x-1">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => setViewingOrder(o)}><Eye className="h-4 w-4" /></Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => { setViewingOrder(o); setItemPage(1); }}><Eye className="h-4 w-4" /></Button>
                                             <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => setEditingOrder(o)}><Edit className="h-4 w-4" /></Button>
                                             <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setTargetOrder({id: o.id, orderNumber: o.orderNumber})}><Trash2 className="h-4 w-4" /></Button>
                                         </TableCell>
@@ -266,7 +279,7 @@ export default function OrdersPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {viewingOrder?.items?.map((item, idx) => (
+                                {paginatedItems.map((item, idx) => (
                                     <TableRow key={item.id || idx} className="h-12">
                                         <TableCell className="text-xs font-medium">{item.name}</TableCell>
                                         <TableCell className="text-right text-xs tabular-nums">{item.quantity}</TableCell>
@@ -275,14 +288,21 @@ export default function OrdersPage() {
                                         <TableCell className="text-right text-xs font-black text-primary tabular-nums">{formatPrice(item.total)}</TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-1">
-                                                <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" onClick={() => setEditingItem({orderId: viewingOrder.id, item})}><Edit className="h-3.5 w-3.5" /></Button>
-                                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setTargetItem({orderId: viewingOrder.id, itemId: item.id!, itemName: item.name})}><Trash2 className="h-3.5 w-3.5" /></Button>
+                                                <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" onClick={() => setEditingItem({orderId: viewingOrder!.id, item})}><Edit className="h-3.5 w-3.5" /></Button>
+                                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setTargetItem({orderId: viewingOrder!.id, itemId: item.id!, itemName: item.name})}><Trash2 className="h-3.5 w-3.5" /></Button>
                                             </div>
                                         </TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
                         </Table>
+                    </div>
+                    <div className="flex items-center justify-between px-6 py-3 border-t bg-muted/10">
+                        <span className="text-xs text-muted-foreground font-medium">Page {itemPage} of {totalItemPages || 1} (5 items per page)</span>
+                        <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={() => setItemPage(prev => Math.max(1, prev - 1))} disabled={itemPage === 1} className="h-8 w-8 p-0"><ChevronLeft className="h-4 w-4" /></Button>
+                            <Button variant="outline" size="sm" onClick={() => setItemPage(prev => Math.min(totalItemPages, prev + 1))} disabled={itemPage === totalItemPages || totalItemPages === 0} className="h-8 w-8 p-0"><ChevronRight className="h-4 w-4" /></Button>
+                        </div>
                     </div>
                     <div className="p-6 border-t bg-muted/30 flex justify-between items-center">
                         <div>

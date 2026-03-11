@@ -37,7 +37,7 @@ export default function UsersPage() {
     const [targetUser, setTargetUser] = useState<{id: string, name: string} | null>(null);
     
     const [currentPage, setCurrentPage] = useState(1);
-    const ITEMS_PER_PAGE = 10;
+    const ITEMS_PER_PAGE = 5;
 
     const { toast } = useToast();
     const { register, handleSubmit, reset, setValue } = useForm<{
@@ -197,11 +197,11 @@ export default function UsersPage() {
                             ))}
                         </TableBody>
                     </Table>
-                    <div className="flex items-center justify-between px-6 py-4 border-t">
-                        <span className="text-sm text-muted-foreground">Page {currentPage} of {totalPages || 1}</span>
+                    <div className="flex items-center justify-between px-6 py-4 border-t bg-muted/10">
+                        <span className="text-xs text-muted-foreground font-medium">Page {currentPage} of {totalPages || 1} (5 records per page)</span>
                         <div className="flex gap-2">
-                            <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}><ChevronLeft className="h-4 w-4" /></Button>
-                            <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0}><ChevronRight className="h-4 w-4" /></Button>
+                            <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="h-8 w-8 p-0"><ChevronLeft className="h-4 w-4" /></Button>
+                            <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0} className="h-8 w-8 p-0"><ChevronRight className="h-4 w-4" /></Button>
                         </div>
                     </div>
                 </CardContent>

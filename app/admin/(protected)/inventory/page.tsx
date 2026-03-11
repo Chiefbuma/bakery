@@ -51,7 +51,7 @@ export default function InventoryPage() {
     const [activeTab, setActiveTab] = useState<string>("products");
     
     const [currentPage, setCurrentPage] = useState(1);
-    const ITEMS_PER_PAGE = 10;
+    const ITEMS_PER_PAGE = 5;
 
     const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
     const [isSupplyDialogOpen, setIsSupplyDialogOpen] = useState(false);
@@ -392,6 +392,13 @@ export default function InventoryPage() {
                                         ))}
                                     </TableBody>
                                 </Table>
+                                <div className="flex items-center justify-between px-6 py-4 border-t bg-muted/10">
+                                    <span className="text-xs text-muted-foreground font-medium">Page {currentPage} of {totalPages || 1} (5 records per page)</span>
+                                    <div className="flex gap-2">
+                                        <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} className="h-8 w-8 p-0"><ChevronLeft className="h-4 w-4" /></Button>
+                                        <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages || totalPages === 0} className="h-8 w-8 p-0"><ChevronRight className="h-4 w-4" /></Button>
+                                    </div>
+                                </div>
                             </CardContent>
                         </Card>
                     </motion.div>
