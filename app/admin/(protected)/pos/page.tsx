@@ -187,7 +187,7 @@ export default function POSPage() {
             }
             finalizeOrder('cash', 'paid', received, balanceValue);
         } else {
-                            handleMpesaPayment();
+            handleMpesaPayment();
         }
     };
 

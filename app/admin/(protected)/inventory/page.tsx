@@ -294,10 +294,10 @@ export default function InventoryPage() {
                     <div className="flex items-center gap-2 w-full md:w-auto">
                         <div className="relative flex-1 md:w-64">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Search inventory..." className="pl-9" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} />
+                            <Input placeholder="Search inventory..." className="pl-9 h-9" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} />
                         </div>
                         <Select value={activeModule} onValueChange={(v) => { setActiveModule(v as any); setCurrentPage(1); }}>
-                            <SelectTrigger className="w-[150px]">
+                            <SelectTrigger className="w-[150px] h-9">
                                 <SelectValue placeholder="Department" />
                             </SelectTrigger>
                             <SelectContent>
@@ -314,17 +314,17 @@ export default function InventoryPage() {
 
                 <AnimatePresence mode="wait">
                     <motion.div key={activeTab} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                        <Card className="shadow-sm border-primary/10">
+                        <Card className="shadow-sm border-primary/10 overflow-hidden">
                             <CardContent className="p-0">
                                 <Table>
                                     <TableHeader>
                                         <TableRow className="bg-muted/50">
-                                            <TableHead className="font-bold">Item</TableHead>
-                                            <TableHead className="font-bold">{activeTab === 'supplies' ? 'Stock Level' : 'Cost Type'}</TableHead>
-                                            <TableHead className="font-bold">{activeTab === 'supplies' ? 'Unit Cost' : 'Sale Price'}</TableHead>
-                                            {activeTab === 'recipes' && <TableHead className="font-bold">Ingredients</TableHead>}
-                                            <TableHead className="font-bold">{activeTab === 'recipes' ? 'Est. COGS' : 'Stock Status'}</TableHead>
-                                            <TableHead className="text-right font-bold">Actions</TableHead>
+                                            <TableHead className="font-bold text-xs uppercase">Item</TableHead>
+                                            <TableHead className="font-bold text-xs uppercase">{activeTab === 'supplies' ? 'Stock Level' : 'Cost Type'}</TableHead>
+                                            <TableHead className="font-bold text-xs uppercase">{activeTab === 'supplies' ? 'Unit Cost' : 'Sale Price'}</TableHead>
+                                            {activeTab === 'recipes' && <TableHead className="font-bold text-xs uppercase">Ingredients</TableHead>}
+                                            <TableHead className="font-bold text-xs uppercase">{activeTab === 'recipes' ? 'Est. COGS' : 'Stock Status'}</TableHead>
+                                            <TableHead className="text-right font-bold text-xs uppercase">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -335,26 +335,26 @@ export default function InventoryPage() {
                                         ) : paginatedItems.map((item: any) => (
                                             <TableRow key={item.id}>
                                                 <TableCell className="font-semibold">
-                                                    <div>{item.name}</div>
-                                                    <div className="text-xs text-muted-foreground uppercase">{item.module}</div>
+                                                    <div className="text-xs">{item.name}</div>
+                                                    <div className="text-[10px] text-muted-foreground uppercase">{item.module}</div>
                                                 </TableCell>
                                                 <TableCell>
                                                     {activeTab === 'supplies' ? (
-                                                        <span className="font-bold">{item.quantity} {item.unit}</span>
+                                                        <span className="font-bold text-xs">{item.quantity} {item.unit}</span>
                                                     ) : (
-                                                        <Badge variant={item.hasRecipe ? "default" : "secondary"}>{item.hasRecipe ? "Production" : "Retail"}</Badge>
+                                                        <Badge variant={item.hasRecipe ? "default" : "secondary"} className="text-[9px] h-4">{item.hasRecipe ? "Production" : "Retail"}</Badge>
                                                     )}
                                                 </TableCell>
-                                                <TableCell>{formatPrice(activeTab === 'supplies' ? item.unitCost : item.price)}</TableCell>
+                                                <TableCell className="text-xs">{formatPrice(activeTab === 'supplies' ? item.unitCost : item.price)}</TableCell>
                                                 {activeTab === 'recipes' && (
-                                                    <TableCell className="max-w-xs">
+                                                    <TableCell className="max-w-[200px]">
                                                         <div className="flex flex-wrap gap-1">
                                                             {(recipes[item.id] || []).length === 0 ? (
-                                                                <span className="text-xs text-muted-foreground italic">No ingredients linked</span>
+                                                                <span className="text-[10px] text-muted-foreground italic">No ingredients linked</span>
                                                             ) : (
                                                                 (recipes[item.id] || []).map((rcp, i) => {
                                                                     const s = supplies.find(sup => sup.id === rcp.supplyId);
-                                                                    return <Badge key={i} variant="outline" className="text-[10px] px-1.5 py-0 h-4">{s?.name || 'Unknown'}</Badge>;
+                                                                    return <Badge key={i} variant="outline" className="text-[9px] px-1.5 py-0 h-4">{s?.name || 'Unknown'}</Badge>;
                                                                 })
                                                             )}
                                                         </div>
@@ -362,24 +362,24 @@ export default function InventoryPage() {
                                                 )}
                                                 <TableCell>
                                                     {activeTab === 'recipes' ? (
-                                                        <span className="font-bold text-primary">{formatPrice((recipes[item.id] || []).reduce((acc, rcp) => {
+                                                        <span className="font-bold text-primary text-xs">{formatPrice((recipes[item.id] || []).reduce((acc, rcp) => {
                                                             const s = supplies.find(sup => sup.id === rcp.supplyId);
                                                             return acc + (Number(rcp.amount) * Number(s?.unitCost || 0));
                                                         }, 0))}</span>
                                                     ) : (
-                                                        <Badge variant={item.stock <= item.minStockLevel ? "destructive" : "outline"}>
+                                                        <Badge variant={item.stock <= item.minStockLevel ? "destructive" : "outline"} className="text-[10px] h-4">
                                                             {item.stock} {item.unit}
                                                         </Badge>
                                                     )}
                                                 </TableCell>
-                                                <TableCell className="text-right space-x-2">
+                                                <TableCell className="text-right space-x-1">
                                                     {activeTab === 'products' && item.hasRecipe && (
-                                                        <Button variant="ghost" size="icon" className="text-amber-600" onClick={() => handleOpenRecipeDialog(item)}><UtensilsCrossed className="h-4 w-4" /></Button>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-600" onClick={() => handleOpenRecipeDialog(item)}><UtensilsCrossed className="h-4 w-4" /></Button>
                                                     )}
                                                     <Button 
                                                         variant="ghost" 
                                                         size="icon" 
-                                                        className="text-primary" 
+                                                        className="h-8 w-8 text-primary" 
                                                         onClick={() => {
                                                             if (activeTab === 'supplies') handleOpenSupplyDialog(item);
                                                             else if (activeTab === 'recipes') handleOpenRecipeDialog(item);
@@ -388,7 +388,7 @@ export default function InventoryPage() {
                                                     >
                                                         <Edit className="h-4 w-4" />
                                                     </Button>
-                                                    <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setTargetItem({id: item.id, name: item.name, type: activeTab === 'supplies' ? 'supply' : 'product'})}><Trash2 className="h-4 w-4" /></Button>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setTargetItem({id: item.id, name: item.name, type: activeTab === 'supplies' ? 'supply' : 'product'})}><Trash2 className="h-4 w-4" /></Button>
                                                 </TableCell>
                                             </TableRow>
                                         ))}
@@ -411,11 +411,11 @@ export default function InventoryPage() {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="col-span-2 space-y-2">
                                 <Label>Product Name</Label>
-                                <Input {...productForm.register('name', { required: true })} disabled={isSubmitting} />
+                                <Input {...productForm.register('name', { required: true })} disabled={isSubmitting} className="h-9" />
                             </div>
                             <div className="col-span-2 space-y-2">
                                 <Label>Description</Label>
-                                <Input {...productForm.register('description')} disabled={isSubmitting} />
+                                <Input {...productForm.register('description')} disabled={isSubmitting} className="h-9" />
                             </div>
                         </div>
 
@@ -424,11 +424,11 @@ export default function InventoryPage() {
                             <RadioGroup value={hasRecipeValue ? "production" : "retail"} onValueChange={(v) => productForm.setValue('hasRecipe', v === 'production')} className="flex gap-4">
                                 <div className="flex items-center space-x-2">
                                     <RadioGroupItem value="retail" id="retail" />
-                                    <Label htmlFor="retail" className="cursor-pointer">Retail (Manual Cost)</Label>
+                                    <Label htmlFor="retail" className="cursor-pointer text-xs">Retail (Manual Cost)</Label>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                     <RadioGroupItem value="production" id="production" />
-                                    <Label htmlFor="production" className="cursor-pointer">Production (Recipe)</Label>
+                                    <Label htmlFor="production" className="cursor-pointer text-xs">Production (Recipe)</Label>
                                 </div>
                             </RadioGroup>
                         </div>
@@ -436,22 +436,22 @@ export default function InventoryPage() {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label>Sale Price (Ksh)</Label>
-                                <Input type="number" {...productForm.register('price', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
+                                <Input type="number" {...productForm.register('price', { required: true, valueAsNumber: true })} disabled={isSubmitting} className="h-9" />
                             </div>
                             <div className="space-y-2">
                                 <Label className={cn(hasRecipeValue && "text-muted-foreground")}>Manual Cost (Ksh)</Label>
-                                <Input type="number" {...productForm.register('costPrice', { required: !hasRecipeValue, valueAsNumber: true })} disabled={isSubmitting || !!hasRecipeValue} className={cn(hasRecipeValue && "bg-muted")} placeholder={hasRecipeValue ? "Auto-calculated" : "0"} />
+                                <Input type="number" {...productForm.register('costPrice', { required: !hasRecipeValue, valueAsNumber: true })} disabled={isSubmitting || !!hasRecipeValue} className={cn("h-9", hasRecipeValue && "bg-muted")} placeholder={hasRecipeValue ? "Auto-calculated" : "0"} />
                             </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label>Opening Stock</Label>
-                                <Input type="number" step="0.01" {...productForm.register('stock', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
+                                <Input type="number" step="0.01" {...productForm.register('stock', { required: true, valueAsNumber: true })} disabled={isSubmitting} className="h-9" />
                             </div>
                             <div className="space-y-2">
                                 <Label>Stock Unit</Label>
-                                <Input {...productForm.register('unit', { required: true })} placeholder="e.g. pcs, kgs, ml" disabled={isSubmitting} />
+                                <Input {...productForm.register('unit', { required: true })} placeholder="e.g. pcs, kgs, ml" disabled={isSubmitting} className="h-9" />
                             </div>
                         </div>
 
@@ -459,7 +459,7 @@ export default function InventoryPage() {
                             <div className="space-y-2">
                                 <Label>Department</Label>
                                 <Select value={productForm.watch('module')} onValueChange={(v) => productForm.setValue('module', v as any)}>
-                                    <SelectTrigger><SelectValue placeholder="Select Dept" /></SelectTrigger>
+                                    <SelectTrigger className="h-9"><SelectValue placeholder="Select Dept" /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="restaurant">Restaurant</SelectItem>
                                         <SelectItem value="bar">Bar</SelectItem>
@@ -471,7 +471,7 @@ export default function InventoryPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label>Min Alert Level</Label>
-                                <Input type="number" {...productForm.register('minStockLevel', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
+                                <Input type="number" {...productForm.register('minStockLevel', { required: true, valueAsNumber: true })} disabled={isSubmitting} className="h-9" />
                             </div>
                         </div>
 
@@ -516,17 +516,17 @@ export default function InventoryPage() {
                     <form onSubmit={supplyForm.handleSubmit(onSupplySubmit)} className="space-y-4 pt-4">
                         <div className="space-y-2">
                             <Label>Supply Name</Label>
-                            <Input {...supplyForm.register('name', { required: true })} disabled={isSubmitting} />
+                            <Input {...supplyForm.register('name', { required: true })} disabled={isSubmitting} className="h-9" />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label>Category</Label>
-                                <Input {...supplyForm.register('category')} disabled={isSubmitting} />
+                                <Input {...supplyForm.register('category')} disabled={isSubmitting} className="h-9" />
                             </div>
                             <div className="space-y-2">
                                 <Label>Department</Label>
                                 <Select value={supplyForm.watch('module')} onValueChange={(v) => supplyForm.setValue('module', v as any)}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="restaurant">Restaurant</SelectItem>
                                         <SelectItem value="bar">Bar</SelectItem>
@@ -540,16 +540,16 @@ export default function InventoryPage() {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label>Quantity</Label>
-                                <Input type="number" step="0.01" {...supplyForm.register('quantity', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
+                                <Input type="number" step="0.01" {...supplyForm.register('quantity', { required: true, valueAsNumber: true })} disabled={isSubmitting} className="h-9" />
                             </div>
                             <div className="space-y-2">
                                 <Label>Unit</Label>
-                                <Input {...supplyForm.register('unit', { required: true })} placeholder="kg, ltr, box" disabled={isSubmitting} />
+                                <Input {...supplyForm.register('unit', { required: true })} placeholder="kg, ltr, box" disabled={isSubmitting} className="h-9" />
                             </div>
                         </div>
                         <div className="space-y-2">
                             <Label>Unit Cost (Ksh)</Label>
-                            <Input type="number" step="0.01" {...supplyForm.register('unitCost', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
+                            <Input type="number" step="0.01" {...supplyForm.register('unitCost', { required: true, valueAsNumber: true })} disabled={isSubmitting} className="h-9" />
                         </div>
                         <DialogFooter className="pt-4">
                             <Button variant="outline" type="button" onClick={() => setIsSupplyDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
@@ -572,12 +572,12 @@ export default function InventoryPage() {
                     <div className="flex-1 overflow-y-auto py-4 space-y-4">
                         <div className="bg-primary/5 p-4 rounded-lg border border-primary/20 flex justify-between items-center">
                             <div>
-                                <p className="text-xs font-bold uppercase text-muted-foreground">Estimated Production Cost</p>
-                                <p className="text-2xl font-black text-primary">{formatPrice(recipeTotalCost)}</p>
+                                <p className="text-[10px] font-bold uppercase text-muted-foreground">Estimated Production Cost</p>
+                                <p className="text-xl font-black text-primary">{formatPrice(recipeTotalCost)}</p>
                             </div>
                             <div className="text-right">
-                                <p className="text-xs font-bold uppercase text-muted-foreground">Retail Price</p>
-                                <p className="text-xl font-bold">{formatPrice(recipeProduct?.price || 0)}</p>
+                                <p className="text-[10px] font-bold uppercase text-muted-foreground">Retail Price</p>
+                                <p className="text-lg font-bold">{formatPrice(recipeProduct?.price || 0)}</p>
                             </div>
                         </div>
                         
@@ -589,9 +589,9 @@ export default function InventoryPage() {
                                 return (
                                     <div key={idx} className="grid grid-cols-12 gap-3 items-end bg-muted/20 p-3 rounded-lg border border-dashed">
                                         <div className="col-span-6 space-y-1.5">
-                                            <Label className="text-[10px] uppercase font-bold">Ingredient / Supply</Label>
+                                            <Label className="text-[9px] uppercase font-bold">Ingredient / Supply</Label>
                                             <Select value={rcp.supplyId} onValueChange={(v) => updateRecipeLine(idx, 'supplyId', v)}>
-                                                <SelectTrigger className="h-9">
+                                                <SelectTrigger className="h-8 text-xs">
                                                     <SelectValue placeholder="Select ingredient..." />
                                                 </SelectTrigger>
                                                 <SelectContent>
@@ -602,37 +602,37 @@ export default function InventoryPage() {
                                             </Select>
                                         </div>
                                         <div className="col-span-3 space-y-1.5">
-                                            <Label className="text-[10px] uppercase font-bold">Qty ({supply?.unit || 'unit'})</Label>
+                                            <Label className="text-[9px] uppercase font-bold">Qty ({supply?.unit || 'unit'})</Label>
                                             <Input 
                                                 type="number" 
                                                 step="0.001" 
-                                                className="h-9" 
+                                                className="h-8 text-xs" 
                                                 value={rcp.amount} 
                                                 onChange={(e) => updateRecipeLine(idx, 'amount', parseFloat(e.target.value))} 
                                             />
                                         </div>
                                         <div className="col-span-2 text-right self-center">
-                                            <p className="text-[10px] uppercase font-bold text-muted-foreground">Cost</p>
-                                            <p className="text-sm font-bold">{formatPrice(lineCost)}</p>
+                                            <p className="text-[9px] uppercase font-bold text-muted-foreground">Cost</p>
+                                            <p className="text-xs font-bold">{formatPrice(lineCost)}</p>
                                         </div>
                                         <div className="col-span-1 text-right">
-                                            <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive" onClick={() => removeRecipeLine(idx)}>
-                                                <Trash2 className="h-4 w-4" />
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeRecipeLine(idx)}>
+                                                <Trash2 className="h-3.5 w-3.5" />
                                             </Button>
                                         </div>
                                     </div>
                                 );
                             })}
                         </div>
-                        <Button variant="outline" className="w-full border-dashed" onClick={addRecipeLine}>
-                            <PlusCircle className="mr-2 h-4 w-4" />
+                        <Button variant="outline" size="sm" className="w-full border-dashed text-xs h-8" onClick={addRecipeLine}>
+                            <PlusCircle className="mr-2 h-3.5 w-3.5" />
                             Add Ingredient
                         </Button>
                     </div>
                     <DialogFooter className="pt-4 border-t">
-                        <Button variant="outline" onClick={() => setIsRecipeDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
-                        <Button onClick={onRecipeSubmit} disabled={isSubmitting} className="gap-2">
-                            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                        <Button variant="outline" size="sm" onClick={() => setIsRecipeDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
+                        <Button size="sm" onClick={onRecipeSubmit} disabled={isSubmitting} className="gap-2">
+                            {isSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
                             Save Recipe
                         </Button>
                     </DialogFooter>

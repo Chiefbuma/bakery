@@ -103,16 +103,16 @@ export default function DashboardPage() {
             <Card className="shadow-sm border-primary/10 overflow-hidden">
                 <CardHeader className="bg-muted/30 py-4 border-b">
                     <CardTitle className="text-lg">Consolidated Financial Statement</CardTitle>
-                    <CardDescription>Overall performance summary across all departments</CardDescription>
+                    <CardDescription className="text-xs">Overall performance summary across all departments</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                     <Table>
                         <TableHeader>
                             <TableRow className="bg-muted/50 hover:bg-muted/50 h-10">
-                                <TableHead className="font-bold">Metric</TableHead>
-                                <TableHead className="text-right text-muted-foreground font-bold">{previousPeriodLabel}</TableHead>
-                                <TableHead className="text-right font-bold text-foreground">{currentPeriodLabel}</TableHead>
-                                <TableHead className="text-right font-bold">MTD Growth</TableHead>
+                                <TableHead className="font-bold text-xs">Metric</TableHead>
+                                <TableHead className="text-right text-muted-foreground font-bold text-xs">{previousPeriodLabel}</TableHead>
+                                <TableHead className="text-right font-bold text-foreground text-xs">{currentPeriodLabel}</TableHead>
+                                <TableHead className="text-right font-bold text-xs">MTD Growth</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -123,9 +123,9 @@ export default function DashboardPage() {
                                 { label: 'Net Operational Profit', val: summary.netProfit, color: 'text-green-600' }
                             ].map((item, i) => (
                                 <TableRow key={i} className="h-12">
-                                    <TableCell className="font-semibold">{item.label}</TableCell>
-                                    <TableCell className="text-right text-muted-foreground">{formatPrice(item.val.previous)}</TableCell>
-                                    <TableCell className={cn("text-right font-bold", item.color)}>{formatPrice(item.val.current)}</TableCell>
+                                    <TableCell className="font-semibold text-xs">{item.label}</TableCell>
+                                    <TableCell className="text-right text-muted-foreground text-xs">{formatPrice(item.val.previous)}</TableCell>
+                                    <TableCell className={cn("text-right font-bold text-xs", item.color)}>{formatPrice(item.val.current)}</TableCell>
                                     <TableCell className="text-right">{renderChange(item.val.changePercent)}</TableCell>
                                 </TableRow>
                             ))}
@@ -137,7 +137,7 @@ export default function DashboardPage() {
             <Card className="shadow-sm border-primary/10 overflow-hidden">
                 <CardHeader className="bg-muted/30 py-4 border-b">
                     <CardTitle className="text-lg">Departmental Contribution Analysis</CardTitle>
-                    <CardDescription>Granular breakdown of Sales, COGS, and Expenses by department.</CardDescription>
+                    <CardDescription className="text-xs">Granular breakdown of Sales, COGS, and Expenses by department.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0 overflow-x-auto">
                     <Table>

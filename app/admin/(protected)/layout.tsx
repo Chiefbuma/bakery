@@ -1,10 +1,9 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Hotel, Package, LogOut, Loader2, CreditCard, Receipt, LayoutDashboard, Users } from "lucide-react";
+import { Hotel, Package, LogOut, Loader2, CreditCard, Receipt, LayoutDashboard, Users, FileText } from "lucide-react";
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -35,7 +34,7 @@ export default function AdminProtectedLayout({
         setUserRole(user.role);
         setUserName(user.name);
         
-        const adminOnlyRoutes = ['/admin/dashboard', '/admin/inventory', '/admin/expenses', '/admin/users'];
+        const adminOnlyRoutes = ['/admin/dashboard', '/admin/inventory', '/admin/expenses', '/admin/users', '/admin/orders'];
         if (user.role !== 'admin' && adminOnlyRoutes.some(route => pathname.startsWith(route))) {
           router.replace('/admin/pos');
         }
@@ -67,6 +66,7 @@ export default function AdminProtectedLayout({
   const allNavItems = [
     { label: 'POS Terminal', href: '/admin/pos', icon: CreditCard, roles: ['admin', 'staff'] },
     { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard, roles: ['admin'] },
+    { label: 'Orders', href: '/admin/orders', icon: FileText, roles: ['admin'] },
     { label: 'Inventory', href: '/admin/inventory', icon: Package, roles: ['admin'] },
     { label: 'Expenses', href: '/admin/expenses', icon: Receipt, roles: ['admin'] },
     { label: 'Users', href: '/admin/users', icon: Users, roles: ['admin'] },

@@ -209,7 +209,7 @@ export async function deleteExpenses(ids: string[]): Promise<void> {
   }
 }
 
-// POS OPERATIONS
+// POS & TRANSACTION OPERATIONS
 export async function placeOrder(transaction: Omit<Transaction, 'id' | 'timestamp'>): Promise<Transaction> {
   const res = await fetch(`${API_BASE}/pos/order`, {
     method: 'POST',
@@ -231,6 +231,31 @@ export async function getPendingOrders(): Promise<Transaction[]> {
     return ensureArray(data);
   } catch (e) {
     return [];
+  }
+}
+
+export async function getAllTransactions(): Promise<Transaction[]> {
+  try {
+    const res = await fetch(`${API_BASE}/transactions`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    const data = await safeJson(res);
+    return ensureArray(data);
+  } catch (e) {
+    return [];
+  }
+}
+
+export async function updateTransaction(id: string, updates: Partial<Transaction>): Promise<void> {
+  await fetch(`${API_BASE}/transactions/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates),
+  });
+}
+
+export async function deleteTransactions(ids: string[]): Promise<void> {
+  for (const id of ids) {
+    await fetch(`${API_BASE}/transactions/${id}`, { method: 'DELETE' });
   }
 }
 
