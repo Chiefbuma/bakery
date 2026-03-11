@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -8,13 +9,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { formatPrice, cn } from "@/lib/utils";
-import { Search, Trash2, Edit, ChevronLeft, ChevronRight, Loader2, RefreshCw, FileText } from "lucide-react";
+import { Search, Trash2, Edit, ChevronLeft, ChevronRight, Loader2, RefreshCw, FileText, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -35,10 +37,12 @@ export default function OrdersPage() {
     const [isRefreshing, setIsRefreshing] = useState(false);
     
     const [currentPage, setCurrentPage] = useState(1);
-    const ITEMS_PER_PAGE = 15;
+    const ITEMS_PER_PAGE = 5;
 
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [editingOrder, setEditingOrder] = useState<Transaction | null>(null);
     const [targetOrder, setTargetOrder] = useState<{id: string, orderNumber: string} | null>(null);
+    const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const { toast } = useToast();
@@ -48,7 +52,7 @@ export default function OrdersPage() {
             if (!silent) setLoading(true);
             else setIsRefreshing(true);
             const data = await getAllTransactions();
-            setOrders(data);
+            setOrders(Array.isArray(data) ? data : []);
         } catch (error) {
             toast({ variant: "destructive", title: "Failed to load transaction ledger" });
         } finally {
@@ -72,6 +76,26 @@ export default function OrdersPage() {
         }
     };
 
+    const handleBulkDelete = async () => {
+        if (selectedIds.length === 0) return;
+        setIsSubmitting(true);
+        try {
+            await deleteTransactions(selectedIds);
+            toast({ title: `${selectedIds.length} records permanently removed` });
+            setSelectedIds([]);
+            load(true);
+        } catch (error) {
+            toast({ variant: "destructive", title: "Bulk deletion failed" });
+        } finally {
+            setIsSubmitting(false);
+            setIsBulkDeleteOpen(false);
+        }
+    };
+
+    const toggleSelect = (id: string) => {
+        setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+    };
+
     const filteredOrders = useMemo(() => 
         orders.filter(o => 
             o.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -84,6 +108,16 @@ export default function OrdersPage() {
         const start = (currentPage - 1) * ITEMS_PER_PAGE;
         return filteredOrders.slice(start, start + ITEMS_PER_PAGE);
     }, [filteredOrders, currentPage]);
+
+    const toggleAllOnPage = () => {
+        const pageIds = paginatedOrders.map(o => o.id);
+        const allSelected = pageIds.every(id => selectedIds.includes(id));
+        if (allSelected) {
+            setSelectedIds(prev => prev.filter(id => !pageIds.includes(id)));
+        } else {
+            setSelectedIds(prev => Array.from(new Set([...prev, ...pageIds])));
+        }
+    };
 
     return (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
@@ -104,18 +138,32 @@ export default function OrdersPage() {
             </div>
 
             <Card className="shadow-sm border-primary/10 overflow-hidden">
-                <CardHeader className="py-4 bg-muted/30 border-b">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                        <FileText className="h-5 w-5 text-primary" />
-                        Master Transaction Ledger
-                    </CardTitle>
-                    <CardDescription className="text-xs">Historical financial data across all hotel modules.</CardDescription>
+                <CardHeader className="py-4 bg-muted/30 border-b flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                            <FileText className="h-5 w-5 text-primary" />
+                            Master Transaction Ledger
+                        </CardTitle>
+                        <CardDescription className="text-xs">Historical financial data across all hotel modules.</CardDescription>
+                    </div>
+                    {selectedIds.length > 0 && (
+                        <Button variant="destructive" size="sm" onClick={() => setIsBulkDeleteOpen(true)} className="gap-2 animate-in fade-in slide-in-from-right-2">
+                            <Trash2 className="h-4 w-4" />
+                            Delete Selected ({selectedIds.length})
+                        </Button>
+                    )}
                 </CardHeader>
                 <CardContent className="p-0">
                     <div className="overflow-x-auto">
                         <Table>
                             <TableHeader>
                                 <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                    <TableHead className="w-10">
+                                        <Checkbox 
+                                            checked={paginatedOrders.length > 0 && paginatedOrders.every(o => selectedIds.includes(o.id))}
+                                            onCheckedChange={toggleAllOnPage}
+                                        />
+                                    </TableHead>
                                     <TableHead className="font-bold whitespace-nowrap text-[11px] uppercase">Order #</TableHead>
                                     <TableHead className="font-bold text-[11px] uppercase">Guest</TableHead>
                                     <TableHead className="font-bold text-[11px] uppercase">Module</TableHead>
@@ -131,11 +179,17 @@ export default function OrdersPage() {
                             </TableHeader>
                             <TableBody>
                                 {loading ? (
-                                    Array.from({ length: 10 }).map((_, i) => <TableRow key={i}><TableCell colSpan={11} className="h-12 animate-pulse bg-muted/20" /></TableRow>)
+                                    Array.from({ length: 5 }).map((_, i) => <TableRow key={i}><TableCell colSpan={12} className="h-12 animate-pulse bg-muted/20" /></TableRow>)
                                 ) : paginatedOrders.length === 0 ? (
-                                    <TableRow><TableCell colSpan={11} className="h-32 text-center text-muted-foreground italic">No transaction records found.</TableCell></TableRow>
+                                    <TableRow><TableCell colSpan={12} className="h-32 text-center text-muted-foreground italic">No transaction records found.</TableCell></TableRow>
                                 ) : paginatedOrders.map((o) => (
-                                    <TableRow key={o.id}>
+                                    <TableRow key={o.id} className={cn(selectedIds.includes(o.id) && "bg-primary/5")}>
+                                        <TableCell>
+                                            <Checkbox 
+                                                checked={selectedIds.includes(o.id)}
+                                                onCheckedChange={() => toggleSelect(o.id)}
+                                            />
+                                        </TableCell>
                                         <TableCell className="font-mono text-[10px] font-bold">{o.orderNumber}</TableCell>
                                         <TableCell className="font-medium whitespace-nowrap text-xs">{o.customerName || "Guest"}</TableCell>
                                         <TableCell className="capitalize text-[10px] font-bold text-muted-foreground">{o.module}</TableCell>
@@ -162,7 +216,7 @@ export default function OrdersPage() {
                         </Table>
                     </div>
                     <div className="flex items-center justify-between px-6 py-4 border-t bg-muted/10">
-                        <span className="text-xs text-muted-foreground font-medium">Page {currentPage} of {totalPages || 1}</span>
+                        <span className="text-xs text-muted-foreground font-medium">Page {currentPage} of {totalPages || 1} (5 records per page)</span>
                         <div className="flex gap-2">
                             <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} className="h-8 w-8 p-0"><ChevronLeft className="h-4 w-4" /></Button>
                             <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages || totalPages === 0} className="h-8 w-8 p-0"><ChevronRight className="h-4 w-4" /></Button>
@@ -246,6 +300,27 @@ export default function OrdersPage() {
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Confirm Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={isBulkDeleteOpen} onOpenChange={setIsBulkDeleteOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <div className="flex items-center gap-2 text-destructive">
+                            <AlertCircle className="h-6 w-6" />
+                            <AlertDialogTitle>Permanent Bulk Removal</AlertDialogTitle>
+                        </div>
+                        <AlertDialogDescription>
+                            You have selected <strong>{selectedIds.length}</strong> transaction records. Deleting them will permanently remove them from the system and recalculate all financial dashboards. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Keep Records</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={isSubmitting}>
+                            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                            Confirm Bulk Delete
+                        </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

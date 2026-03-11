@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -137,7 +138,7 @@ export default function DashboardPage() {
             <Card className="shadow-sm border-primary/10 overflow-hidden">
                 <CardHeader className="bg-muted/30 py-4 border-b">
                     <CardTitle className="text-lg">Departmental Contribution Analysis</CardTitle>
-                    <CardDescription className="text-xs">Granular breakdown of Sales, COGS, and Expenses by department.</CardDescription>
+                    <CardDescription className="text-xs">Comparative performance and cost breakdown by department.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0 overflow-x-auto">
                     <Table>
@@ -161,18 +162,14 @@ export default function DashboardPage() {
                                     <TableCell className="capitalize font-bold text-xs">
                                         {m.module === 'accommodation' ? 'Rooms' : m.module}
                                     </TableCell>
-                                    {/* Previous Month Data */}
                                     <TableCell className="text-right text-[10px] text-muted-foreground">{formatPrice(m.previousSales)}</TableCell>
                                     <TableCell className="text-right text-[10px] text-muted-foreground">{formatPrice(m.previousCogs)}</TableCell>
                                     <TableCell className="text-right text-[10px] text-muted-foreground">{formatPrice(m.previousOpex)}</TableCell>
                                     <TableCell className="text-right text-[10px] font-bold text-muted-foreground border-r">{formatPrice(m.previousNet)}</TableCell>
-                                    
-                                    {/* Current Month Data */}
                                     <TableCell className="text-right text-[10px] font-bold text-primary">{formatPrice(m.currentSales)}</TableCell>
                                     <TableCell className="text-right text-[10px] font-medium">{formatPrice(m.currentCogs)}</TableCell>
                                     <TableCell className="text-right text-[10px] font-medium">{formatPrice(m.currentOpex)}</TableCell>
                                     <TableCell className="text-right text-[10px] font-black text-primary border-r">{formatPrice(m.currentNet)}</TableCell>
-                                    
                                     <TableCell className="text-right">
                                         {renderChange(m.changePercent)}
                                     </TableCell>
