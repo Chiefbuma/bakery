@@ -359,7 +359,18 @@ export default function InventoryPage() {
                                                     {activeTab === 'products' && item.hasRecipe && (
                                                         <Button variant="ghost" size="icon" className="text-amber-600" onClick={() => handleOpenRecipeDialog(item)}><UtensilsCrossed className="h-4 w-4" /></Button>
                                                     )}
-                                                    <Button variant="ghost" size="icon" className="text-primary" onClick={() => activeTab === 'supplies' ? handleOpenSupplyDialog(item) : handleOpenProductDialog(item)}><Edit className="h-4 w-4" /></Button>
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="icon" 
+                                                        className="text-primary" 
+                                                        onClick={() => {
+                                                            if (activeTab === 'supplies') handleOpenSupplyDialog(item);
+                                                            else if (activeTab === 'recipes') handleOpenRecipeDialog(item);
+                                                            else handleOpenProductDialog(item);
+                                                        }}
+                                                    >
+                                                        <Edit className="h-4 w-4" />
+                                                    </Button>
                                                     <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setTargetItem({id: item.id, name: item.name, type: activeTab === 'supplies' ? 'supply' : 'product'})}><Trash2 className="h-4 w-4" /></Button>
                                                 </TableCell>
                                             </TableRow>
