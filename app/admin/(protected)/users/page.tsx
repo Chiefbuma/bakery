@@ -39,7 +39,7 @@ export default function UsersPage() {
     const [targetUser, setTargetUser] = useState<{id: string, name: string} | null>(null);
     
     const [currentPage, setCurrentPage] = useState(1);
-    const ITEMS_PER_PAGE = 5;
+    const ITEMS_PER_PAGE = 10;
 
     const { toast } = useToast();
     const { register, handleSubmit, reset, setValue } = useForm<{
@@ -135,92 +135,99 @@ export default function UsersPage() {
     }, [filteredUsers, currentPage]);
 
     return (
-        <div className="space-y-3">
-            <div className="flex flex-col gap-0.5">
-                <h1 className="text-xl font-bold tracking-tight">Personnel Directory</h1>
-                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Manage system credentials.</p>
+        <div className="space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">Personnel Directory</h1>
+                    <p className="text-muted-foreground">Manage system credentials and authorized access.</p>
+                </div>
+                <Button onClick={() => handleOpenDialog()} className="gap-2">
+                    <UserPlus className="h-4 w-4" />
+                    Add User
+                </Button>
             </div>
 
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between border-b py-2.5">
-                    <div className="space-y-0.5">
-                        <CardTitle className="text-[11px] font-bold uppercase">Staff Management</CardTitle>
-                        <CardDescription className="text-[8px] font-bold uppercase">Authorized Access</CardDescription>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="relative w-40">
-                            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                            <Input placeholder="Search..." className="h-7 pl-8 text-[10px]" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} />
+            <Card className="shadow-sm border-primary/10">
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle className="text-lg uppercase">Staff Management</CardTitle>
+                            <CardDescription>System access and departmental roles.</CardDescription>
                         </div>
-                        <Button size="sm" className="h-7 text-[9px] font-bold uppercase" onClick={() => handleOpenDialog()}>
-                            <UserPlus className="mr-1 h-3 w-3" /> Add User
-                        </Button>
+                        <div className="relative w-64">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="Search staff..." className="pl-9" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} />
+                        </div>
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
                     <Table>
                         <TableHeader>
-                            <TableRow className="bg-muted/50 h-7">
-                                <TableHead className="text-[9px] font-black uppercase">Staff Profile</TableHead>
-                                <TableHead className="text-[9px] font-black uppercase">Role</TableHead>
-                                <TableHead className="text-right text-[9px] font-black uppercase">Actions</TableHead>
+                            <TableRow className="bg-muted/50">
+                                <TableHead className="font-bold">Staff Profile</TableHead>
+                                <TableHead className="font-bold">Role</TableHead>
+                                <TableHead className="font-bold">Registered</TableHead>
+                                <TableHead className="text-right font-bold">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {loading ? (
-                                Array.from({ length: 5 }).map((_, i) => <TableRow key={i}><TableCell colSpan={3} className="h-10 animate-pulse bg-muted/10" /></TableRow>)
+                                Array.from({ length: 5 }).map((_, i) => <TableRow key={i}><TableCell colSpan={4} className="h-16 animate-pulse bg-muted/10" /></TableRow>)
                             ) : paginatedUsers.length === 0 ? (
-                                <TableRow><TableCell colSpan={3} className="h-20 text-center text-muted-foreground text-[9px] font-bold uppercase italic">No personnel found.</TableCell></TableRow>
+                                <TableRow><TableCell colSpan={4} className="h-20 text-center text-muted-foreground italic">No personnel records found.</TableCell></TableRow>
                             ) : paginatedUsers.map((u) => (
-                                <TableRow key={u.id} className="h-10">
+                                <TableRow key={u.id}>
                                     <TableCell>
                                         <div className="flex flex-col">
-                                            <span className="font-bold text-[10px]">{u.name}</span>
-                                            <span className="text-[8px] text-muted-foreground">{u.email}</span>
+                                            <span className="font-bold">{u.name}</span>
+                                            <span className="text-xs text-muted-foreground">{u.email}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell>
-                                        <Badge variant={u.role === 'admin' ? 'default' : 'secondary'} className="capitalize text-[8px] h-3.5 px-1.5">
+                                        <Badge variant={u.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
                                             {u.role}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell className="text-right space-x-0.5">
-                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-primary" onClick={() => handleOpenDialog(u)}><Edit className="h-3 w-3" /></Button>
-                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" disabled={u.email === 'admin@wamaghach.com'} onClick={() => { setTargetUser({id: u.id, name: u.name}); setDeleteConfirmOpen(true); }}><Trash2 className="h-3 w-3" /></Button>
+                                    <TableCell className="text-xs text-muted-foreground">
+                                        {new Date(u.createdAt).toLocaleDateString()}
+                                    </TableCell>
+                                    <TableCell className="text-right space-x-2">
+                                        <Button variant="ghost" size="icon" className="text-primary" onClick={() => handleOpenDialog(u)}><Edit className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" className="text-destructive" disabled={u.email === 'admin@wamaghach.com'} onClick={() => { setTargetUser({id: u.id, name: u.name}); setDeleteConfirmOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
                                     </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
                     </Table>
-                    <div className="flex items-center justify-between px-3 py-1.5 border-t bg-muted/10">
-                        <span className="text-[8px] font-bold text-muted-foreground uppercase">Page {currentPage} of {totalPages || 1}</span>
-                        <div className="flex gap-1">
-                            <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}><ChevronLeft className="h-3 w-3" /></Button>
-                            <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0}><ChevronRight className="h-3 w-3" /></Button>
+                    <div className="flex items-center justify-between px-6 py-4 border-t">
+                        <span className="text-sm text-muted-foreground">Page {currentPage} of {totalPages || 1}</span>
+                        <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}><ChevronLeft className="h-4 w-4" /></Button>
+                            <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0}><ChevronRight className="h-4 w-4" /></Button>
                         </div>
                     </div>
                 </CardContent>
             </Card>
 
             <Dialog open={isDialogOpen} onOpenChange={(open) => { if(!isSubmitting) setIsDialogOpen(open); }}>
-                <DialogContent className="sm:max-w-[320px] p-0 overflow-hidden">
-                    <DialogHeader className="p-3 border-b bg-muted/10">
-                        <DialogTitle className="text-[11px] font-bold uppercase">{editingUser ? 'Update Profile' : 'Register User'}</DialogTitle>
-                        <DialogDescription className="text-[8px] font-bold uppercase">Staff access credentials.</DialogDescription>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>{editingUser ? 'Update Staff Profile' : 'Register New Staff'}</DialogTitle>
+                        <DialogDescription>Set access credentials and authority level.</DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={handleSubmit(onFormSubmit)} className="p-3 space-y-2">
-                        <div className="space-y-0.5">
-                            <Label className="text-[9px] font-bold uppercase">Full Name</Label>
-                            <input {...register('name', { required: true })} disabled={isSubmitting} placeholder="e.g. John Doe" className="flex h-7 w-full rounded-md border border-input bg-background px-3 py-1 text-[10px] focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50" />
+                    <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4 pt-4">
+                        <div className="space-y-2">
+                            <Label>Full Name</Label>
+                            <Input {...register('name', { required: true })} disabled={isSubmitting} placeholder="e.g. John Doe" />
                         </div>
-                        <div className="space-y-0.5">
-                            <Label className="text-[9px] font-bold uppercase">Email Address</Label>
-                            <input type="email" {...register('email', { required: true })} disabled={isSubmitting} className="flex h-7 w-full rounded-md border border-input bg-background px-3 py-1 text-[10px] focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50" />
+                        <div className="space-y-2">
+                            <Label>Email Address</Label>
+                            <Input type="email" {...register('email', { required: true })} disabled={isSubmitting} />
                         </div>
-                        <div className="space-y-0.5">
-                            <Label className="text-[9px] font-bold uppercase">Role</Label>
+                        <div className="space-y-2">
+                            <Label>Role</Label>
                             <Select value={editingUser?.role || 'staff'} onValueChange={(v) => setValue('role', v as UserRole)}>
-                                <SelectTrigger className="h-7 text-[10px] font-bold uppercase"><SelectValue /></SelectTrigger>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="admin">Administrator</SelectItem>
                                     <SelectItem value="staff">Standard Staff</SelectItem>
@@ -228,15 +235,15 @@ export default function UsersPage() {
                             </Select>
                         </div>
                         {!editingUser && (
-                            <div className="space-y-0.5">
-                                <Label className="text-[9px] font-bold uppercase">Access Key</Label>
-                                <input type="password" placeholder="••••••••" {...register('password')} disabled={isSubmitting} className="flex h-7 w-full rounded-md border border-input bg-background px-3 py-1 text-[10px] focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50" />
+                            <div className="space-y-2">
+                                <Label>Initial Access Key</Label>
+                                <Input type="password" placeholder="Leave empty for default" {...register('password')} disabled={isSubmitting} />
                             </div>
                         )}
-                        <DialogFooter className="pt-2 gap-1.5">
-                            <Button variant="outline" size="sm" type="button" onClick={() => setIsDialogOpen(false)} disabled={isSubmitting} className="h-7 text-[9px] font-bold">CANCEL</Button>
-                            <Button size="sm" type="submit" disabled={isSubmitting} className="flex-1 text-[9px] font-bold uppercase">
-                                {isSubmitting ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                        <DialogFooter className="pt-4">
+                            <Button variant="outline" type="button" onClick={() => setIsDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
+                            <Button type="submit" disabled={isSubmitting} className="gap-2">
+                                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                                 Save
                             </Button>
                         </DialogFooter>
@@ -247,12 +254,12 @@ export default function UsersPage() {
             <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle className="text-sm font-bold uppercase">Delete User?</AlertDialogTitle>
-                        <AlertDialogDescription className="text-xs">Revoke all system access for this account immediately?</AlertDialogDescription>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>This will immediately revoke all system access for {targetUser?.name}. This action cannot be undone.</AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter className="gap-2">
-                        <AlertDialogCancel className="text-[10px] font-bold uppercase h-8" onClick={() => setDeleteConfirmOpen(false)}>CANCEL</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-white text-[10px] font-bold uppercase h-8 hover:bg-destructive/90">REVOKE ACCESS</AlertDialogAction>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setDeleteConfirmOpen(false)}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-white hover:bg-destructive/90">Revoke Access</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

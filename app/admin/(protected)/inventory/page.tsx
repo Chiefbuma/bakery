@@ -52,7 +52,7 @@ export default function InventoryPage() {
     const [activeTab, setActiveTab] = useState<string>("products");
     
     const [currentPage, setCurrentPage] = useState(1);
-    const ITEMS_PER_PAGE = 5;
+    const ITEMS_PER_PAGE = 10;
 
     const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
     const [isSupplyDialogOpen, setIsSupplyDialogOpen] = useState(false);
@@ -236,119 +236,104 @@ export default function InventoryPage() {
     const hasRecipeValue = productForm.watch('hasRecipe');
 
     return (
-        <div className="space-y-3">
-            <div className="flex flex-col gap-0.5">
-                <h1 className="text-xl font-bold tracking-tight font-headline text-primary">Inventory Control</h1>
-                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Sellable Products & Raw Ingredients</p>
+        <div className="space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight font-headline text-primary">Inventory Management</h1>
+                    <p className="text-muted-foreground">Manage products, supplies and manufacturing recipes.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button onClick={() => activeTab === 'supplies' ? handleOpenSupplyDialog() : handleOpenProductDialog()}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        {activeTab === 'supplies' ? 'Add Supply' : 'Add Product'}
+                    </Button>
+                </div>
             </div>
 
             <Tabs defaultValue="products" value={activeTab} onValueChange={(v) => { setActiveTab(v); setCurrentPage(1); }}>
-                <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
-                    <TabsList className="bg-muted/50 p-0.5 h-8">
-                        <TabsTrigger value="products" className="text-[9px] font-bold uppercase px-3 flex items-center gap-1.5">
-                            {loading && activeTab === 'products' ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : null}
-                            Master Stock
-                        </TabsTrigger>
-                        <TabsTrigger value="supplies" className="text-[9px] font-bold uppercase px-3 flex items-center gap-1.5">
-                            {loading && activeTab === 'supplies' ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : null}
-                            Raw Supplies
-                        </TabsTrigger>
-                        <TabsTrigger value="recipes" className="text-[9px] font-bold uppercase px-3 flex items-center gap-1.5">
-                            {loading && activeTab === 'recipes' ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : null}
-                            Recipes
-                        </TabsTrigger>
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
+                    <TabsList>
+                        <TabsTrigger value="products">Master Stock</TabsTrigger>
+                        <TabsTrigger value="supplies">Raw Supplies</TabsTrigger>
+                        <TabsTrigger value="recipes">Production Recipes</TabsTrigger>
                     </TabsList>
-                    <div className="flex items-center gap-1.5">
-                        <div className="relative w-40">
-                            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                            <Input placeholder="Search..." className="h-7 pl-7 text-[10px]" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} />
+                    <div className="flex items-center gap-2 w-full md:w-auto">
+                        <div className="relative flex-1 md:w-64">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="Search inventory..." className="pl-9" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} />
                         </div>
                         <Select value={activeModule} onValueChange={(v) => { setActiveModule(v as any); setCurrentPage(1); }}>
-                            <SelectTrigger className="w-[120px] h-7 text-[10px] font-bold uppercase"><SelectValue /></SelectTrigger>
+                            <SelectTrigger className="w-[150px]">
+                                <SelectValue placeholder="Department" />
+                            </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">ALL DEPT</SelectItem>
-                                <SelectItem value="restaurant">RESTAURANT</SelectItem>
-                                <SelectItem value="bar">BAR</SelectItem>
-                                <SelectItem value="carwash">CAR WASH</SelectItem>
-                                <SelectItem value="accommodation">ROOMS</SelectItem>
-                                <SelectItem value="entertainment">ENT.</SelectItem>
+                                <SelectItem value="all">All Departments</SelectItem>
+                                <SelectItem value="restaurant">Restaurant</SelectItem>
+                                <SelectItem value="bar">Bar</SelectItem>
+                                <SelectItem value="carwash">Car Wash</SelectItem>
+                                <SelectItem value="accommodation">Accommodation</SelectItem>
+                                <SelectItem value="entertainment">Entertainment</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
                 </div>
 
                 <AnimatePresence mode="wait">
-                    <motion.div key={activeTab} initial={{ opacity: 0, x: 5 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -5 }}>
+                    <motion.div key={activeTab} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
                         <Card className="shadow-sm border-primary/10">
-                            <CardHeader className="flex flex-row items-center justify-between py-2.5 border-b">
-                                <div className="space-y-0.5">
-                                    <CardTitle className="text-[11px] font-bold uppercase">{activeTab === 'supplies' ? 'Raw Supplies Ledger' : activeTab === 'recipes' ? 'Ingredient Mapping' : 'Sellable Products'}</CardTitle>
-                                    <CardDescription className="text-[8px] font-bold uppercase text-muted-foreground">Departmental Tracking</CardDescription>
-                                </div>
-                                <Button size="sm" onClick={() => activeTab === 'supplies' ? handleOpenSupplyDialog() : handleOpenProductDialog()} className="h-7 text-[9px] font-bold uppercase px-3">
-                                    <PlusCircle className="mr-1 h-3 w-3" /> {activeTab === 'supplies' ? 'Add Supply' : 'Add Product'}
-                                </Button>
-                            </CardHeader>
                             <CardContent className="p-0">
                                 <Table>
                                     <TableHeader>
-                                        <TableRow className="bg-muted/30 h-7">
-                                            <TableHead className="text-[9px] font-black uppercase">Item</TableHead>
-                                            <TableHead className="text-[9px] font-black uppercase">{activeTab === 'supplies' ? 'Qty' : 'Type'}</TableHead>
-                                            <TableHead className="text-[9px] font-black uppercase">{activeTab === 'supplies' ? 'Unit Cost' : 'Price'}</TableHead>
-                                            <TableHead className="text-[9px] font-black uppercase">{activeTab === 'recipes' ? 'Cost of Sale' : 'Stock'}</TableHead>
-                                            <TableHead className="text-right text-[9px] font-black uppercase">Actions</TableHead>
+                                        <TableRow className="bg-muted/50">
+                                            <TableHead className="font-bold">Item</TableHead>
+                                            <TableHead className="font-bold">{activeTab === 'supplies' ? 'Stock Level' : 'Cost Type'}</TableHead>
+                                            <TableHead className="font-bold">{activeTab === 'supplies' ? 'Unit Cost' : 'Sale Price'}</TableHead>
+                                            <TableHead className="font-bold">{activeTab === 'recipes' ? 'Est. COGS' : 'Stock Status'}</TableHead>
+                                            <TableHead className="text-right font-bold">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {loading ? (
-                                            Array.from({ length: 5 }).map((_, i) => <TableRow key={i}><TableCell colSpan={5} className="h-9 animate-pulse bg-muted/10" /></TableRow>)
+                                            Array.from({ length: 5 }).map((_, i) => <TableRow key={i}><TableCell colSpan={5} className="h-16 animate-pulse bg-muted/20" /></TableRow>)
                                         ) : paginatedItems.length === 0 ? (
-                                            <TableRow><TableCell colSpan={5} className="text-center py-8 text-[9px] uppercase font-bold text-muted-foreground italic">No matching records found.</TableCell></TableRow>
+                                            <TableRow><TableCell colSpan={5} className="text-center py-10 text-muted-foreground">No items found.</TableCell></TableRow>
                                         ) : paginatedItems.map((item: any) => (
-                                            <TableRow key={item.id} className="h-9">
-                                                <TableCell className="font-bold text-[10px]">
+                                            <TableRow key={item.id}>
+                                                <TableCell className="font-semibold">
                                                     <div>{item.name}</div>
-                                                    <div className="text-[8px] text-muted-foreground uppercase">{item.module}</div>
+                                                    <div className="text-xs text-muted-foreground uppercase">{item.module}</div>
                                                 </TableCell>
                                                 <TableCell>
                                                     {activeTab === 'supplies' ? (
-                                                        <span className="text-[10px] font-black">{item.quantity} {item.unit}</span>
+                                                        <span className="font-bold">{item.quantity} {item.unit}</span>
                                                     ) : (
-                                                        <Badge variant={item.hasRecipe ? "secondary" : "outline"} className="text-[8px] px-1 h-3.5">{item.hasRecipe ? "PROD" : "RETAIL"}</Badge>
+                                                        <Badge variant={item.hasRecipe ? "default" : "secondary"}>{item.hasRecipe ? "Production" : "Retail"}</Badge>
                                                     )}
                                                 </TableCell>
-                                                <TableCell className="text-[10px] font-black">{formatPrice(activeTab === 'supplies' ? item.unitCost : item.price)}</TableCell>
+                                                <TableCell>{formatPrice(activeTab === 'supplies' ? item.unitCost : item.price)}</TableCell>
                                                 <TableCell>
                                                     {activeTab === 'recipes' ? (
-                                                        <span className="text-[10px] font-black text-primary">{formatPrice((recipes[item.id] || []).reduce((acc, rcp) => {
+                                                        <span className="font-bold text-primary">{formatPrice((recipes[item.id] || []).reduce((acc, rcp) => {
                                                             const s = supplies.find(sup => sup.id === rcp.supplyId);
                                                             return acc + (Number(rcp.amount) * Number(s?.unitCost || 0));
                                                         }, 0))}</span>
                                                     ) : (
-                                                        <Badge variant={item.stock <= item.minStockLevel ? "destructive" : "secondary"} className="text-[8px] px-1 h-3.5">
+                                                        <Badge variant={item.stock <= item.minStockLevel ? "destructive" : "outline"}>
                                                             {item.stock} {item.unit}
                                                         </Badge>
                                                     )}
                                                 </TableCell>
-                                                <TableCell className="text-right space-x-0.5">
+                                                <TableCell className="text-right space-x-2">
                                                     {activeTab === 'products' && item.hasRecipe && (
-                                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-amber-600" onClick={() => handleOpenRecipeDialog(item)}><UtensilsCrossed className="h-3 w-3" /></Button>
+                                                        <Button variant="ghost" size="icon" className="text-amber-600" onClick={() => handleOpenRecipeDialog(item)}><UtensilsCrossed className="h-4 w-4" /></Button>
                                                     )}
-                                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-primary" onClick={() => activeTab === 'supplies' ? handleOpenSupplyDialog(item) : handleOpenProductDialog(item)}><Edit className="h-3 w-3" /></Button>
-                                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => setTargetItem({id: item.id, name: item.name, type: activeTab === 'supplies' ? 'supply' : 'product'})}><Trash2 className="h-3 w-3" /></Button>
+                                                    <Button variant="ghost" size="icon" className="text-primary" onClick={() => activeTab === 'supplies' ? handleOpenSupplyDialog(item) : handleOpenProductDialog(item)}><Edit className="h-4 w-4" /></Button>
+                                                    <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setTargetItem({id: item.id, name: item.name, type: activeTab === 'supplies' ? 'supply' : 'product'})}><Trash2 className="h-4 w-4" /></Button>
                                                 </TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
                                 </Table>
-                                <div className="flex items-center justify-between px-3 py-1.5 border-t bg-muted/10">
-                                    <span className="text-[8px] font-bold text-muted-foreground uppercase">Page {currentPage} of {totalPages}</span>
-                                    <div className="flex gap-1">
-                                        <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}><ChevronLeft className="h-3 w-3" /></Button>
-                                        <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}><ChevronRight className="h-3 w-3" /></Button>
-                                    </div>
-                                </div>
                             </CardContent>
                         </Card>
                     </motion.div>
@@ -356,175 +341,74 @@ export default function InventoryPage() {
             </Tabs>
 
             {/* Product Dialog */}
-            <Dialog open={isProductDialogOpen} onOpenChange={(open) => { if(!isSubmitting) setIsProductDialogOpen(open); }}>
-                <DialogContent className="sm:max-w-[360px] p-0 overflow-hidden">
-                    <DialogHeader className="p-3 border-b bg-muted/10">
-                        <DialogTitle className="text-[11px] font-bold uppercase">{editingProduct ? 'Edit Product' : 'Add Product'}</DialogTitle>
-                        <DialogDescription className="text-[8px] font-bold uppercase">Configure sellable item and cost type.</DialogDescription>
+            <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
+                        <DialogDescription>Configure details for a sellable item.</DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={productForm.handleSubmit(onProductSubmit)} className="p-3 space-y-1.5">
-                        <div className="grid grid-cols-2 gap-2">
-                            <div className="col-span-2 space-y-0.5">
-                                <Label className="text-[9px] font-bold uppercase">Product Name</Label>
-                                <Input {...productForm.register('name', { required: true })} disabled={isSubmitting} className="h-7 text-[10px]" />
+                    <form onSubmit={productForm.handleSubmit(onProductSubmit)} className="space-y-4 pt-4">
+                        <div className="space-y-2">
+                            <Label>Product Name</Label>
+                            <Input {...productForm.register('name', { required: true })} disabled={isSubmitting} />
+                        </div>
+                        <div className="space-y-2 p-3 bg-muted/30 rounded-lg border">
+                            <Label className="text-xs font-bold uppercase text-muted-foreground block mb-2">Costing Method</Label>
+                            <RadioGroup value={hasRecipeValue ? "production" : "retail"} onValueChange={(v) => productForm.setValue('hasRecipe', v === 'production')} className="flex gap-4">
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="retail" id="retail" />
+                                    <Label htmlFor="retail" className="cursor-pointer">Retail (Manual Cost)</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="production" id="production" />
+                                    <Label htmlFor="production" className="cursor-pointer">Production (Recipe)</Label>
+                                </div>
+                            </RadioGroup>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Sale Price (Ksh)</Label>
+                                <Input type="number" {...productForm.register('price', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
                             </div>
-                            <div className="col-span-2 space-y-1 p-1.5 bg-muted/20 rounded border">
-                                <Label className="text-[8px] font-black uppercase">Cost Structure</Label>
-                                <RadioGroup value={hasRecipeValue ? "production" : "retail"} onValueChange={(v) => productForm.setValue('hasRecipe', v === 'production')} className="flex gap-4">
-                                    <div className="flex items-center space-x-1.5">
-                                        <RadioGroupItem value="retail" id="retail" className="h-2.5 w-2.5" />
-                                        <Label htmlFor="retail" className="text-[10px] font-bold cursor-pointer">Retail (Fixed Cost)</Label>
-                                    </div>
-                                    <div className="flex items-center space-x-1.5">
-                                        <RadioGroupItem value="production" id="production" className="h-2.5 w-2.5" />
-                                        <Label htmlFor="production" className="text-[10px] font-bold cursor-pointer">Production (Recipe)</Label>
-                                    </div>
-                                </RadioGroup>
+                            <div className="space-y-2">
+                                <Label className={cn(hasRecipeValue && "text-muted-foreground")}>Manual Cost (Ksh)</Label>
+                                <Input type="number" {...productForm.register('costPrice', { required: !hasRecipeValue, valueAsNumber: true })} disabled={isSubmitting || !!hasRecipeValue} className={cn(hasRecipeValue && "bg-muted")} placeholder={hasRecipeValue ? "Auto-calculated" : "0"} />
                             </div>
-                            <div className="space-y-0.5">
-                                <Label className="text-[9px] font-bold uppercase">Sale Price</Label>
-                                <Input type="number" {...productForm.register('price', { required: true, valueAsNumber: true })} disabled={isSubmitting} className="h-7 text-[10px]" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Opening Stock</Label>
+                                <Input type="number" step="0.01" {...productForm.register('stock', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
                             </div>
-                            <div className="space-y-0.5">
-                                <Label className={cn("text-[9px] font-bold uppercase", hasRecipeValue && "text-muted-foreground")}>Manual Cost</Label>
-                                <Input type="number" {...productForm.register('costPrice', { required: !hasRecipeValue, valueAsNumber: true })} disabled={isSubmitting || !!hasRecipeValue} className={cn("h-7 text-[10px]", hasRecipeValue && "bg-muted")} placeholder={hasRecipeValue ? "Auto-cost" : "0"} />
+                            <div className="space-y-2">
+                                <Label>Stock Unit</Label>
+                                <Input {...productForm.register('unit', { required: true })} placeholder="e.g. pcs, kgs, ml" disabled={isSubmitting} />
                             </div>
-                            <div className="space-y-0.5">
-                                <Label className="text-[9px] font-bold uppercase">Stock</Label>
-                                <Input type="number" step="0.01" {...productForm.register('stock', { required: true, valueAsNumber: true })} disabled={isSubmitting} className="h-7 text-[10px]" />
-                            </div>
-                            <div className="space-y-0.5">
-                                <Label className="text-[9px] font-bold uppercase">Unit</Label>
-                                <Input {...productForm.register('unit', { required: true })} placeholder="pcs" disabled={isSubmitting} className="h-7 text-[10px]" />
-                            </div>
-                            <div className="space-y-0.5">
-                                <Label className="text-[9px] font-bold uppercase">Department</Label>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Department</Label>
                                 <Select value={productForm.watch('module')} onValueChange={(v) => productForm.setValue('module', v as any)}>
-                                    <SelectTrigger className="h-7 text-[10px] font-bold uppercase"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger><SelectValue placeholder="Select Dept" /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="restaurant">RESTAURANT</SelectItem>
-                                        <SelectItem value="bar">BAR</SelectItem>
-                                        <SelectItem value="carwash">CAR WASH</SelectItem>
-                                        <SelectItem value="accommodation">ROOMS</SelectItem>
-                                        <SelectItem value="entertainment">ENT.</SelectItem>
+                                        <SelectItem value="restaurant">Restaurant</SelectItem>
+                                        <SelectItem value="bar">Bar</SelectItem>
+                                        <SelectItem value="carwash">Car Wash</SelectItem>
+                                        <SelectItem value="accommodation">Accommodation</SelectItem>
+                                        <SelectItem value="entertainment">Entertainment</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="space-y-0.5">
-                                <Label className="text-[9px] font-bold uppercase">Alert Level</Label>
-                                <Input type="number" {...productForm.register('minStockLevel', { required: true, valueAsNumber: true })} disabled={isSubmitting} className="h-7 text-[10px]" />
+                            <div className="space-y-2">
+                                <Label>Min Alert Level</Label>
+                                <Input type="number" {...productForm.register('minStockLevel', { required: true, valueAsNumber: true })} disabled={isSubmitting} />
                             </div>
                         </div>
-                        <DialogFooter className="pt-2 gap-1.5">
-                            <Button variant="outline" size="sm" type="button" onClick={() => setIsProductDialogOpen(false)} className="h-7 text-[9px] font-bold">CANCEL</Button>
-                            <Button size="sm" type="submit" disabled={isSubmitting} className="h-7 text-[9px] font-bold uppercase flex-1">
-                                {isSubmitting ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : null}
+                        <DialogFooter className="pt-4">
+                            <Button variant="outline" type="button" onClick={() => setIsProductDialogOpen(false)} className="gap-2">Cancel</Button>
+                            <Button type="submit" disabled={isSubmitting} className="gap-2">
+                                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                                 Save Product
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
-
-            {/* Recipe Dialog */}
-            <Dialog open={isRecipeDialogOpen} onOpenChange={setIsRecipeDialogOpen}>
-                <DialogContent className="sm:max-w-[400px] p-0 overflow-hidden">
-                    <DialogHeader className="p-3 border-b bg-muted/10">
-                        <DialogTitle className="text-[11px] font-bold uppercase">Recipe: {recipeProduct?.name}</DialogTitle>
-                        <DialogDescription className="text-[8px] font-bold uppercase">Map raw ingredients for production items.</DialogDescription>
-                    </DialogHeader>
-                    <div className="p-3 space-y-1.5">
-                        <div className="max-h-[200px] overflow-y-auto space-y-1 pr-1 custom-scrollbar">
-                            {currentRecipe.map((rcp, idx) => {
-                                const supply = supplies.find(s => s.id === rcp.supplyId);
-                                const lineCost = Number(rcp.amount || 0) * Number(supply?.unitCost || 0);
-                                return (
-                                    <div key={idx} className="flex flex-col gap-0.5 p-1 bg-muted/10 rounded border border-dashed">
-                                        <div className="flex items-center gap-1.5">
-                                            <Select value={rcp.supplyId} onValueChange={(v) => {
-                                                const next = [...currentRecipe];
-                                                next[idx].supplyId = v;
-                                                setCurrentRecipe(next);
-                                            }}>
-                                                <SelectTrigger className="flex-1 h-7 text-[9px] font-bold uppercase"><SelectValue placeholder="Supply" /></SelectTrigger>
-                                                <SelectContent>
-                                                    {supplies.map(s => <SelectItem key={s.id} value={s.id}>{s.name} ({s.unit})</SelectItem>)}
-                                                </SelectContent>
-                                            </Select>
-                                            <Input type="number" step="0.001" className="w-16 h-7 text-[10px] font-bold" placeholder="Qty" value={rcp.amount} onChange={(e) => {
-                                                const next = [...currentRecipe];
-                                                next[idx].amount = parseFloat(e.target.value) || 0;
-                                                setCurrentRecipe(next);
-                                            }} />
-                                            <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => setCurrentRecipe(prev => prev.filter((_, i) => i !== idx))}><Trash2 className="h-3 w-3" /></Button>
-                                        </div>
-                                        {lineCost > 0 && <div className="text-[8px] font-black text-primary text-right uppercase px-1">Line Cost: {formatPrice(lineCost)}</div>}
-                                    </div>
-                                );
-                            })}
-                        </div>
-                        <Button variant="outline" size="sm" className="w-full border-dashed text-[9px] font-bold uppercase h-7" onClick={() => setCurrentRecipe([...currentRecipe, { supplyId: '', amount: 0 }])}>
-                            <PlusCircle className="mr-1 h-3 w-3" /> Add Ingredient
-                        </Button>
-                        <div className="p-1.5 bg-primary/5 rounded border border-primary/20 flex justify-between items-center">
-                            <span className="font-black uppercase text-[9px]">Production COGS</span>
-                            <span className="text-xs font-black text-primary">{formatPrice(recipeTotalCost)}</span>
-                        </div>
-                    </div>
-                    <DialogFooter className="p-3 bg-muted/10 border-t gap-1.5">
-                        <Button variant="outline" size="sm" onClick={() => setIsRecipeDialogOpen(false)} className="h-7 text-[9px] font-bold">CANCEL</Button>
-                        <Button size="sm" onClick={onRecipeSubmit} disabled={isSubmitting} className="h-7 text-[9px] font-bold uppercase flex-1">
-                            {isSubmitting ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : null}
-                            Commit Recipe
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Supply Dialog */}
-            <Dialog open={isSupplyDialogOpen} onOpenChange={(open) => { if(!isSubmitting) setIsSupplyDialogOpen(open); }}>
-                <DialogContent className="sm:max-w-[340px] p-0 overflow-hidden">
-                    <DialogHeader className="p-3 border-b bg-muted/10">
-                        <DialogTitle className="text-[11px] font-bold uppercase">{editingSupply ? 'Edit Supply' : 'Add Supply'}</DialogTitle>
-                        <DialogDescription className="text-[8px] font-bold uppercase">Record raw material unit cost and level.</DialogDescription>
-                    </DialogHeader>
-                    <form onSubmit={supplyForm.handleSubmit(onSupplySubmit)} className="p-3 space-y-1.5">
-                        <div className="space-y-0.5">
-                            <Label className="text-[9px] font-bold uppercase">Supply Name</Label>
-                            <Input {...supplyForm.register('name', { required: true })} disabled={isSubmitting} className="h-7 text-[10px]" />
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                            <div className="space-y-0.5">
-                                <Label className="text-[9px] font-bold uppercase">Qty</Label>
-                                <Input type="number" step="0.001" {...supplyForm.register('quantity', { required: true, valueAsNumber: true })} disabled={isSubmitting} className="h-7 text-[10px]" />
-                            </div>
-                            <div className="space-y-0.5">
-                                <Label className="text-[9px] font-bold uppercase">Unit</Label>
-                                <Input {...supplyForm.register('unit', { required: true })} placeholder="kg" disabled={isSubmitting} className="h-7 text-[10px]" />
-                            </div>
-                            <div className="space-y-0.5">
-                                <Label className="text-[9px] font-bold uppercase">Unit Cost</Label>
-                                <Input type="number" {...supplyForm.register('unitCost', { required: true, valueAsNumber: true })} disabled={isSubmitting} className="h-7 text-[10px]" />
-                            </div>
-                            <div className="space-y-0.5">
-                                <Label className="text-[9px] font-bold uppercase">Dept</Label>
-                                <Select value={supplyForm.watch('module') || 'restaurant'} onValueChange={(v) => supplyForm.setValue('module', v)}>
-                                    <SelectTrigger className="h-7 text-[10px] font-bold uppercase"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="restaurant">RESTAURANT</SelectItem>
-                                        <SelectItem value="bar">BAR</SelectItem>
-                                        <SelectItem value="carwash">CAR WASH</SelectItem>
-                                        <SelectItem value="accommodation">ROOMS</SelectItem>
-                                        <SelectItem value="entertainment">ENT.</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <DialogFooter className="pt-2 gap-1.5">
-                            <Button variant="outline" size="sm" type="button" onClick={() => setIsSupplyDialogOpen(false)} className="h-7 text-[9px] font-bold">CANCEL</Button>
-                            <Button size="sm" type="submit" disabled={isSubmitting} className="h-7 text-[9px] font-bold uppercase flex-1">
-                                {isSubmitting ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : null}
-                                Save Record
                             </Button>
                         </DialogFooter>
                     </form>
@@ -534,12 +418,12 @@ export default function InventoryPage() {
             <AlertDialog open={!!targetItem} onOpenChange={() => setTargetItem(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle className="text-sm font-bold uppercase">Delete Inventory Record?</AlertDialogTitle>
-                        <AlertDialogDescription className="text-xs">Are you sure you want to permanently remove this item? This action is irreversible.</AlertDialogDescription>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>This will permanently delete the inventory record for "{targetItem?.name}". This action cannot be undone.</AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter className="gap-2">
-                        <AlertDialogCancel className="text-[10px] font-bold uppercase h-8">CANCEL</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteItem} className="bg-destructive text-white text-[10px] font-bold uppercase h-8 hover:bg-destructive/90">CONFIRM REMOVAL</AlertDialogAction>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteItem} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete Item</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

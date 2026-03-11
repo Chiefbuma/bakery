@@ -1,9 +1,22 @@
-
 'use client';
 
 import type { Product, Transaction, HotelModule, DashboardData, SaleItem, Supply, Expense, User, UserRole, SupplyConsumption } from '@/lib/types';
 
 const API_BASE = '/api';
+
+/**
+ * Robust JSON parsing for shared hosting environments.
+ * Prevents "Unexpected end of JSON input" errors if API returns empty or HTML.
+ */
+async function safeJson(res: Response) {
+  const text = await res.text();
+  try {
+    return text ? JSON.parse(text) : null;
+  } catch (e) {
+    console.error('JSON Parse Error:', e, 'Raw Body:', text);
+    return null;
+  }
+}
 
 function ensureArray<T>(data: any): T[] {
   return Array.isArray(data) ? data : [];
@@ -34,7 +47,7 @@ export async function getUsers(): Promise<User[]> {
   try {
     const res = await fetch(`${API_BASE}/users`);
     if (!res.ok) return [];
-    const data = await res.json();
+    const data = await safeJson(res);
     return ensureArray(data);
   } catch (e) {
     return [];
@@ -47,7 +60,7 @@ export async function addUser(user: Omit<User, 'id' | 'createdAt'>): Promise<Use
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(user),
   });
-  return res.json();
+  return safeJson(res);
 }
 
 export async function updateUser(id: string, updates: Partial<User>): Promise<void> {
@@ -68,7 +81,7 @@ export async function getProducts(module?: HotelModule): Promise<Product[]> {
     const url = module && module !== 'all' ? `${API_BASE}/products?module=${module}` : `${API_BASE}/products`;
     const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) return [];
-    const data = await res.json();
+    const data = await safeJson(res);
     return ensureArray(data).map(castProduct);
   } catch (e) {
     return [];
@@ -81,7 +94,7 @@ export async function addProduct(product: Omit<Product, 'id'>): Promise<Product>
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(product),
   });
-  return res.json();
+  return safeJson(res);
 }
 
 export async function updateProduct(id: string, updates: Partial<Product>): Promise<void> {
@@ -104,7 +117,7 @@ export async function getSupplies(module?: HotelModule): Promise<Supply[]> {
     const url = module && module !== 'all' ? `${API_BASE}/supplies?module=${module}` : `${API_BASE}/supplies`;
     const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) return [];
-    const data = await res.json();
+    const data = await safeJson(res);
     return ensureArray(data).map(castSupply);
   } catch (e) {
     return [];
@@ -117,7 +130,7 @@ export async function addSupply(supply: Omit<Supply, 'id'>): Promise<Supply> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(supply),
   });
-  return res.json();
+  return safeJson(res);
 }
 
 export async function updateSupply(id: string, updates: Partial<Supply>): Promise<void> {
@@ -139,7 +152,7 @@ export async function getProductRecipes(): Promise<Record<string, SupplyConsumpt
   try {
     const res = await fetch(`${API_BASE}/recipes`, { cache: 'no-store' });
     if (!res.ok) return {};
-    const data = await res.json();
+    const data = await safeJson(res);
     const recipes: Record<string, SupplyConsumption[]> = {};
     if (Array.isArray(data)) {
       data.forEach((r: any) => {
@@ -166,7 +179,7 @@ export async function getExpenses(): Promise<Expense[]> {
   try {
     const res = await fetch(`${API_BASE}/expenses`, { cache: 'no-store' });
     if (!res.ok) return [];
-    const data = await res.json();
+    const data = await safeJson(res);
     return ensureArray(data).map(castExpense);
   } catch (e) {
     return [];
@@ -179,7 +192,7 @@ export async function addExpense(expense: Omit<Expense, 'id'>): Promise<Expense>
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(expense),
   });
-  return res.json();
+  return safeJson(res);
 }
 
 export async function updateExpense(id: string, updates: Partial<Expense>): Promise<void> {
@@ -204,17 +217,17 @@ export async function placeOrder(transaction: Omit<Transaction, 'id' | 'timestam
     body: JSON.stringify(transaction),
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Transaction failed' }));
-    throw new Error(err.error || 'Transaction failed');
+    const err = await safeJson(res);
+    throw new Error(err?.error || 'Transaction failed');
   }
-  return res.json();
+  return safeJson(res);
 }
 
 export async function getPendingOrders(): Promise<Transaction[]> {
   try {
     const res = await fetch(`${API_BASE}/pos/pending`, { cache: 'no-store' });
     if (!res.ok) return [];
-    const data = await res.json();
+    const data = await safeJson(res);
     return ensureArray(data);
   } catch (e) {
     return [];
@@ -225,7 +238,9 @@ export async function getPendingOrders(): Promise<Transaction[]> {
 export async function getDashboardData(): Promise<DashboardData> {
   const res = await fetch(`${API_BASE}/dashboard`, { cache: 'no-store' });
   if (!res.ok) throw new Error('Failed to load dashboard data');
-  return res.json();
+  const data = await safeJson(res);
+  if (!data) throw new Error('Empty response from analytics engine');
+  return data;
 }
 
 // UTILS
@@ -236,7 +251,7 @@ export async function uploadImage(file: File): Promise<string> {
     method: 'POST',
     body: formData,
   });
-  const data = await res.json();
-  if (data.error) throw new Error(data.error);
-  return data.url;
+  const data = await safeJson(res);
+  if (data?.error) throw new Error(data.error);
+  return data?.url || '';
 }
