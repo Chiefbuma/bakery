@@ -254,9 +254,28 @@ export async function updateTransaction(id: string, updates: Partial<Transaction
 }
 
 export async function deleteTransactions(ids: string[]): Promise<void> {
-  for (const id of ids) {
-    await fetch(`${API_BASE}/transactions/${id}`, { method: 'DELETE' });
-  }
+  const res = await fetch(`${API_BASE}/transactions`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids }),
+  });
+  if (!res.ok) throw new Error('Bulk delete failed');
+}
+
+export async function updateTransactionItem(itemId: number, updates: any): Promise<void> {
+  const res = await fetch(`${API_BASE}/transactions/items/${itemId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) throw new Error('Item update failed');
+}
+
+export async function deleteTransactionItem(itemId: number): Promise<void> {
+  const res = await fetch(`${API_BASE}/transactions/items/${itemId}`, {
+    method: 'DELETE'
+  });
+  if (!res.ok) throw new Error('Item deletion failed');
 }
 
 // DASHBOARD

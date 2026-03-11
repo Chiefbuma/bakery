@@ -5,8 +5,15 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const [rows]: any = await pool.query('SELECT * FROM transactions ORDER BY timestamp DESC');
-    return NextResponse.json(rows);
+    const [transactions]: any = await pool.query('SELECT * FROM transactions ORDER BY timestamp DESC');
+    
+    // Fetch items for each transaction
+    for (const tx of transactions) {
+      const [items] = await pool.query('SELECT * FROM transaction_items WHERE transactionId = ?', [tx.id]);
+      tx.items = items;
+    }
+    
+    return NextResponse.json(transactions);
   } catch (error) {
     console.error('Fetch Transactions Error:', error);
     return NextResponse.json({ error: "Failed to fetch transactions" }, { status: 500 });

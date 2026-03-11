@@ -1,9 +1,8 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { getAllTransactions, updateTransaction, deleteTransactions } from "@/services/hotel-service";
-import type { Transaction } from "@/lib/types";
+import { getAllTransactions, updateTransaction, deleteTransactions, updateTransactionItem, deleteTransactionItem } from "@/services/hotel-service";
+import type { Transaction, SaleItem } from "@/lib/types";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatPrice, cn } from "@/lib/utils";
-import { Search, Trash2, Edit, ChevronLeft, ChevronRight, Loader2, RefreshCw, FileText, AlertCircle } from "lucide-react";
+import { Search, Trash2, Edit, ChevronLeft, ChevronRight, Loader2, RefreshCw, FileText, AlertCircle, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -41,7 +40,10 @@ export default function OrdersPage() {
 
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [editingOrder, setEditingOrder] = useState<Transaction | null>(null);
+    const [viewingOrder, setViewingOrder] = useState<Transaction | null>(null);
+    const [editingItem, setEditingItem] = useState<{orderId: string, item: SaleItem} | null>(null);
     const [targetOrder, setTargetOrder] = useState<{id: string, orderNumber: string} | null>(null);
+    const [targetItem, setTargetItem] = useState<{orderId: string, itemId: number, itemName: string} | null>(null);
     const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -73,6 +75,22 @@ export default function OrdersPage() {
             toast({ variant: "destructive", title: "Deletion failed" });
         } finally {
             setTargetOrder(null);
+        }
+    };
+
+    const handleDeleteItem = async () => {
+        if (!targetItem) return;
+        setIsSubmitting(true);
+        try {
+            await deleteTransactionItem(targetItem.itemId);
+            toast({ title: "Line item removed" });
+            load(true);
+            setViewingOrder(null);
+        } catch (e) {
+            toast({ variant: "destructive", title: "Failed to delete item" });
+        } finally {
+            setIsSubmitting(false);
+            setTargetItem(null);
         }
     };
 
@@ -207,6 +225,7 @@ export default function OrdersPage() {
                                             {new Date(o.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                                         </TableCell>
                                         <TableCell className="text-right space-x-1">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => setViewingOrder(o)}><Eye className="h-4 w-4" /></Button>
                                             <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => setEditingOrder(o)}><Edit className="h-4 w-4" /></Button>
                                             <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setTargetOrder({id: o.id, orderNumber: o.orderNumber})}><Trash2 className="h-4 w-4" /></Button>
                                         </TableCell>
@@ -224,6 +243,58 @@ export default function OrdersPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            <Dialog open={!!viewingOrder} onOpenChange={(open) => !open && setViewingOrder(null)}>
+                <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+                    <DialogHeader className="p-6 border-b bg-muted/30">
+                        <DialogTitle className="text-xl font-headline flex items-center gap-2">
+                            <Eye className="h-5 w-5 text-primary" />
+                            Order Breakdown: {viewingOrder?.orderNumber}
+                        </DialogTitle>
+                        <DialogDescription>
+                            Line items for {viewingOrder?.customerName || "Guest"} ({viewingOrder?.module} module)
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex-1 overflow-y-auto p-0">
+                        <Table>
+                            <TableHeader>
+                                <TableRow className="bg-muted/50 h-10">
+                                    <TableHead className="font-bold text-[10px] uppercase">Product</TableHead>
+                                    <TableHead className="text-right font-bold text-[10px] uppercase">Qty</TableHead>
+                                    <TableHead className="text-right font-bold text-[10px] uppercase">Price</TableHead>
+                                    <TableHead className="text-right font-bold text-[10px] uppercase">Cost</TableHead>
+                                    <TableHead className="text-right font-bold text-[10px] uppercase">Subtotal</TableHead>
+                                    <TableHead className="text-right font-bold text-[10px] uppercase">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {viewingOrder?.items?.map((item, idx) => (
+                                    <TableRow key={item.id || idx} className="h-12">
+                                        <TableCell className="text-xs font-medium">{item.name}</TableCell>
+                                        <TableCell className="text-right text-xs tabular-nums">{item.quantity}</TableCell>
+                                        <TableCell className="text-right text-xs tabular-nums">{formatPrice(item.price)}</TableCell>
+                                        <TableCell className="text-right text-xs text-muted-foreground tabular-nums">{formatPrice(item.costPrice)}</TableCell>
+                                        <TableCell className="text-right text-xs font-black text-primary tabular-nums">{formatPrice(item.total)}</TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex justify-end gap-1">
+                                                <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" onClick={() => setEditingItem({orderId: viewingOrder.id, item})}><Edit className="h-3.5 w-3.5" /></Button>
+                                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setTargetItem({orderId: viewingOrder.id, itemId: item.id!, itemName: item.name})}><Trash2 className="h-3.5 w-3.5" /></Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                    <div className="p-6 border-t bg-muted/30 flex justify-between items-center">
+                        <div>
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Total Valuation</p>
+                            <p className="text-xl font-black text-primary">{formatPrice(viewingOrder?.totalAmount || 0)}</p>
+                        </div>
+                        <Button variant="outline" onClick={() => setViewingOrder(null)}>Close Audit</Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             <Dialog open={!!editingOrder} onOpenChange={(open) => !open && setEditingOrder(null)}>
                 <DialogContent className="sm:max-w-[425px]">
@@ -289,6 +360,71 @@ export default function OrdersPage() {
                 </DialogContent>
             </Dialog>
 
+            <Dialog open={!!editingItem} onOpenChange={(open) => !open && setEditingItem(null)}>
+                <DialogContent className="sm:max-w-[400px]">
+                    <DialogHeader>
+                        <DialogTitle>Modify Line Item</DialogTitle>
+                        <DialogDescription>Adjust quantities or pricing for "{editingItem?.item.name}"</DialogDescription>
+                    </DialogHeader>
+                    {editingItem && (
+                        <div className="space-y-4 pt-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Quantity</Label>
+                                    <Input 
+                                        type="number" 
+                                        defaultValue={editingItem.item.quantity} 
+                                        onChange={(e) => setEditingItem({
+                                            ...editingItem, 
+                                            item: { ...editingItem.item, quantity: Number(e.target.value), total: Number(e.target.value) * editingItem.item.price }
+                                        })} 
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Unit Price (Ksh)</Label>
+                                    <Input 
+                                        type="number" 
+                                        defaultValue={editingItem.item.price} 
+                                        onChange={(e) => setEditingItem({
+                                            ...editingItem, 
+                                            item: { ...editingItem.item, price: Number(e.target.value), total: Number(e.target.value) * editingItem.item.quantity }
+                                        })} 
+                                    />
+                                </div>
+                            </div>
+                            <div className="bg-primary/5 p-4 rounded-lg border text-center">
+                                <p className="text-[10px] font-bold uppercase text-muted-foreground mb-1">New Item Total</p>
+                                <p className="text-2xl font-black text-primary">{formatPrice(editingItem.item.total)}</p>
+                            </div>
+                            <DialogFooter className="pt-4">
+                                <Button variant="outline" onClick={() => setEditingItem(null)}>Cancel</Button>
+                                <Button onClick={async () => {
+                                    setIsSubmitting(true);
+                                    try {
+                                        await updateTransactionItem(editingItem.item.id!, {
+                                            quantity: editingItem.item.quantity,
+                                            price: editingItem.item.price,
+                                            total: editingItem.item.total
+                                        });
+                                        toast({ title: "Line item updated" });
+                                        setEditingItem(null);
+                                        setViewingOrder(null);
+                                        load(true);
+                                    } catch (e) {
+                                        toast({ variant: "destructive", title: "Failed to update item" });
+                                    } finally {
+                                        setIsSubmitting(false);
+                                    }
+                                }} disabled={isSubmitting}>
+                                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                                    Save Changes
+                                </Button>
+                            </DialogFooter>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+
             <AlertDialog open={!!targetOrder} onOpenChange={(open) => !open && setTargetOrder(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -300,6 +436,24 @@ export default function OrdersPage() {
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Confirm Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={!!targetItem} onOpenChange={(open) => !open && setTargetItem(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Remove Line Item?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete "{targetItem?.itemName}" from this order? The total transaction value will be recalculated.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteItem} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={isSubmitting}>
+                            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                            Confirm Delete
+                        </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

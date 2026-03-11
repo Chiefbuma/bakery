@@ -52,6 +52,7 @@ export interface Expense {
 }
 
 export interface SaleItem {
+  id?: number;
   productId: string;
   name: string;
   quantity: number;
