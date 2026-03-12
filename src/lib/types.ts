@@ -1,108 +1,102 @@
-export type HotelModule = 'restaurant' | 'bar' | 'carwash' | 'accommodation' | 'entertainment' | 'general';
 
-export type UserRole = 'admin' | 'staff';
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  password?: string;
-  createdAt: string;
-}
-
-export interface Product {
+export interface Cake {
   id: string;
   name: string;
   description: string;
+  base_price: number;
+  image_data_uri?: string | null;
+  rating: number;
   category: string;
-  module: HotelModule;
-  price: number;
-  costPrice: number;
-  stock: number;
-  minStockLevel: number;
-  unit: string;
-  image_url: string;
-  hasRecipe: boolean;
+  orders_count: number;
+  ready_time: string;
+  defaultFlavorId?: string;
+  customizable: boolean;
 }
 
-export interface Supply {
+export interface SpecialOffer {
+  cake: Cake;
+  discount_percentage: number;
+  original_price: number;
+  special_price: number;
+  savings: number;
+}
+
+export interface Flavor {
   id: string;
   name: string;
-  category: string;
-  module: string;
-  quantity: number;
-  unit: string;
-  unitCost: number;
-  lastPurchased: string;
+  description?: string;
+  price: number;
+  color?: string;
 }
 
-export interface SupplyConsumption {
-  supplyId: string;
-  amount: number;
-}
-
-export interface Expense {
+export interface Size {
   id: string;
-  category: 'salary' | 'utility' | 'maintenance' | 'rent' | 'miscellaneous' | 'garbage';
-  amount: number;
-  description: string;
-  date: string;
-  module: HotelModule;
+  name:string;
+  serves: string;
+  price: number;
 }
 
-export interface SaleItem {
-  id?: number;
-  productId: string;
+export interface Color {
+  id: string;
+  name: string;
+  hex_value: string;
+  price: number;
+}
+
+export interface Topping {
+  id: string;
+  name: string;
+  price: number;
+}
+
+export interface CustomizationOptions {
+  flavors: Flavor[];
+  sizes: Size[];
+  colors: Color[];
+  toppings: Topping[];
+}
+
+export interface Customizations {
+  flavor: string | null;
+  size: string | null;
+  color: string | null;
+  toppings: string[];
+}
+
+export interface CartItem {
+  id: string; // Unique ID for each cart item instance
   name: string;
   quantity: number;
-  price: number;
-  costPrice: number;
-  total: number;
+  price: number; // Final price per item, including customizations
+  image_data_uri?: string | null;
+  cakeId: string;
+  customizations?: Customizations;
 }
 
-export interface Transaction {
-  id: string;
-  orderNumber: string;
-  module: HotelModule;
-  items: SaleItem[];
-  totalAmount: number;
-  totalCost: number;
-  timestamp: string;
-  paymentMethod: 'cash' | 'mpesa' | 'card' | 'none';
-  status: 'paid' | 'pending';
-  customerName?: string;
-  amountReceived?: number;
-  balance?: number;
+export interface DeliveryInfo {
+  name: string;
+  phone: string;
+  address: string;
+  delivery_date: string;
+  delivery_time: string;
+  delivery_method: 'delivery' | 'pickup';
+  pickup_location: string;
+  special_instructions: string;
 }
 
-export interface ComparisonMetric {
-  current: number;
-  previous: number;
-  changePercent: number;
-}
-
-export interface ModuleComparison {
-  module: HotelModule;
-  currentSales: number;
-  currentCogs: number;
-  currentOpex: number;
-  currentNet: number;
-  previousSales: number;
-  previousCogs: number;
-  previousOpex: number;
-  previousNet: number;
-  changePercent: number;
-}
-
-export interface DashboardData {
-  summary: {
-    revenue: ComparisonMetric;
-    cogs: ComparisonMetric;
-    operatingCost: ComparisonMetric;
-    netProfit: ComparisonMetric;
-  };
-  moduleStats: ModuleComparison[];
-  currentPeriodLabel: string;
-  previousPeriodLabel: string;
+export interface Order {
+  id: number;
+  order_number: string;
+  customer_name: string;
+  customer_phone: string;
+  delivery_method: 'delivery' | 'pickup';
+  delivery_address?: string;
+  pickup_location?: string;
+  delivery_date?: string;
+  total_price: number;
+  deposit_amount: number;
+  payment_status: 'pending' | 'paid';
+  order_status: 'processing' | 'complete' | 'cancelled';
+  created_at: string;
+  items: CartItem[];
 }
