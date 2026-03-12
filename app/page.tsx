@@ -45,44 +45,47 @@ export default function BakeryLandingPage() {
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="space-y-8"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-primary font-black text-[10px] uppercase tracking-[0.2em]">
-              <Sparkles className="h-3 w-3 animate-pulse" />
-              <span>Artisanal Excellence</span>
-            </div>
-            
-            <div className="space-y-4">
-              <h1 className="text-7xl md:text-9xl font-black text-white leading-[0.85] font-headline tracking-tighter">
-                Baking <br/>
-                <span className="text-primary italic relative">
-                  Dreams
-                  <motion.span 
-                    initial={{ width: 0 }} 
-                    animate={{ width: '100%' }} 
-                    className="absolute -bottom-2 left-0 h-1 bg-primary/30 rounded-full" 
-                  />
-                </span> 
-                Daily
-              </h1>
-              <p className="text-xl md:text-2xl text-stone-300 max-w-lg leading-relaxed font-medium">
-                WhiskeDelights crafts <span className="text-white font-bold underline decoration-primary/50 underline-offset-4">artisanal cakes</span> that transform every celebration into an unforgettable masterpiece.
-              </p>
-            </div>
+            {/* Glossy Hero Text Container */}
+            <div className="bg-white/10 backdrop-blur-2xl border border-white/20 p-8 md:p-12 rounded-[2.5rem] shadow-2xl space-y-8">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-primary font-black text-[10px] uppercase tracking-[0.2em]">
+                <Sparkles className="h-3 w-3 animate-pulse" />
+                <span>Artisanal Excellence</span>
+              </div>
+              
+              <div className="space-y-6">
+                <h1 className="text-6xl md:text-8xl font-black text-white leading-[0.85] font-headline tracking-tighter">
+                  Baking <br/>
+                  <span className="text-primary italic relative">
+                    Dreams
+                    <motion.span 
+                      initial={{ width: 0 }} 
+                      animate={{ width: '100%' }} 
+                      className="absolute -bottom-2 left-0 h-1 bg-primary/30 rounded-full" 
+                    />
+                  </span> <br/>
+                  Daily
+                </h1>
+                <p className="text-lg md:text-xl text-stone-300 max-w-lg leading-relaxed font-medium">
+                  WhiskeDelights crafts <span className="text-white font-bold underline decoration-primary/50 underline-offset-4">artisanal cakes</span> that transform every celebration into an unforgettable masterpiece.
+                </p>
+              </div>
 
-            <div className="flex flex-wrap gap-5 pt-4">
-              <Link href="#menu">
-                <Button size="lg" className="h-16 px-10 text-lg font-black shadow-[0_0_40px_rgba(var(--primary),0.3)] hover:shadow-[0_0_60px_rgba(var(--primary),0.5)] transition-all">
-                  Browse Menu
-                </Button>
-              </Link>
-              <Link href={`/cakes/${SPECIAL_OFFER.cake.id}`}>
-                <Button 
-                  variant="outline" 
-                  size="lg" 
-                  className="h-16 px-10 text-lg font-black border-white/20 text-white bg-white/10 backdrop-blur-2xl hover:bg-white/20 transition-all shadow-2xl"
-                >
-                  Claim Offer
-                </Button>
-              </Link>
+              <div className="flex flex-wrap gap-5 pt-4">
+                <Link href="#menu">
+                  <Button size="lg" className="h-16 px-10 text-lg font-black shadow-[0_0_40px_rgba(var(--primary),0.3)] hover:shadow-[0_0_60px_rgba(var(--primary),0.5)] transition-all">
+                    Browse Menu
+                  </Button>
+                </Link>
+                <Link href={`/cakes/${SPECIAL_OFFER.cake.id}`}>
+                  <Button 
+                    variant="outline" 
+                    size="lg" 
+                    className="h-16 px-10 text-lg font-black border-white/20 text-white bg-white/10 backdrop-blur-2xl hover:bg-white/20 transition-all shadow-2xl"
+                  >
+                    Claim Offer
+                  </Button>
+                </Link>
+              </div>
             </div>
           </motion.div>
 
