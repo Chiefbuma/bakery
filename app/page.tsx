@@ -6,10 +6,12 @@ import { formatPrice } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Star, ShoppingBasket, ArrowRight, Sparkles, Clock, Utensils } from 'lucide-react';
+import { Star, ShoppingBasket, ArrowRight, Sparkles, Clock, Utensils, Phone } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
+import { InstagramIcon } from '@/components/icons/instagram-icon';
+import { WhatsappIcon } from '@/components/icons/whatsapp-icon';
 
 export default function BakeryLandingPage() {
   const [filter, setFilter] = useState('All');
@@ -29,11 +31,11 @@ export default function BakeryLandingPage() {
             src="https://images.unsplash.com/photo-1517686469429-8bdb88b9f907?auto=format&fit=crop&q=80&w=2000" 
             alt="Bakery background"
             fill
-            className="object-cover opacity-40 scale-105"
+            className="object-cover opacity-30 scale-105"
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-tr from-stone-950 via-stone-900/80 to-transparent" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white/5 to-transparent opacity-30" />
+          <div className="absolute inset-0 bg-gradient-to-tr from-stone-950 via-stone-900/90 to-transparent" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white/5 to-transparent opacity-20" />
         </div>
         
         <div className="container mx-auto px-6 relative z-10 grid lg:grid-cols-2 gap-16 items-center py-20">
@@ -62,7 +64,7 @@ export default function BakeryLandingPage() {
                 Daily
               </h1>
               <p className="text-xl md:text-2xl text-stone-300 max-w-lg leading-relaxed font-medium">
-                WhiskeDelights crafts <span className="text-white font-bold">artisanal cakes</span> that transform every celebration into an unforgettable masterpiece.
+                WhiskeDelights crafts <span className="text-white font-bold underline decoration-primary/50 underline-offset-4">artisanal cakes</span> that transform every celebration into an unforgettable masterpiece.
               </p>
             </div>
 
@@ -251,10 +253,16 @@ export default function BakeryLandingPage() {
             © 2024 WhiskeDelights Artisanal Bakery.
           </div>
           
-          <div className="flex gap-8 text-[10px] font-black uppercase tracking-widest">
-            <Link href="#" className="hover:text-primary transition-colors">Instagram</Link>
-            <Link href="#" className="hover:text-primary transition-colors">Pinterest</Link>
-            <Link href="#" className="hover:text-primary transition-colors">Contact</Link>
+          <div className="flex gap-4">
+            <Link href="#" title="Instagram" className="h-12 w-12 rounded-2xl bg-white border border-stone-200 flex items-center justify-center hover:text-primary hover:border-primary hover:shadow-lg hover:shadow-primary/10 transition-all group">
+              <InstagramIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />
+            </Link>
+            <Link href="#" title="WhatsApp" className="h-12 w-12 rounded-2xl bg-white border border-stone-200 flex items-center justify-center hover:text-primary hover:border-primary hover:shadow-lg hover:shadow-primary/10 transition-all group">
+              <WhatsappIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />
+            </Link>
+            <Link href="#" title="Contact Us" className="h-12 w-12 rounded-2xl bg-white border border-stone-200 flex items-center justify-center hover:text-primary hover:border-primary hover:shadow-lg hover:shadow-primary/10 transition-all group">
+              <Phone className="h-5 w-5 group-hover:scale-110 transition-transform" />
+            </Link>
           </div>
         </div>
       </footer>
