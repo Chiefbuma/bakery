@@ -76,40 +76,29 @@ export default function BakeryLandingPage() {
                     Browse Menu
                   </Button>
                 </Link>
-                <Link href={`/cakes/${SPECIAL_OFFER.cake.id}`}>
-                  <Button 
-                    variant="outline" 
-                    size="lg" 
-                    className="h-16 px-10 text-lg font-black border-white/20 text-white bg-white/10 backdrop-blur-2xl hover:bg-white/20 transition-all shadow-2xl"
-                  >
-                    Claim Offer
-                  </Button>
-                </Link>
               </div>
             </div>
           </motion.div>
 
           <motion.div 
-            initial={{ opacity: 0, scale: 0.8, rotate: -5 }} 
-            animate={{ opacity: 1, scale: 1, rotate: 0 }}
+            initial={{ opacity: 0, scale: 0.8 }} 
+            animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1, ease: "backOut" }}
-            className="relative"
+            className="relative flex flex-col items-center gap-8"
           >
             {/* Glossy Backdrop for Cake */}
             <div className="absolute inset-0 bg-primary/20 blur-[120px] rounded-full scale-75" />
             
-            <div className="relative aspect-square max-w-lg mx-auto group">
-              <div className="absolute inset-0 rounded-full border border-white/10 p-8">
-                <div className="absolute inset-0 rounded-full border border-white/5 animate-[spin_20s_linear_infinite]" />
-              </div>
-              
-              <div className="relative h-full w-full rounded-full overflow-hidden border-[12px] border-white/5 shadow-[0_0_100px_rgba(0,0,0,0.5)] bg-stone-900">
+            <div className="relative aspect-square w-full max-w-lg mx-auto group">
+              {/* Square Frame with High Gloss */}
+              <div className="relative h-full w-full rounded-[2.5rem] overflow-hidden border-[12px] border-white/5 shadow-[0_0_100px_rgba(0,0,0,0.5)] bg-stone-900">
                 <Image 
                   src={SPECIAL_OFFER.cake.image_data_uri || ''} 
                   alt={SPECIAL_OFFER.cake.name}
                   fill
                   className="object-cover group-hover:scale-110 transition-transform duration-1000"
                   priority
+                  data-ai-hint="luxury cake"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
               </div>
@@ -118,7 +107,7 @@ export default function BakeryLandingPage() {
               <motion.div 
                 animate={{ y: [0, -10, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute -bottom-10 -left-10 md:bottom-0 md:-left-5 bg-white/10 backdrop-blur-2xl border border-white/20 p-6 rounded-3xl shadow-2xl max-w-[240px]"
+                className="absolute -bottom-10 -left-10 md:bottom-0 md:-left-10 bg-white/10 backdrop-blur-2xl border border-white/20 p-6 rounded-3xl shadow-2xl max-w-[240px]"
               >
                 <div className="flex items-center gap-2 mb-2">
                   <Badge className="bg-primary text-white border-none text-[10px] font-black uppercase">Daily Special</Badge>
@@ -137,7 +126,7 @@ export default function BakeryLandingPage() {
               </motion.div>
 
               {/* Animated Glossy Badge */}
-              <div className="absolute top-0 -right-5 h-36 w-36 bg-primary rounded-full flex flex-col items-center justify-center text-white shadow-[0_0_50px_rgba(var(--primary),0.4)] rotate-12 overflow-hidden">
+              <div className="absolute -top-5 -right-5 h-32 w-32 bg-primary rounded-full flex flex-col items-center justify-center text-white shadow-[0_0_50px_rgba(var(--primary),0.4)] rotate-12 overflow-hidden z-20">
                 <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent pointer-events-none" />
                 <motion.div 
                   animate={{ x: ['-100%', '100%'] }} 
@@ -145,9 +134,21 @@ export default function BakeryLandingPage() {
                   className="absolute inset-0 bg-white/20 -skew-x-12 translate-x-full" 
                 />
                 <span className="text-[10px] uppercase font-black tracking-widest opacity-80">Special Save</span>
-                <span className="text-5xl font-black">{SPECIAL_OFFER.discount_percentage}%</span>
+                <span className="text-4xl font-black">{SPECIAL_OFFER.discount_percentage}%</span>
               </div>
             </div>
+
+            {/* Contextual Claim Offer Button positioned near the cake */}
+            <Link href={`/cakes/${SPECIAL_OFFER.cake.id}`} className="w-full max-w-lg">
+              <Button 
+                variant="outline" 
+                size="lg" 
+                className="w-full h-16 text-xl font-black border-white/20 text-white bg-white/10 backdrop-blur-2xl hover:bg-white/20 transition-all shadow-2xl rounded-2xl group"
+              >
+                Claim Offer Now
+                <ArrowRight className="ml-2 h-6 w-6 group-hover:translate-x-2 transition-transform" />
+              </Button>
+            </Link>
           </motion.div>
         </div>
       </section>
