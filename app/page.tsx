@@ -75,7 +75,11 @@ export default function BakeryLandingPage() {
                 </Button>
               </Link>
               <Link href={`/cakes/${SPECIAL_OFFER.cake.id}`}>
-                <Button variant="outline" size="lg" className="h-16 px-10 text-lg font-black border-white/20 text-white hover:bg-white/10 backdrop-blur-sm">
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="h-16 px-10 text-lg font-black border-white/20 text-white bg-white/10 backdrop-blur-2xl hover:bg-white/20 transition-all shadow-2xl"
+                >
                   Claim Offer
                 </Button>
               </Link>
