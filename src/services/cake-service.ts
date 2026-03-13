@@ -32,8 +32,8 @@ let activeSpecialOffer: SpecialOffer = {
   savings: cakes[0].base_price * 0.2
 };
 
-// --- HELPER ---
-const delay = (ms: number = 500) => new Promise(resolve => setTimeout(resolve, ms));
+// --- HELPER (Reduced delays for better performance) ---
+const delay = (ms: number = 200) => new Promise(resolve => setTimeout(resolve, ms));
 
 // --- CAKES ---
 export async function getCakes(): Promise<Cake[]> {
@@ -62,8 +62,7 @@ export async function deleteCake(cakeId: string): Promise<void> {
 }
 
 export async function uploadImage(file: File): Promise<string> {
-  await delay(1500); // Simulate upload time
-  // In a real app this would return a server URL. For mock, we use a random unsplash URL.
+  await delay(500); // Faster simulated upload
   return `https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&q=80&w=600&sig=${Math.random()}`;
 }
 
@@ -162,7 +161,7 @@ export async function updateSpecialOffer(payload: SpecialOfferUpdatePayload): Pr
 
 // --- AUTH ---
 export async function loginAdmin(credentials: LoginCredentials): Promise<{ token: string }> {
-  await delay(1000);
+  await delay(500);
   if (credentials.email === 'admin@whiskedelights.com' && credentials.password === 'admin123') {
     if (typeof window !== 'undefined') {
       localStorage.setItem('authToken', 'mock-jwt-token');

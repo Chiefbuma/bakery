@@ -38,6 +38,7 @@ export default function BakeryLandingPage() {
   }, []);
 
   const categories = useMemo(() => {
+    if (!cakes.length) return ['All'];
     const cats = ['All', ...Array.from(new Set(cakes.map(c => c.category)))];
     return cats;
   }, [cakes]);
@@ -82,7 +83,6 @@ export default function BakeryLandingPage() {
             transition={{ duration: 0.8 }}
             className="space-y-8"
           >
-            {/* Glossy Transparent Heading Background */}
             <div className="bg-white/10 backdrop-blur-2xl border border-white/20 p-8 md:p-12 rounded-[2.5rem] shadow-2xl space-y-8">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-primary font-black text-[10px] uppercase tracking-[0.2em]">
                 <Sparkles className="h-3 w-3 animate-pulse" />
@@ -109,7 +109,6 @@ export default function BakeryLandingPage() {
             >
               <div className="absolute inset-0 bg-primary/20 blur-[120px] rounded-full scale-75" />
               
-              {/* Square Placeholder for Special Offer */}
               <div className="relative aspect-square w-full max-w-lg mx-auto group">
                 <div className="relative h-full w-full rounded-[2.5rem] overflow-hidden border-[12px] border-white/5 shadow-2xl bg-stone-900">
                   <Image 
@@ -122,7 +121,6 @@ export default function BakeryLandingPage() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                 </div>
 
-                {/* Glossy Special Offer Card */}
                 <div className="absolute -bottom-10 -left-10 bg-white/10 backdrop-blur-2xl border border-white/20 p-6 rounded-3xl shadow-2xl max-w-[240px]">
                   <div className="flex items-center gap-2 mb-2">
                     <Badge className="bg-primary text-white border-none text-[10px] font-black uppercase">Daily Special</Badge>
@@ -140,7 +138,6 @@ export default function BakeryLandingPage() {
                 </div>
               </div>
 
-              {/* Glossy Transparent Claim Offer Button */}
               <Link href={`/cakes/${specialOffer.cake.id}`} className="w-full max-w-lg">
                 <Button 
                   variant="outline" 
@@ -185,7 +182,6 @@ export default function BakeryLandingPage() {
           </div>
         </div>
 
-        {/* Catalog Scrollable View */}
         <div className="h-[900px] overflow-y-auto pr-4 custom-scrollbar bg-stone-50/30 rounded-[3rem] p-8 border">
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-10">
             {filteredCakes.map((cake) => (
