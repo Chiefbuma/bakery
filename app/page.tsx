@@ -65,14 +65,6 @@ export default function BakeryLandingPage() {
                   WhiskeDelights crafts artisanal cakes that transform every celebration into an unforgettable masterpiece.
                 </p>
               </div>
-
-              <div className="flex flex-wrap gap-5 pt-4">
-                <Link href="#menu">
-                  <Button size="lg" className="h-16 px-10 text-lg font-black shadow-xl">
-                    Browse Menu
-                  </Button>
-                </Link>
-              </div>
             </div>
           </motion.div>
 

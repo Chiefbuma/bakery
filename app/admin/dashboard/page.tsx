@@ -59,13 +59,14 @@ export default function AdminDashboardPage() {
     },
   ];
 
+  // For Dashboard preview, we show top 5, but the dedicated ledger page has the strict 5-record pagination
   const recentOrders = orders.slice(0, 5);
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
       <div>
-        <h1 className="text-3xl font-black font-headline tracking-tight">Artisanal Overview</h1>
-        <p className="text-muted-foreground font-medium">Real-time performance metrics for WhiskeDelights Bakery.</p>
+        <h1 className="text-3xl font-black font-headline tracking-tight text-stone-900">Bakery Performance</h1>
+        <p className="text-muted-foreground font-medium">Real-time performance metrics for WhiskeDelights Artisanal Bakery.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -94,7 +95,7 @@ export default function AdminDashboardPage() {
               Recent Requests (Top 5)
             </CardTitle>
             <Link href="/admin/orders">
-              <Badge variant="outline" className="text-white border-white/20 hover:bg-white/10 cursor-pointer">View Ledger</Badge>
+              <Badge variant="outline" className="text-white border-white/20 hover:bg-white/10 cursor-pointer">View Full Ledger</Badge>
             </Link>
           </CardHeader>
           <CardContent className="p-0">
@@ -108,7 +109,9 @@ export default function AdminDashboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentOrders.map((order) => (
+                {recentOrders.length === 0 ? (
+                    <TableRow><TableCell colSpan={4} className="h-32 text-center text-muted-foreground italic">No recent orders.</TableCell></TableRow>
+                ) : recentOrders.map((order) => (
                   <TableRow key={order.id} className="hover:bg-stone-50/50 transition-colors">
                     <TableCell className="font-mono text-xs font-black text-primary">{order.order_number}</TableCell>
                     <TableCell className="font-bold text-sm">{order.customer_name}</TableCell>
@@ -132,7 +135,7 @@ export default function AdminDashboardPage() {
           <CardHeader className="bg-primary text-white">
             <CardTitle className="text-sm uppercase tracking-[0.2em] font-black flex items-center gap-2">
               <Star className="h-4 w-4" />
-              Top Masterpieces
+              Bestsellers
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6 space-y-6">

@@ -18,15 +18,19 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState('');
-  const recordsPerPage = 5; // Strict 5 record pagination for focused auditing
+  const recordsPerPage = 5; // Strict 5-record pagination for high-precision auditing
 
   useEffect(() => {
     fetchOrders();
   }, []);
 
   const fetchOrders = async () => {
-    const data = await getOrders();
-    setOrders(data);
+    try {
+      const data = await getOrders();
+      setOrders(data);
+    } catch (error) {
+      toast({ variant: "destructive", title: "Sync Failed", description: "Could not retrieve order ledger." });
+    }
   };
 
   const handleUpdateStatus = async (id: number, status: any) => {
@@ -46,7 +50,7 @@ export default function AdminOrdersPage() {
     o.order_number.toLowerCase().includes(search.toLowerCase())
   );
 
-  const totalPages = Math.ceil(filteredOrders.length / recordsPerPage);
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / recordsPerPage));
   const currentOrders = filteredOrders.slice((currentPage - 1) * recordsPerPage, currentPage * recordsPerPage);
 
   return (

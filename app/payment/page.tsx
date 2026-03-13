@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -11,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import Script from 'next/script';
 
-const PAYSTACK_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || 'pk_test_placeholder';
+const PAYSTACK_PUBLIC_KEY = 'pk_live_8d9017d3458e0213efd55c219527b9171482e87d';
 
 export default function PaymentPage() {
   const router = useRouter();
@@ -38,8 +37,8 @@ export default function PaymentPage() {
 
     const handler = (window as any).PaystackPop.setup({
       key: PAYSTACK_PUBLIC_KEY,
-      email: 'customer@example.com', // In a real app, get this from checkout state
-      amount: depositAmount * 100, // Paystack uses Kobo/Cents
+      email: 'customer@example.com',
+      amount: depositAmount * 100, // Paystack uses Cents/Kobo
       currency: 'KES',
       channels: ['mobile_money', 'card'],
       ref: orderRef,
@@ -74,13 +73,13 @@ export default function PaymentPage() {
 
   if (isPaid) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-6 text-stone-900">
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           className="max-w-md w-full"
         >
-          <Card className="border-none shadow-2xl text-center overflow-hidden">
+          <Card className="border-none shadow-2xl text-center overflow-hidden rounded-[2rem]">
             <div className="bg-primary h-2 w-full" />
             <CardContent className="p-12 space-y-8">
               <div className="relative inline-block">
@@ -128,13 +127,13 @@ export default function PaymentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 pb-20">
+    <div className="min-h-screen bg-stone-50 pb-20 text-stone-900">
       <Script src="https://js.paystack.co/v1/inline.js" strategy="lazyOnload" />
       
-      <header className="bg-white border-b py-6">
+      <header className="bg-white border-b py-6 sticky top-0 z-50">
         <div className="container mx-auto px-6 flex items-center justify-between">
           <Button variant="ghost" onClick={() => router.back()} className="flex items-center gap-2 text-sm font-bold hover:text-primary">
-            <Copy className="h-4 w-4 rotate-180" />
+            <ShoppingBag className="h-4 w-4 rotate-180" />
             <span>Back to Checkout</span>
           </Button>
           <div className="text-xl font-black font-headline text-primary">Final Confirmation</div>
@@ -146,7 +145,7 @@ export default function PaymentPage() {
         <div className="space-y-8">
           <section className="space-y-4">
             <h2 className="text-2xl font-black">Review Your Order</h2>
-            <Card className="border-none shadow-sm overflow-hidden">
+            <Card className="border-none shadow-sm overflow-hidden rounded-[2rem]">
               <CardHeader className="bg-stone-900 text-white py-4">
                 <CardTitle className="text-sm uppercase tracking-[0.2em] font-black">Order ID: {orderRef}</CardTitle>
               </CardHeader>
@@ -159,7 +158,7 @@ export default function PaymentPage() {
                   <div className="flex justify-between items-center p-4 bg-primary/5 rounded-xl border border-primary/10">
                     <div className="space-y-1">
                       <span className="text-sm font-black text-primary uppercase tracking-widest">Required Deposit (50%)</span>
-                      <p className="text-xs text-muted-foreground font-medium">Pay now to confirm your order slot.</p>
+                      <p className="text-xs text-muted-foreground font-medium">Pay now to confirm your artisanal slot.</p>
                     </div>
                     <span className="text-2xl font-black text-primary">Ksh {depositAmount.toLocaleString()}</span>
                   </div>
@@ -175,22 +174,21 @@ export default function PaymentPage() {
                 <Button 
                   onClick={handlePaystackPayment} 
                   disabled={isProcessing}
-                  className="w-full h-16 text-xl font-black gap-3 shadow-xl bg-primary hover:bg-primary/90 transition-all group relative overflow-hidden"
+                  className="w-full h-16 text-xl font-black gap-3 shadow-xl bg-primary hover:bg-primary/90 transition-all group relative overflow-hidden rounded-2xl"
                 >
                   {isProcessing ? (
                     <Loader2 className="h-6 w-6 animate-spin" />
                   ) : (
                     <>
                       <CreditCard className="h-6 w-6" />
-                      Pay with M-Pesa
+                      Confirm & Pay Deposit
                     </>
                   )}
-                  {/* Glossy Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent pointer-events-none" />
                 </Button>
 
                 <p className="text-center text-[10px] text-muted-foreground font-medium italic">
-                  By clicking Pay, you agree to our terms of service and artisanal baking policy.
+                  By clicking Pay, you agree to the WhiskeDelights terms of artisanal baking.
                 </p>
               </CardContent>
             </Card>
