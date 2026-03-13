@@ -1,4 +1,3 @@
-
 import mysql from 'mysql2/promise';
 
 /**
@@ -12,12 +11,12 @@ const pool = mysql.createPool({
   database: process.env.DB_DATABASE,
   port: parseInt(process.env.DB_PORT || '3306'),
   waitForConnections: true,
-  connectionLimit: 5,
+  connectionLimit: 10, // Increased for production
   queueLimit: 0,
   enableKeepAlive: true,
   keepAliveInitialDelay: 10000,
   connectTimeout: 60000,
-  timezone: '+03:00',
+  timezone: '+03:00', // East Africa Time
 });
 
 export default pool;
