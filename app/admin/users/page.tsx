@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo } from "react";
-import { getUsers, addUser, deleteUser, updateUser } from "@/services/hotel-service";
 import type { User, UserRole } from "@/lib/types";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,112 +12,23 @@ import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
 
+// Mock User Data for Bakery
+const MOCK_USERS: User[] = [
+  { id: '1', name: 'Admin Master', email: 'admin@whiskedelights.com', role: 'admin', createdAt: new Date().toISOString() },
+  { id: '2', name: 'Jane Baker', email: 'jane@whiskedelights.com', role: 'staff', createdAt: new Date().toISOString() },
+];
+
 export default function AdminUsersPage() {
-    const [users, setUsers] = useState<User[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [users, setUsers] = useState<User[]>(MOCK_USERS);
+    const [loading, setLoading] = useState(false);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
-    const [editingUser, setEditingUser] = useState<User | null>(null);
-    
-    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-    const [targetUser, setTargetUser] = useState<{id: string, name: string} | null>(null);
-    
     const [currentPage, setCurrentPage] = useState(1);
-    const ITEMS_PER_PAGE = 5;
+    const ITEMS_PER_PAGE = 5; // Strict 5 record pagination
 
     const { toast } = useToast();
-    const { register, handleSubmit, reset, setValue } = useForm<{
-        name: string;
-        email: string;
-        role: UserRole;
-        password?: string;
-    }>();
-
-    const loadUsers = async () => {
-        setLoading(true);
-        try {
-            const data = await getUsers();
-            setUsers(data);
-        } catch (error) {
-            toast({ variant: "destructive", title: "Load Failed" });
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => { loadUsers(); }, []);
-
-    const handleOpenDialog = (user?: User) => {
-        if (user) {
-            setEditingUser(user);
-            reset({
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                password: ''
-            });
-        } else {
-            setEditingUser(null);
-            reset({
-                name: '',
-                email: '',
-                role: 'staff',
-                password: ''
-            });
-        }
-        setIsDialogOpen(true);
-    };
-
-    const onFormSubmit = async (data: any) => {
-        setIsSubmitting(true);
-        try {
-            if (editingUser) {
-                await updateUser(editingUser.id, data);
-                toast({ title: "User Updated" });
-            } else {
-                await addUser({
-                    ...data,
-                    password: data.password || 'staff123',
-                });
-                toast({ title: "User Created" });
-            }
-            setIsDialogOpen(false);
-            setEditingUser(null);
-            loadUsers();
-        } catch (error) {
-            toast({ variant: "destructive", title: "Operation Failed" });
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const handleConfirmDelete = async () => {
-        if (!targetUser) return;
-        try {
-            await deleteUser(targetUser.id);
-            toast({ title: "User Removed" });
-            loadUsers();
-        } catch (error) {
-            toast({ variant: "destructive", title: "Action Failed" });
-        } finally {
-            setDeleteConfirmOpen(false);
-            setTargetUser(null);
-        }
-    };
 
     const filteredUsers = useMemo(() => 
         users.filter(u => 
@@ -128,21 +38,27 @@ export default function AdminUsersPage() {
     [users, searchQuery]);
 
     const totalPages = Math.max(1, Math.ceil(filteredUsers.length / ITEMS_PER_PAGE));
-    const paginatedUsers = useMemo(() => {
-        const start = (currentPage - 1) * ITEMS_PER_PAGE;
-        return filteredUsers.slice(start, start + ITEMS_PER_PAGE);
-    }, [filteredUsers, currentPage]);
+    const paginatedUsers = filteredUsers.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+    const handleDelete = (id: string) => {
+        if (users.find(u => u.id === id)?.email === 'admin@whiskedelights.com') {
+            toast({ variant: "destructive", title: "Action Restricted", description: "Main admin cannot be deleted." });
+            return;
+        }
+        setUsers(users.filter(u => u.id !== id));
+        toast({ title: "Personnel Removed", description: "Access has been revoked." });
+    };
 
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-black font-headline tracking-tight">Personnel Directory</h1>
-                    <p className="text-muted-foreground font-medium">Manage system credentials and authorized access.</p>
+                    <h1 className="text-3xl font-black font-headline tracking-tight">Staff Directory</h1>
+                    <p className="text-muted-foreground font-medium">Control corporate access and management privileges.</p>
                 </div>
-                <Button onClick={() => handleOpenDialog()} className="font-black gap-2 h-12 px-6 shadow-lg shadow-primary/20">
+                <Button onClick={() => setIsDialogOpen(true)} className="font-black gap-2 h-12 px-6 shadow-lg shadow-primary/20">
                     <UserPlus className="h-5 w-5" />
-                    Register Staff
+                    Register Personnel
                 </Button>
             </div>
 
@@ -151,12 +67,12 @@ export default function AdminUsersPage() {
                     <div className="flex items-center justify-between">
                         <CardTitle className="text-sm uppercase tracking-[0.2em] font-black flex items-center gap-2">
                             <Users className="h-4 w-4" />
-                            Staff Accounts (5 per page)
+                            Active Accounts (5 per page)
                         </CardTitle>
                         <div className="relative w-64">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400" />
                             <Input 
-                              placeholder="Search staff..." 
+                              placeholder="Find personnel..." 
                               className="h-8 pl-9 bg-white/10 border-white/20 text-white placeholder:text-stone-500 text-xs rounded-lg" 
                               value={searchQuery} 
                               onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} 
@@ -169,15 +85,13 @@ export default function AdminUsersPage() {
                         <TableHeader>
                             <TableRow className="bg-stone-50 border-none">
                                 <TableHead className="font-black text-[10px] uppercase">Staff Profile</TableHead>
-                                <TableHead className="font-black text-[10px] uppercase">Role</TableHead>
+                                <TableHead className="font-black text-[10px] uppercase">Authority</TableHead>
                                 <TableHead className="font-black text-[10px] uppercase">Registered</TableHead>
                                 <TableHead className="text-right font-black text-[10px] uppercase">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {loading ? (
-                                Array.from({ length: 5 }).map((_, i) => <TableRow key={i}><TableCell colSpan={4} className="h-16 animate-pulse bg-muted/10" /></TableRow>)
-                            ) : paginatedUsers.length === 0 ? (
+                            {paginatedUsers.length === 0 ? (
                                 <TableRow><TableCell colSpan={4} className="h-24 text-center text-muted-foreground italic">No personnel records found.</TableCell></TableRow>
                             ) : paginatedUsers.map((u) => (
                                 <TableRow key={u.id} className="hover:bg-stone-50/50 transition-colors">
@@ -197,8 +111,8 @@ export default function AdminUsersPage() {
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex justify-end gap-1">
-                                            <Button variant="ghost" size="icon" className="text-primary h-8 w-8" onClick={() => handleOpenDialog(u)}><Edit className="h-4 w-4" /></Button>
-                                            <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" disabled={u.email === 'admin@whiskedelights.com'} onClick={() => { setTargetUser({id: u.id, name: u.name}); setDeleteConfirmOpen(true); }}><Trash2 className="h-4 w-4" /></Button>
+                                            <Button variant="ghost" size="icon" className="text-primary h-8 w-8"><Edit className="h-4 w-4" /></Button>
+                                            <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => handleDelete(u.id)}><Trash2 className="h-4 w-4" /></Button>
                                         </div>
                                     </TableCell>
                                 </TableRow>
@@ -215,60 +129,38 @@ export default function AdminUsersPage() {
                 </CardContent>
             </Card>
 
-            <Dialog open={isDialogOpen} onOpenChange={(open) => { if(!isSubmitting) setIsDialogOpen(open); }}>
-                <DialogContent className="sm:max-w-[425px]">
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogContent>
                     <DialogHeader>
-                        <DialogTitle className="font-headline text-2xl font-black">{editingUser ? 'Update Staff Profile' : 'Register New Staff'}</DialogTitle>
-                        <DialogDescription className="font-medium">Set access credentials and authority level.</DialogDescription>
+                        <DialogTitle className="font-headline text-2xl font-black">Register Personnel</DialogTitle>
+                        <DialogDescription>Add a new master baker or administrator to the corporate portal.</DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4 pt-4">
+                    <div className="space-y-4 pt-4">
                         <div className="space-y-2">
-                            <Label className="font-black text-xs uppercase tracking-widest text-stone-500">Full Name</Label>
-                            <Input {...register('name', { required: true })} disabled={isSubmitting} placeholder="e.g. John Doe" className="h-12 border-2 rounded-xl" />
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Full Name</Label>
+                            <Input placeholder="John Doe" className="h-12 border-2 rounded-xl" />
                         </div>
                         <div className="space-y-2">
-                            <Label className="font-black text-xs uppercase tracking-widest text-stone-500">Email Address</Label>
-                            <Input type="email" {...register('email', { required: true })} disabled={isSubmitting} className="h-12 border-2 rounded-xl" />
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Corporate Email</Label>
+                            <Input type="email" placeholder="john@whiskedelights.com" className="h-12 border-2 rounded-xl" />
                         </div>
                         <div className="space-y-2">
-                            <Label className="font-black text-xs uppercase tracking-widest text-stone-500">Role</Label>
-                            <Select value={editingUser?.role || 'staff'} onValueChange={(v) => setValue('role', v as UserRole)}>
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Authority Level</Label>
+                            <Select defaultValue="staff">
                                 <SelectTrigger className="h-12 border-2 rounded-xl"><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="admin">Administrator</SelectItem>
-                                    <SelectItem value="staff">Standard Staff</SelectItem>
+                                    <SelectItem value="staff">Staff Member</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
-                        {!editingUser && (
-                            <div className="space-y-2">
-                                <Label className="font-black text-xs uppercase tracking-widest text-stone-500">Initial Access Key</Label>
-                                <Input type="password" placeholder="Leave empty for default" {...register('password')} disabled={isSubmitting} className="h-12 border-2 rounded-xl" />
-                            </div>
-                        )}
-                        <DialogFooter className="pt-4">
-                            <Button variant="outline" type="button" onClick={() => setIsDialogOpen(false)} disabled={isSubmitting} className="h-12 rounded-xl">Cancel</Button>
-                            <Button type="submit" disabled={isSubmitting} className="h-12 rounded-xl gap-2 px-8 font-black">
-                                {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                                Save Personnel
-                            </Button>
-                        </DialogFooter>
-                    </form>
+                    </div>
+                    <DialogFooter className="pt-6">
+                        <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="h-12 rounded-xl">Cancel</Button>
+                        <Button className="h-12 rounded-xl px-8 font-black" onClick={() => { setIsDialogOpen(false); toast({ title: "Staff Created" }); }}>Save Profile</Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
-
-            <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle className="font-headline text-2xl font-black">Revoke Access?</AlertDialogTitle>
-                        <AlertDialogDescription className="font-medium">This will immediately revoke all system access for {targetUser?.name}. This action cannot be undone.</AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel onClick={() => setDeleteConfirmOpen(false)} className="rounded-xl">Keep User</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-white hover:bg-destructive/90 rounded-xl font-black">Revoke Access</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
         </motion.div>
     );
 }

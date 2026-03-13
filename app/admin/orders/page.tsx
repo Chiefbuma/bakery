@@ -8,15 +8,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatPrice, cn } from '@/lib/utils';
-import { Trash2, CheckCircle, Clock, ChevronLeft, ChevronRight, ShoppingBag } from 'lucide-react';
+import { Trash2, CheckCircle, ChevronLeft, ChevronRight, ShoppingBag, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
+import { Input } from '@/components/ui/input';
 
 export default function AdminOrdersPage() {
   const { toast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const recordsPerPage = 5; // Strict 5 record pagination
+  const [search, setSearch] = useState('');
+  const recordsPerPage = 5;
 
   useEffect(() => {
     fetchOrders();
@@ -39,14 +41,30 @@ export default function AdminOrdersPage() {
     fetchOrders();
   };
 
-  const totalPages = Math.ceil(orders.length / recordsPerPage);
-  const currentOrders = orders.slice((currentPage - 1) * recordsPerPage, currentPage * recordsPerPage);
+  const filteredOrders = orders.filter(o => 
+    o.customer_name.toLowerCase().includes(search.toLowerCase()) || 
+    o.order_number.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const totalPages = Math.ceil(filteredOrders.length / recordsPerPage);
+  const currentOrders = filteredOrders.slice((currentPage - 1) * recordsPerPage, currentPage * recordsPerPage);
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-black font-headline tracking-tight">Order Fulfillment</h1>
-        <p className="text-muted-foreground font-medium">Manage artisanal requests and track delivery status.</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black font-headline tracking-tight">Order Fulfillment</h1>
+          <p className="text-muted-foreground font-medium">Manage artisanal requests and track delivery status.</p>
+        </div>
+        <div className="relative w-full md:w-64">
+           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+           <Input 
+             placeholder="Search ledger..." 
+             className="pl-10 h-10 border-2" 
+             value={search} 
+             onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }} 
+           />
+        </div>
       </div>
 
       <Card className="border-none shadow-sm overflow-hidden">
@@ -69,7 +87,7 @@ export default function AdminOrdersPage() {
             </TableHeader>
             <TableBody>
               {currentOrders.length === 0 ? (
-                <TableRow><TableCell colSpan={5} className="text-center py-12 text-muted-foreground italic">No orders found.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} className="text-center py-12 text-muted-foreground italic">No matches found.</TableCell></TableRow>
               ) : currentOrders.map((order) => (
                 <TableRow key={order.id} className="hover:bg-stone-50/50 transition-colors">
                   <TableCell className="font-black font-mono text-primary text-xs">{order.order_number}</TableCell>
@@ -92,10 +110,10 @@ export default function AdminOrdersPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
-                       <Button variant="ghost" size="icon" className="text-green-600 h-8 w-8" onClick={() => handleUpdateStatus(order.id, 'complete')} title="Complete">
+                       <Button variant="ghost" size="icon" className="text-green-600 h-8 w-8" onClick={() => handleUpdateStatus(order.id, 'complete')}>
                          <CheckCircle className="h-4 w-4" />
                        </Button>
-                       <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => handleDelete(order.id)} title="Delete">
+                       <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => handleDelete(order.id)}>
                          <Trash2 className="h-4 w-4" />
                        </Button>
                     </div>
@@ -106,7 +124,7 @@ export default function AdminOrdersPage() {
           </Table>
           
           <div className="p-4 border-t flex items-center justify-between bg-stone-50/50">
-             <span className="text-xs font-bold text-muted-foreground">Showing {currentOrders.length} of {orders.length}</span>
+             <span className="text-xs font-bold text-muted-foreground">Page {currentPage} of {totalPages || 1}</span>
              <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="h-8 w-8 p-0"><ChevronLeft className="h-4 w-4" /></Button>
                 <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0} className="h-8 w-8 p-0"><ChevronRight className="h-4 w-4" /></Button>
