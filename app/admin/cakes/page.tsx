@@ -16,7 +16,7 @@ export default function AdminCakesPage() {
   const { toast } = useToast();
   const [cakes, setCakes] = useState<Cake[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const recordsPerPage = 5;
+  const recordsPerPage = 5; // Strict 5 record pagination
 
   useEffect(() => {
     fetchCakes();

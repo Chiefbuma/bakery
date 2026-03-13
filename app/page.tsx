@@ -6,14 +6,13 @@ import { formatPrice } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Star, ShoppingBasket, ArrowRight, Sparkles, Clock, Utensils, Phone, Search } from 'lucide-react';
+import { Star, ShoppingBasket, ArrowRight, Sparkles, Search } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { InstagramIcon } from '@/components/icons/instagram-icon';
 import { WhatsappIcon } from '@/components/icons/whatsapp-icon';
 import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
 
 export default function BakeryLandingPage() {
   const [filter, setFilter] = useState('All');
@@ -38,6 +37,7 @@ export default function BakeryLandingPage() {
             fill
             className="object-cover opacity-30 scale-105"
             priority
+            data-ai-hint="bakery background"
           />
           <div className="absolute inset-0 bg-gradient-to-tr from-stone-950 via-stone-900/90 to-transparent" />
         </div>
@@ -49,6 +49,7 @@ export default function BakeryLandingPage() {
             transition={{ duration: 0.8 }}
             className="space-y-8"
           >
+            {/* Glossy Transparent Heading Background */}
             <div className="bg-white/10 backdrop-blur-2xl border border-white/20 p-8 md:p-12 rounded-[2.5rem] shadow-2xl space-y-8">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-primary font-black text-[10px] uppercase tracking-[0.2em]">
                 <Sparkles className="h-3 w-3 animate-pulse" />
@@ -82,6 +83,7 @@ export default function BakeryLandingPage() {
           >
             <div className="absolute inset-0 bg-primary/20 blur-[120px] rounded-full scale-75" />
             
+            {/* Square Placeholder for Special Offer */}
             <div className="relative aspect-square w-full max-w-lg mx-auto group">
               <div className="relative h-full w-full rounded-[2.5rem] overflow-hidden border-[12px] border-white/5 shadow-2xl bg-stone-900">
                 <Image 
@@ -94,6 +96,7 @@ export default function BakeryLandingPage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
               </div>
 
+              {/* Glossy Special Offer Card */}
               <div className="absolute -bottom-10 -left-10 bg-white/10 backdrop-blur-2xl border border-white/20 p-6 rounded-3xl shadow-2xl max-w-[240px]">
                 <div className="flex items-center gap-2 mb-2">
                   <Badge className="bg-primary text-white border-none text-[10px] font-black uppercase">Daily Special</Badge>
@@ -111,6 +114,7 @@ export default function BakeryLandingPage() {
               </div>
             </div>
 
+            {/* Glossy Transparent Claim Offer Button placed near the cake */}
             <Link href={`/cakes/${SPECIAL_OFFER.cake.id}`} className="w-full max-w-lg">
               <Button 
                 variant="outline" 
@@ -125,7 +129,7 @@ export default function BakeryLandingPage() {
         </div>
       </section>
 
-      {/* Featured Collections */}
+      {/* Featured Collections with Vertical Scrollable Gallery */}
       <section id="menu" className="py-24 container mx-auto px-6">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
           <div className="space-y-4">
@@ -146,7 +150,7 @@ export default function BakeryLandingPage() {
                 key={cat} 
                 variant={filter === cat ? "default" : "outline"}
                 onClick={() => setFilter(cat)}
-                className="rounded-full px-6"
+                className="rounded-full px-6 font-bold"
               >
                 {cat}
               </Button>
@@ -154,13 +158,13 @@ export default function BakeryLandingPage() {
           </div>
         </div>
 
-        {/* Catalog Scrollable View */}
-        <div className="h-[800px] overflow-y-auto pr-4 custom-scrollbar">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        {/* Catalog Scrollable View - Fixed height with vertical scroll */}
+        <div className="h-[900px] overflow-y-auto pr-4 custom-scrollbar bg-stone-50/30 rounded-[3rem] p-8 border">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-10">
             {filteredCakes.map((cake) => (
-              <motion.div key={cake.id} layout>
-                <Card className="group overflow-hidden border-none bg-white shadow-sm hover:shadow-xl transition-all duration-500 rounded-[2.5rem]">
-                  <div className="relative h-64 overflow-hidden">
+              <motion.div key={cake.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <Card className="group overflow-hidden border-none bg-white shadow-sm hover:shadow-2xl transition-all duration-500 rounded-[2.5rem]">
+                  <div className="relative h-72 overflow-hidden">
                     <Image src={cake.image_data_uri || ''} alt={cake.name} fill className="object-cover group-hover:scale-110 transition-transform duration-700" />
                     <div className="absolute top-4 right-4">
                       <Badge className="bg-white/95 text-black border-none px-3 py-1 font-black shadow-md">
@@ -168,16 +172,16 @@ export default function BakeryLandingPage() {
                       </Badge>
                     </div>
                   </div>
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-start mb-4">
+                  <CardContent className="p-8">
+                    <div className="flex justify-between items-start mb-6">
                       <div>
                         <span className="text-[10px] font-black text-primary uppercase tracking-widest">{cake.category}</span>
-                        <h3 className="text-xl font-black">{cake.name}</h3>
+                        <h3 className="text-2xl font-black">{cake.name}</h3>
                       </div>
                       <span className="text-xl font-black text-primary">{formatPrice(cake.base_price)}</span>
                     </div>
                     <Link href={`/cakes/${cake.id}`}>
-                      <Button className="w-full h-12 rounded-xl gap-2 font-black">
+                      <Button className="w-full h-14 rounded-2xl gap-2 font-black shadow-lg shadow-primary/10">
                         {cake.customizable ? 'Customize' : 'Order Now'}
                         <ArrowRight className="h-4 w-4" />
                       </Button>
@@ -190,24 +194,29 @@ export default function BakeryLandingPage() {
         </div>
       </section>
 
-      {/* Signature Footer */}
-      <footer className="py-16 border-t bg-stone-50">
-        <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
+      {/* Signature Footer with Icons */}
+      <footer className="py-20 border-t bg-stone-50">
+        <div className="container mx-auto px-6 grid md:grid-cols-3 gap-12 items-center">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-primary rounded-xl flex items-center justify-center shadow-lg">
-              <ShoppingBasket className="h-5 w-5 text-white" />
+            <div className="h-12 w-12 bg-primary rounded-2xl flex items-center justify-center shadow-xl shadow-primary/20">
+              <ShoppingBasket className="h-6 w-6 text-white" />
             </div>
-            <span className="text-2xl font-black font-headline">WhiskeDelights</span>
+            <span className="text-3xl font-black font-headline">WhiskeDelights</span>
           </div>
-          <div className="flex gap-4">
-            <Link href="#" className="h-10 w-10 rounded-xl bg-white border flex items-center justify-center hover:text-primary transition-all">
-              <InstagramIcon className="h-5 w-5" />
+          
+          <div className="flex justify-center gap-6">
+            <Link href="#" className="h-14 w-14 rounded-2xl bg-white border shadow-sm flex items-center justify-center hover:bg-primary/5 hover:text-primary transition-all group">
+              <InstagramIcon className="h-6 w-6 group-hover:scale-110 transition-transform" />
             </Link>
-            <Link href="#" className="h-10 w-10 rounded-xl bg-white border flex items-center justify-center hover:text-primary transition-all">
-              <WhatsappIcon className="h-5 w-5" />
+            <Link href="#" className="h-14 w-14 rounded-2xl bg-white border shadow-sm flex items-center justify-center hover:bg-green-50 hover:text-green-600 transition-all group">
+              <WhatsappIcon className="h-6 w-6 group-hover:scale-110 transition-transform" />
             </Link>
           </div>
-          <p className="text-xs text-muted-foreground font-bold">© 2024 WhiskeDelights Artisanal Bakery.</p>
+          
+          <div className="text-center md:text-right">
+             <p className="text-xs text-muted-foreground font-black uppercase tracking-widest">© 2024 WhiskeDelights Artisanal Bakery</p>
+             <p className="text-[10px] text-stone-400 mt-1">Othaya Branch • Nyeri County</p>
+          </div>
         </div>
       </footer>
     </div>

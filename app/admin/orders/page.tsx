@@ -16,7 +16,7 @@ export default function AdminOrdersPage() {
   const { toast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const recordsPerPage = 5;
+  const recordsPerPage = 5; // Strict 5 record pagination
 
   useEffect(() => {
     fetchOrders();
