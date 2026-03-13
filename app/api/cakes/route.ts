@@ -8,10 +8,11 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const [rows]: any = await pool.query('SELECT * FROM cakes ORDER BY orders_count DESC');
-    return NextResponse.json(rows);
+    return NextResponse.json(rows || []);
   } catch (error) {
     console.error('[CAKES_API_GET_ERROR]', error);
-    return NextResponse.json({ error: "Catalog failure" }, { status: 500 });
+    // Return an empty array instead of 500 to keep the UI from crashing during DB setup
+    return NextResponse.json([], { status: 200 });
   }
 }
 
