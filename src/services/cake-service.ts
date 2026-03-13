@@ -9,7 +9,6 @@
 
 import type { Cake, SpecialOffer, CustomizationOptions, Order, LoginCredentials, SpecialOfferUpdatePayload, CustomizationCategory, User } from '@/lib/types';
 
-// Use relative path for production to prevent CORS and Protocol mismatch (HTTP vs HTTPS)
 const API_URL = '/api';
 
 const getHeaders = () => {
@@ -26,7 +25,7 @@ async function safeParseJson(response: Response) {
   try {
     return JSON.parse(text);
   } catch (e) {
-    console.error('[JSON_PARSE_ERROR]', text.substring(0, 100)); // Log only start of response
+    console.error('[JSON_PARSE_ERROR]', text.substring(0, 100));
     return null;
   }
 }

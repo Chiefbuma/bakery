@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs';
 
 export const dynamic = 'force-dynamic';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_not_for_production';
+const JWT_SECRET = process.env.JWT_SECRET || 'production_fallback_secret_6xks_cnhxf';
 
 export async function POST(req: NextRequest) {
     try {
@@ -16,17 +16,21 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: 'Missing credentials' }, { status: 400 });
         }
 
+        // Query production users table
         const [rows]: any[] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
         if (rows.length === 0) {
             return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
         }
 
         const user = rows[0];
+        
+        // Securely compare hashed password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
         }
 
+        // Generate stateless JWT session
         const token = jwt.sign(
             { id: user.id, email: user.email, role: user.role, name: user.name }, 
             JWT_SECRET, 

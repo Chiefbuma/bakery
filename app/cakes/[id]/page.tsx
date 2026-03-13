@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, use } from 'react';
@@ -44,10 +45,9 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
         setCake(foundCake || null);
         setOptions(customizationOptions);
         
-        // Set defaults from first available options
-        if (customizationOptions.flavors.length > 0) setFlavorId(customizationOptions.flavors[0].id.toString());
-        if (customizationOptions.sizes.length > 0) setSizeId(customizationOptions.sizes[0].id.toString());
-        if (customizationOptions.colors.length > 0) setColorId(customizationOptions.colors[0].id.toString());
+        if (customizationOptions.flavors?.length > 0) setFlavorId(customizationOptions.flavors[0].id.toString());
+        if (customizationOptions.sizes?.length > 0) setSizeId(customizationOptions.sizes[0].id.toString());
+        if (customizationOptions.colors?.length > 0) setColorId(customizationOptions.colors[0].id.toString());
         
       } catch (error) {
         console.error('Failed to load cake details', error);
@@ -59,30 +59,28 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
   }, [id]);
 
   const totalPrice = useMemo(() => {
-    if (!cake || !options) return 0;
+    if (!cake) return 0;
     
-    // Safety check for numeric values to prevent NaN
     let total = Number(cake.base_price) || 0;
     
-    if (cake.customizable) {
-      const flavor = options.flavors.find(f => f.id.toString() === flavorId);
-      const size = options.sizes.find(s => s.id.toString() === sizeId);
-      const color = options.colors.find(c => c.id.toString() === colorId);
+    if (cake.customizable && options) {
+      const flavor = options.flavors?.find(f => f.id.toString() === flavorId);
+      const size = options.sizes?.find(s => s.id.toString() === sizeId);
+      const color = options.colors?.find(c => c.id.toString() === colorId);
       
-      const flavorPrice = Number(flavor?.price) || 0;
-      const sizePrice = Number(size?.price) || 0;
-      const colorPrice = Number(color?.price) || 0;
+      total += Number(flavor?.price) || 0;
+      total += Number(size?.price) || 0;
+      total += Number(color?.price) || 0;
       
       const toppingsPrice = selectedToppings.reduce((acc, tid) => {
-        const topping = options.toppings.find(t => t.id.toString() === tid);
+        const topping = options.toppings?.find(t => t.id.toString() === tid);
         return acc + (Number(topping?.price) || 0);
       }, 0);
 
-      total += flavorPrice + sizePrice + colorPrice + toppingsPrice;
+      total += toppingsPrice;
     }
 
-    const final = total * quantity;
-    return isNaN(final) ? 0 : final;
+    return (total || 0) * quantity;
   }, [cake, options, quantity, flavorId, sizeId, colorId, selectedToppings]);
 
   if (isLoading) {
@@ -95,9 +93,10 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
   }
 
   if (!cake || !options) return (
-    <div className="min-h-screen flex flex-col items-center justify-center">
-      <h1 className="text-2xl font-black">Cake Not Found</h1>
-      <Link href="/"><Button className="mt-4">Return Home</Button></Link>
+    <div className="min-h-screen flex flex-col items-center justify-center text-center p-6">
+      <h1 className="text-2xl font-black font-headline">Cake Not Found</h1>
+      <p className="text-muted-foreground mb-6">This artisanal recipe is currently unavailable.</p>
+      <Link href="/"><Button className="rounded-xl px-8 h-12 font-black">Return to Gallery</Button></Link>
     </div>
   );
 
@@ -135,14 +134,10 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
       </header>
 
       <main className="container mx-auto px-6 py-12 grid lg:grid-cols-2 gap-16">
-        <motion.div 
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="space-y-6"
-        >
-          <div className="relative aspect-square w-full rounded-2xl overflow-hidden shadow-2xl border">
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+          <div className="relative aspect-square w-full rounded-2xl overflow-hidden shadow-2xl border bg-stone-100">
             <Image 
-              src={cake.image_data_uri || 'https://picsum.photos/seed/cake-detail/600/600'} 
+              src={cake.image_data_uri || 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&q=80&w=600'} 
               alt={cake.name}
               fill
               className="object-cover"
@@ -151,11 +146,7 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
           </div>
         </motion.div>
 
-        <motion.div 
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="space-y-8"
-        >
+        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-8">
           <div className="space-y-4">
             <div className="flex items-center gap-4">
                <Badge variant="outline" className="font-bold border-primary text-primary">{cake.category}</Badge>
@@ -164,8 +155,8 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
                  {cake.rating || 'New'} <span className="text-muted-foreground ml-1 font-medium">({cake.orders_count}+ orders)</span>
                </div>
             </div>
-            <h1 className="text-4xl font-black font-headline leading-tight">{cake.name}</h1>
-            <p className="text-muted-foreground leading-relaxed">
+            <h1 className="text-4xl md:text-5xl font-black font-headline leading-tight">{cake.name}</h1>
+            <p className="text-muted-foreground leading-relaxed font-medium">
               {cake.description}
             </p>
           </div>
@@ -175,15 +166,15 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
           {cake.customizable ? (
             <div className="space-y-8">
               <div className="space-y-4">
-                <Label className="text-base font-black">Choose Flavor</Label>
+                <Label className="text-base font-black uppercase tracking-widest text-stone-500 text-[10px]">1. Choose Flavor</Label>
                 <RadioGroup value={flavorId} onValueChange={setFlavorId} className="grid sm:grid-cols-2 gap-3">
-                  {options.flavors.map(flavor => (
-                    <div key={flavor.id} className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer ${flavorId === flavor.id.toString() ? 'border-primary bg-primary/5' : 'border-stone-100 hover:border-primary/30'}`} onClick={() => setFlavorId(flavor.id.toString())}>
+                  {options.flavors?.map(flavor => (
+                    <div key={flavor.id} className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all cursor-pointer ${flavorId === flavor.id.toString() ? 'border-primary bg-primary/5' : 'border-stone-100 hover:border-primary/30'}`} onClick={() => setFlavorId(flavor.id.toString())}>
                       <div className="flex items-center gap-3">
                         <RadioGroupItem value={flavor.id.toString()} id={`f-${flavor.id}`} />
                         <div>
-                          <Label htmlFor={`f-${flavor.id}`} className="font-bold cursor-pointer">{flavor.name}</Label>
-                          {flavor.description && <p className="text-[10px] text-muted-foreground">{flavor.description}</p>}
+                          <Label htmlFor={`f-${flavor.id}`} className="font-bold cursor-pointer text-sm">{flavor.name}</Label>
+                          {flavor.description && <p className="text-[10px] text-muted-foreground font-medium">{flavor.description}</p>}
                         </div>
                       </div>
                       <span className="text-xs font-black text-primary">+{formatPrice(flavor.price)}</span>
@@ -193,13 +184,13 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
               </div>
 
               <div className="space-y-4">
-                <Label className="text-base font-black">Pick Your Size</Label>
+                <Label className="text-base font-black uppercase tracking-widest text-stone-500 text-[10px]">2. Pick Your Size</Label>
                 <RadioGroup value={sizeId} onValueChange={setSizeId} className="grid grid-cols-3 gap-3">
-                  {options.sizes.map(size => (
-                    <div key={size.id} className={`flex flex-col items-center p-3 rounded-xl border-2 transition-all cursor-pointer text-center ${sizeId === size.id.toString() ? 'border-primary bg-primary/5' : 'border-stone-100 hover:border-primary/30'}`} onClick={() => setSizeId(size.id.toString())}>
+                  {options.sizes?.map(size => (
+                    <div key={size.id} className={`flex flex-col items-center p-4 rounded-xl border-2 transition-all cursor-pointer text-center ${sizeId === size.id.toString() ? 'border-primary bg-primary/5' : 'border-stone-100 hover:border-primary/30'}`} onClick={() => setSizeId(size.id.toString())}>
                       <RadioGroupItem value={size.id.toString()} id={`s-${size.id}`} className="sr-only" />
-                      <span className="font-bold text-sm">{size.name}</span>
-                      <span className="text-[10px] text-muted-foreground">{size.serves}</span>
+                      <span className="font-black text-sm">{size.name}</span>
+                      <span className="text-[10px] text-muted-foreground font-bold">{size.serves}</span>
                       <span className="text-xs font-black text-primary mt-2">+{formatPrice(size.price)}</span>
                     </div>
                   ))}
@@ -207,9 +198,9 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
               </div>
 
               <div className="space-y-4">
-                <Label className="text-base font-black">Frosting Theme</Label>
+                <Label className="text-base font-black uppercase tracking-widest text-stone-500 text-[10px]">3. Frosting Theme</Label>
                 <div className="flex flex-wrap gap-4">
-                  {options.colors.map(color => (
+                  {options.colors?.map(color => (
                     <button 
                       key={color.id} 
                       onClick={() => setColorId(color.id.toString())}
@@ -223,10 +214,10 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
               </div>
 
               <div className="space-y-4">
-                <Label className="text-base font-black">Extra Decorations</Label>
+                <Label className="text-base font-black uppercase tracking-widest text-stone-500 text-[10px]">4. Extra Decorations</Label>
                 <div className="grid sm:grid-cols-2 gap-3">
-                  {options.toppings.map(topping => (
-                    <div key={topping.id} className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer ${selectedToppings.includes(topping.id.toString()) ? 'border-primary bg-primary/5' : 'border-stone-100 hover:border-primary/30'}`} onClick={() => toggleTopping(topping.id.toString())}>
+                  {options.toppings?.map(topping => (
+                    <div key={topping.id} className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all cursor-pointer ${selectedToppings.includes(topping.id.toString()) ? 'border-primary bg-primary/5' : 'border-stone-100 hover:border-primary/30'}`} onClick={() => toggleTopping(topping.id.toString())}>
                       <div className="flex items-center gap-3">
                         <Checkbox checked={selectedToppings.includes(topping.id.toString())} onCheckedChange={() => toggleTopping(topping.id.toString())} />
                         <span className="text-sm font-bold">{topping.name}</span>
@@ -238,11 +229,11 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
               </div>
             </div>
           ) : (
-            <div className="p-4 bg-primary/5 rounded-xl flex items-start gap-3 border border-primary/10">
-              <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <div className="p-6 bg-primary/5 rounded-2xl flex items-start gap-4 border border-primary/10">
+              <Info className="h-6 w-6 text-primary shrink-0 mt-0.5" />
               <div className="text-sm">
-                <p className="font-bold text-primary">Standard Collection</p>
-                <p className="text-muted-foreground">This artisanal creation is baked to our signature recipe and cannot be customized.</p>
+                <p className="font-black text-primary uppercase tracking-widest text-[10px] mb-1">Standard Collection</p>
+                <p className="text-muted-foreground font-medium">This artisanal creation is baked to our signature recipe and cannot be customized. It represents the purest expression of our bakery's heritage.</p>
               </div>
             </div>
           )}
@@ -251,23 +242,23 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
 
           <div className="space-y-6 pt-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4 bg-stone-100 p-1.5 rounded-full border">
-                <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={() => setQuantity(Math.max(1, quantity - 1))}><Minus className="h-4 w-4" /></Button>
-                <span className="text-lg font-black w-8 text-center">{quantity}</span>
-                <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={() => setQuantity(quantity + 1)}><Plus className="h-4 w-4" /></Button>
+              <div className="flex items-center gap-4 bg-stone-100 p-2 rounded-full border">
+                <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 bg-white shadow-sm" onClick={() => setQuantity(Math.max(1, quantity - 1))}><Minus className="h-4 w-4" /></Button>
+                <span className="text-xl font-black w-8 text-center">{quantity}</span>
+                <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 bg-white shadow-sm" onClick={() => setQuantity(quantity + 1)}><Plus className="h-4 w-4" /></Button>
               </div>
               <div className="text-right">
-                <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Total Value</p>
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-1">Total Value</p>
                 <p className="text-4xl font-black text-primary">{formatPrice(totalPrice)}</p>
               </div>
             </div>
 
-            <Button size="lg" className="w-full h-16 text-xl font-black gap-3 shadow-xl hover:shadow-2xl transition-all" onClick={handleAddToCart} disabled={isAdding}>
+            <Button size="lg" className="w-full h-16 text-xl font-black gap-3 shadow-xl hover:shadow-2xl transition-all rounded-2xl" onClick={handleAddToCart} disabled={isAdding}>
               {isAdding ? <Loader2 className="h-6 w-6 animate-spin" /> : <ShoppingCart className="h-6 w-6" />}
-              {isAdding ? 'Adding to Cart...' : 'Place Order'}
+              {isAdding ? 'Preparing Order...' : 'Place Order'}
             </Button>
-            <p className="text-center text-[10px] text-muted-foreground font-medium">
-              Ready for pickup or delivery within <span className="text-foreground font-bold">{cake.ready_time}</span>
+            <p className="text-center text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+              Ready for pickup or delivery within <span className="text-foreground">{cake.ready_time}</span>
             </p>
           </div>
         </motion.div>

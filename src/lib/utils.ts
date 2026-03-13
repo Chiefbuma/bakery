@@ -8,15 +8,13 @@ export function cn(...inputs: ClassValue[]) {
 
 /**
  * Robust price formatter that handles numeric strings and NaN cases gracefully.
- * Defaults to 0 if the input is invalid or null.
+ * Defaults to "Ksh 0" if the input is invalid.
  */
 export function formatPrice(amount: number | string | null | undefined): string {
-  // Convert null/undefined to 0 immediately
   if (amount === null || amount === undefined) return 'Ksh 0';
 
   const value = typeof amount === 'string' ? parseFloat(amount) : amount;
   
-  // Handle NaN or invalid numeric strings
   if (isNaN(value)) {
     return 'Ksh 0';
   }
