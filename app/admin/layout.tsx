@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { ShoppingBag, LayoutDashboard, Package, Settings, Star, LogOut, Menu, X, Utensils } from 'lucide-react';
+import { ShoppingBag, LayoutDashboard, Package, Settings, Star, LogOut, Menu, X, Utensils, Users } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -32,6 +32,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { label: 'Cakes', href: '/admin/cakes', icon: Package },
     { label: 'Customizations', href: '/admin/customizations', icon: Settings },
     { label: 'Special Offers', href: '/admin/offers', icon: Star },
+    { label: 'Users', href: '/admin/users', icon: Users },
   ];
 
   const handleLogout = () => {

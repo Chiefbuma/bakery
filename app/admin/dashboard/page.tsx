@@ -40,24 +40,26 @@ export default function AdminDashboardPage() {
       <div className="grid lg:grid-cols-2 gap-8">
         <Card className="border-none shadow-sm">
           <CardHeader>
-            <CardTitle className="text-lg font-black uppercase tracking-widest">Recent Activity</CardTitle>
+            <CardTitle className="text-lg font-black uppercase tracking-widest text-stone-900">Recent Activity</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-sm text-muted-foreground italic text-center py-10">
-              No recent alerts to display.
+              No recent alerts to display. (Showing 5 most recent records)
             </div>
           </CardContent>
         </Card>
         <Card className="border-none shadow-sm">
           <CardHeader>
-            <CardTitle className="text-lg font-black uppercase tracking-widest">Top Selling Masterpieces</CardTitle>
+            <CardTitle className="text-lg font-black uppercase tracking-widest text-stone-900">Top Masterpieces</CardTitle>
           </CardHeader>
           <CardContent>
              <div className="space-y-4">
                 {[
                   { name: 'Chocolate Fudge', orders: 45 },
                   { name: 'Red Velvet', orders: 32 },
-                  { name: 'Matcha Dream', orders: 28 }
+                  { name: 'Matcha Dream', orders: 28 },
+                  { name: 'Strawberry Dream', orders: 15 },
+                  { name: 'Lemon Zest', orders: 12 }
                 ].map((cake, i) => (
                   <div key={i} className="flex items-center justify-between p-3 bg-stone-50 rounded-xl border border-transparent hover:border-primary/10 transition-colors">
                     <span className="font-bold text-sm">{cake.name}</span>

@@ -65,7 +65,7 @@ export default function AdminCustomizationsPage() {
           <CardHeader className="bg-stone-900 text-white">
             <CardTitle className="text-sm uppercase tracking-[0.2em] font-black flex items-center gap-2">
               <Settings className="h-4 w-4" />
-              Variant Pricing
+              Variant Pricing (5 per page)
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -102,8 +102,8 @@ export default function AdminCustomizationsPage() {
              <div className="p-4 border-t flex items-center justify-between bg-stone-50/50">
                 <span className="text-xs font-bold text-muted-foreground">Page {currentPage} of {totalPages || 1}</span>
                 <div className="flex gap-2">
-                   <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}><ChevronLeft className="h-4 w-4" /></Button>
-                   <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0}><ChevronRight className="h-4 w-4" /></Button>
+                   <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="h-8 w-8 p-0"><ChevronLeft className="h-4 w-4" /></Button>
+                   <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0} className="h-8 w-8 p-0"><ChevronRight className="h-4 w-4" /></Button>
                 </div>
              </div>
           </CardContent>

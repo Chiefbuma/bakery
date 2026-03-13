@@ -53,7 +53,7 @@ export default function AdminOrdersPage() {
         <CardHeader className="bg-stone-900 text-white">
           <CardTitle className="text-sm uppercase tracking-[0.2em] font-black flex items-center gap-2">
             <ShoppingBag className="h-4 w-4" />
-            Transaction Ledger
+            Transaction Ledger (5 per page)
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -95,9 +95,6 @@ export default function AdminOrdersPage() {
                        <Button variant="ghost" size="icon" className="text-green-600 h-8 w-8" onClick={() => handleUpdateStatus(order.id, 'complete')} title="Complete">
                          <CheckCircle className="h-4 w-4" />
                        </Button>
-                       <Button variant="ghost" size="icon" className="text-amber-600 h-8 w-8" onClick={() => handleUpdateStatus(order.id, 'processing')} title="Processing">
-                         <Clock className="h-4 w-4" />
-                       </Button>
                        <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => handleDelete(order.id)} title="Delete">
                          <Trash2 className="h-4 w-4" />
                        </Button>
@@ -109,7 +106,7 @@ export default function AdminOrdersPage() {
           </Table>
           
           <div className="p-4 border-t flex items-center justify-between bg-stone-50/50">
-             <span className="text-xs font-bold text-muted-foreground">Page {currentPage} of {totalPages || 1}</span>
+             <span className="text-xs font-bold text-muted-foreground">Showing {currentOrders.length} of {orders.length}</span>
              <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="h-8 w-8 p-0"><ChevronLeft className="h-4 w-4" /></Button>
                 <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0} className="h-8 w-8 p-0"><ChevronRight className="h-4 w-4" /></Button>
