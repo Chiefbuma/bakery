@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Cake, SpecialOffer, CustomizationOptions, Order, LoginCredentials, SpecialOfferUpdatePayload, CustomizationCategory } from '@/lib/types';
@@ -22,6 +23,15 @@ export async function getCakes(): Promise<Cake[]> {
   const res = await fetch(`${API_URL}/cakes`);
   if (!res.ok) throw new Error('Failed to fetch cakes');
   return res.json();
+}
+
+export async function createCake(cake: Partial<Cake>): Promise<void> {
+  const res = await fetch(`${API_URL}/cakes`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(cake),
+  });
+  if (!res.ok) throw new Error('Failed to create cake');
 }
 
 export async function getOrders(): Promise<Order[]> {
@@ -86,6 +96,7 @@ export async function loginAdmin(credentials: LoginCredentials): Promise<{ token
     const data = await res.json();
     if (typeof window !== 'undefined') {
         localStorage.setItem('authToken', data.token);
+        localStorage.setItem('isAdminLoggedIn', 'true');
     }
     return data;
 }
