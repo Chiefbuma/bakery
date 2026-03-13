@@ -15,8 +15,7 @@ import {
   Search, 
   Loader2, 
   Utensils, 
-  Clock, 
-  Heart
+  Clock
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -290,50 +289,54 @@ export default function BakeryLandingPage() {
       </section>
 
       {/* Signature Footer */}
-      <footer className="py-16 border-t bg-stone-50">
+      <footer className="py-20 bg-primary text-primary-foreground">
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
             <div className="lg:col-span-2 space-y-6">
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 bg-primary rounded-2xl flex items-center justify-center shadow-xl shadow-primary/20">
-                  <Utensils className="h-4 w-4 text-white" />
+                <div className="h-10 w-10 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20">
+                  <Utensils className="h-5 w-5 text-white" />
                 </div>
-                <span className="text-xl font-black font-headline tracking-tighter">WhiskeDelights</span>
+                <span className="text-2xl font-black font-headline tracking-tighter">WhiskeDelights</span>
               </div>
-              <p className="text-muted-foreground font-medium text-[9px] max-w-sm leading-relaxed uppercase tracking-wide">Crafting premium artisanal cakes for Nyeri County and beyond. Every slice tells a story of passion and quality.</p>
-              <div className="flex gap-3">
-                <Link href="#" className="h-9 w-9 rounded-xl bg-white border shadow-sm flex items-center justify-center hover:bg-primary hover:text-white transition-all group">
-                  <InstagramIcon className="h-4 w-4 group-hover:scale-110 transition-transform" />
+              <p className="text-white/80 font-medium text-xs max-w-sm leading-relaxed uppercase tracking-wide">
+                Crafting premium artisanal cakes for Nyeri County and beyond. Every slice tells a story of passion and quality.
+              </p>
+              <div className="flex gap-4">
+                <Link href="#" className="h-10 w-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center hover:bg-white hover:text-primary transition-all group">
+                  <InstagramIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />
                 </Link>
-                <Link href="#" className="h-9 w-9 rounded-xl bg-white border shadow-sm flex items-center justify-center hover:bg-green-600 hover:text-white transition-all group">
-                  <WhatsappIcon className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                <Link href="#" className="h-10 w-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center hover:bg-white hover:text-green-600 transition-all group">
+                  <WhatsappIcon className="h-5 w-5 group-hover:scale-110 transition-transform" />
                 </Link>
               </div>
             </div>
             
-            <div className="space-y-4">
-              <h4 className="font-black uppercase tracking-widest text-[8px] text-stone-400">Navigation</h4>
-              <ul className="space-y-3 text-[9px] font-black text-muted-foreground uppercase tracking-widest">
-                <li><Link href="#menu" className="hover:text-primary transition-colors">The Gallery</Link></li>
-                <li><Link href="/" className="hover:text-primary transition-colors">Home</Link></li>
+            <div className="space-y-6">
+              <h4 className="font-black uppercase tracking-widest text-[10px] text-white/50">Navigation</h4>
+              <ul className="space-y-4 text-[10px] font-black uppercase tracking-widest">
+                <li><Link href="#menu" className="hover:text-white/70 transition-colors">The Gallery</Link></li>
+                <li><Link href="/" className="hover:text-white/70 transition-colors">Home</Link></li>
               </ul>
             </div>
 
-            <div className="space-y-4">
-              <h4 className="font-black uppercase tracking-widest text-[8px] text-stone-400">Operating Hours</h4>
-              <ul className="space-y-3 text-[9px] font-black text-muted-foreground uppercase tracking-widest">
-                <li className="flex items-center gap-2"><Clock className="h-3 w-3" /> Mon - Fri: 8am - 7pm</li>
-                <li className="flex items-center gap-2"><Clock className="h-3 w-3" /> Saturday: 9am - 6pm</li>
-                <li className="flex items-center gap-2 text-primary italic font-black"><Star className="h-3 w-3" /> Sunday: Closed</li>
+            <div className="space-y-6">
+              <h4 className="font-black uppercase tracking-widest text-[10px] text-white/50">Operating Hours</h4>
+              <ul className="space-y-4 text-[10px] font-black uppercase tracking-widest">
+                <li className="flex items-center gap-3 opacity-80"><Clock className="h-4 w-4" /> Mon - Fri: 8am - 7pm</li>
+                <li className="flex items-center gap-3 opacity-80"><Clock className="h-4 w-4" /> Saturday: 9am - 6pm</li>
+                <li className="flex items-center gap-3 text-white italic"><Star className="h-4 w-4" /> Sunday: Closed</li>
               </ul>
             </div>
           </div>
           
-          <div className="pt-8 border-t flex flex-col md:flex-row justify-between items-center gap-4">
-             <p className="text-[8px] font-black uppercase tracking-[0.2em] text-stone-400">© 2024 WhiskeDelights Artisanal Bakery • Nyeri, Kenya</p>
-             <div className="flex gap-6 text-[8px] font-black uppercase tracking-widest text-stone-400">
-               <Link href="#" className="hover:text-primary transition-colors">Privacy Policy</Link>
-               <Link href="#" className="hover:text-primary transition-colors">Terms of Service</Link>
+          <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-6">
+             <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40">
+               © 2024 WhiskeDelights Artisanal Bakery • Nyeri, Kenya
+             </p>
+             <div className="flex gap-8 text-[9px] font-black uppercase tracking-widest text-white/40">
+               <Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link>
+               <Link href="#" className="hover:text-white transition-colors">Terms of Service</Link>
              </div>
           </div>
         </div>
