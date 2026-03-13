@@ -28,9 +28,9 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
   const [isAdding, setIsAdding] = useState(false);
 
   const [quantity, setQuantity] = useState(1);
-  const [flavorId, setFlavorId] = useState('f1');
-  const [sizeId, setSizeId] = useState('s1');
-  const [colorId, setColorId] = useState('c1');
+  const [flavorId, setFlavorId] = useState('');
+  const [sizeId, setSizeId] = useState('');
+  const [colorId, setColorId] = useState('');
   const [selectedToppings, setSelectedToppings] = useState<string[]>([]);
 
   useEffect(() => {
@@ -43,9 +43,12 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
         const foundCake = cakeList.find(c => c.id === id);
         setCake(foundCake || null);
         setOptions(customizationOptions);
-        if (foundCake?.defaultFlavorId) {
-          setFlavorId(foundCake.defaultFlavorId);
-        }
+        
+        // Set defaults from first available options
+        if (customizationOptions.flavors.length > 0) setFlavorId(customizationOptions.flavors[0].id.toString());
+        if (customizationOptions.sizes.length > 0) setSizeId(customizationOptions.sizes[0].id.toString());
+        if (customizationOptions.colors.length > 0) setColorId(customizationOptions.colors[0].id.toString());
+        
       } catch (error) {
         console.error('Failed to load cake details', error);
       } finally {
@@ -57,20 +60,29 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
 
   const totalPrice = useMemo(() => {
     if (!cake || !options) return 0;
-    let total = cake.base_price;
+    
+    // Safety check for numeric values to prevent NaN
+    let total = Number(cake.base_price) || 0;
     
     if (cake.customizable) {
-      const flavor = options.flavors.find(f => f.id === flavorId);
-      const size = options.sizes.find(s => s.id === sizeId);
-      const color = options.colors.find(c => c.id === colorId);
+      const flavor = options.flavors.find(f => f.id.toString() === flavorId);
+      const size = options.sizes.find(s => s.id.toString() === sizeId);
+      const color = options.colors.find(c => c.id.toString() === colorId);
+      
+      const flavorPrice = Number(flavor?.price) || 0;
+      const sizePrice = Number(size?.price) || 0;
+      const colorPrice = Number(color?.price) || 0;
+      
       const toppingsPrice = selectedToppings.reduce((acc, tid) => {
-        return acc + (options.toppings.find(t => t.id === tid)?.price || 0);
+        const topping = options.toppings.find(t => t.id.toString() === tid);
+        return acc + (Number(topping?.price) || 0);
       }, 0);
 
-      total += (flavor?.price || 0) + (size?.price || 0) + (color?.price || 0) + toppingsPrice;
+      total += flavorPrice + sizePrice + colorPrice + toppingsPrice;
     }
 
-    return total * quantity;
+    const final = total * quantity;
+    return isNaN(final) ? 0 : final;
   }, [cake, options, quantity, flavorId, sizeId, colorId, selectedToppings]);
 
   if (isLoading) {
@@ -91,7 +103,6 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
 
   const handleAddToCart = async () => {
     setIsAdding(true);
-    // Simulate brief delay for feedback
     await new Promise(resolve => setTimeout(resolve, 800));
     toast({
       title: "Added to cart!",
@@ -124,7 +135,6 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
       </header>
 
       <main className="container mx-auto px-6 py-12 grid lg:grid-cols-2 gap-16">
-        {/* Left: Product Media */}
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -141,7 +151,6 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
           </div>
         </motion.div>
 
-        {/* Right: Customization & Info */}
         <motion.div 
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -165,16 +174,15 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
 
           {cake.customizable ? (
             <div className="space-y-8">
-              {/* Flavor */}
               <div className="space-y-4">
                 <Label className="text-base font-black">Choose Flavor</Label>
                 <RadioGroup value={flavorId} onValueChange={setFlavorId} className="grid sm:grid-cols-2 gap-3">
                   {options.flavors.map(flavor => (
-                    <div key={flavor.id} className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer ${flavorId === flavor.id ? 'border-primary bg-primary/5' : 'border-stone-100 hover:border-primary/30'}`} onClick={() => setFlavorId(flavor.id)}>
+                    <div key={flavor.id} className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer ${flavorId === flavor.id.toString() ? 'border-primary bg-primary/5' : 'border-stone-100 hover:border-primary/30'}`} onClick={() => setFlavorId(flavor.id.toString())}>
                       <div className="flex items-center gap-3">
-                        <RadioGroupItem value={flavor.id} id={flavor.id} />
+                        <RadioGroupItem value={flavor.id.toString()} id={`f-${flavor.id}`} />
                         <div>
-                          <Label htmlFor={flavor.id} className="font-bold cursor-pointer">{flavor.name}</Label>
+                          <Label htmlFor={`f-${flavor.id}`} className="font-bold cursor-pointer">{flavor.name}</Label>
                           {flavor.description && <p className="text-[10px] text-muted-foreground">{flavor.description}</p>}
                         </div>
                       </div>
@@ -184,13 +192,12 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
                 </RadioGroup>
               </div>
 
-              {/* Size */}
               <div className="space-y-4">
                 <Label className="text-base font-black">Pick Your Size</Label>
                 <RadioGroup value={sizeId} onValueChange={setSizeId} className="grid grid-cols-3 gap-3">
                   {options.sizes.map(size => (
-                    <div key={size.id} className={`flex flex-col items-center p-3 rounded-xl border-2 transition-all cursor-pointer text-center ${sizeId === size.id ? 'border-primary bg-primary/5' : 'border-stone-100 hover:border-primary/30'}`} onClick={() => setSizeId(size.id)}>
-                      <RadioGroupItem value={size.id} id={size.id} className="sr-only" />
+                    <div key={size.id} className={`flex flex-col items-center p-3 rounded-xl border-2 transition-all cursor-pointer text-center ${sizeId === size.id.toString() ? 'border-primary bg-primary/5' : 'border-stone-100 hover:border-primary/30'}`} onClick={() => setSizeId(size.id.toString())}>
+                      <RadioGroupItem value={size.id.toString()} id={`s-${size.id}`} className="sr-only" />
                       <span className="font-bold text-sm">{size.name}</span>
                       <span className="text-[10px] text-muted-foreground">{size.serves}</span>
                       <span className="text-xs font-black text-primary mt-2">+{formatPrice(size.price)}</span>
@@ -199,15 +206,14 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
                 </RadioGroup>
               </div>
 
-              {/* Color */}
               <div className="space-y-4">
                 <Label className="text-base font-black">Frosting Theme</Label>
                 <div className="flex flex-wrap gap-4">
                   {options.colors.map(color => (
                     <button 
                       key={color.id} 
-                      onClick={() => setColorId(color.id)}
-                      className={`group flex items-center gap-2 p-1.5 pr-4 rounded-full border-2 transition-all ${colorId === color.id ? 'border-primary bg-primary/5' : 'border-stone-100 hover:border-primary/30'}`}
+                      onClick={() => setColorId(color.id.toString())}
+                      className={`group flex items-center gap-2 p-1.5 pr-4 rounded-full border-2 transition-all ${colorId === color.id.toString() ? 'border-primary bg-primary/5' : 'border-stone-100 hover:border-primary/30'}`}
                     >
                       <div className="h-6 w-6 rounded-full border border-stone-200" style={{ backgroundColor: color.hex_value }} />
                       <span className="text-xs font-bold">{color.name}</span>
@@ -216,14 +222,13 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
                 </div>
               </div>
 
-              {/* Toppings */}
               <div className="space-y-4">
                 <Label className="text-base font-black">Extra Decorations</Label>
                 <div className="grid sm:grid-cols-2 gap-3">
                   {options.toppings.map(topping => (
-                    <div key={topping.id} className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer ${selectedToppings.includes(topping.id) ? 'border-primary bg-primary/5' : 'border-stone-100 hover:border-primary/30'}`} onClick={() => toggleTopping(topping.id)}>
+                    <div key={topping.id} className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer ${selectedToppings.includes(topping.id.toString()) ? 'border-primary bg-primary/5' : 'border-stone-100 hover:border-primary/30'}`} onClick={() => toggleTopping(topping.id.toString())}>
                       <div className="flex items-center gap-3">
-                        <Checkbox checked={selectedToppings.includes(topping.id)} onCheckedChange={() => toggleTopping(topping.id)} />
+                        <Checkbox checked={selectedToppings.includes(topping.id.toString())} onCheckedChange={() => toggleTopping(topping.id.toString())} />
                         <span className="text-sm font-bold">{topping.name}</span>
                       </div>
                       <span className="text-xs font-black text-primary">+{formatPrice(topping.price)}</span>
@@ -252,7 +257,7 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
                 <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" onClick={() => setQuantity(quantity + 1)}><Plus className="h-4 w-4" /></Button>
               </div>
               <div className="text-right">
-                <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Total Valuation</p>
+                <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Total Value</p>
                 <p className="text-4xl font-black text-primary">{formatPrice(totalPrice)}</p>
               </div>
             </div>
