@@ -16,7 +16,7 @@ export default function AdminCakesPage() {
   const { toast } = useToast();
   const [cakes, setCakes] = useState<Cake[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const recordsPerPage = 5; // Strict 5 record pagination
+  const recordsPerPage = 5; // Strict 5 record pagination for focused auditing
 
   useEffect(() => {
     fetchCakes();
@@ -29,7 +29,7 @@ export default function AdminCakesPage() {
 
   const handleDelete = async (id: string) => {
     await deleteCake(id);
-    toast({ variant: "destructive", title: "Cake Removed", description: "Menu item deleted." });
+    toast({ variant: "destructive", title: "Cake Removed", description: "The item has been deleted from your catalog." });
     fetchCakes();
   };
 
@@ -68,11 +68,13 @@ export default function AdminCakesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {currentCakes.map((cake) => (
+              {currentCakes.length === 0 ? (
+                <TableRow><TableCell colSpan={5} className="h-32 text-center text-muted-foreground italic">No cakes found.</TableCell></TableRow>
+              ) : currentCakes.map((cake) => (
                 <TableRow key={cake.id} className="hover:bg-stone-50/50 transition-colors">
                   <TableCell>
                     <div className="relative h-12 w-12 rounded-lg overflow-hidden border bg-stone-100">
-                       <Image src={cake.image_data_uri || ''} alt={cake.name} fill className="object-cover" />
+                       <Image src={cake.image_data_uri || 'https://picsum.photos/seed/cake/200/200'} alt={cake.name} fill className="object-cover" />
                     </div>
                   </TableCell>
                   <TableCell>

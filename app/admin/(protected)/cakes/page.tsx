@@ -1,5 +1,9 @@
 /**
  * NEUTRALIZED: Redundant route group file.
- * Logic centrally located in app/admin/cakes/page.tsx
+ * Logic centrally located in app/admin/cakes/page.tsx to resolve parallel route conflicts.
  */
-export default function Neutralized() { return null; }
+import { redirect } from 'next/navigation';
+
+export default function NeutralizedCakes() {
+    redirect('/admin/cakes');
+}

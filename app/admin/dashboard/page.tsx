@@ -9,10 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { formatPrice, cn } from '@/lib/utils';
 import { 
   ShoppingBag, 
-  TrendingUp, 
   Package, 
   Clock, 
-  ChevronRight, 
   Star,
   DollarSign
 } from 'lucide-react';
@@ -93,10 +91,10 @@ export default function AdminDashboardPage() {
           <CardHeader className="bg-stone-900 text-white flex flex-row items-center justify-between">
             <CardTitle className="text-sm uppercase tracking-[0.2em] font-black flex items-center gap-2">
               <Clock className="h-4 w-4" />
-              Recent Orders
+              Recent Requests (Top 5)
             </CardTitle>
             <Link href="/admin/orders">
-              <Badge variant="outline" className="text-white border-white/20 hover:bg-white/10 cursor-pointer">View All</Badge>
+              <Badge variant="outline" className="text-white border-white/20 hover:bg-white/10 cursor-pointer">View Ledger</Badge>
             </Link>
           </CardHeader>
           <CardContent className="p-0">

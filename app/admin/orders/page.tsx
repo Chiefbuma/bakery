@@ -18,7 +18,7 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState('');
-  const recordsPerPage = 5;
+  const recordsPerPage = 5; // Strict 5 record pagination for focused auditing
 
   useEffect(() => {
     fetchOrders();
@@ -31,13 +31,13 @@ export default function AdminOrdersPage() {
 
   const handleUpdateStatus = async (id: number, status: any) => {
     await updateOrderStatus(id, status);
-    toast({ title: "Order Updated", description: `Status changed to ${status}.` });
+    toast({ title: "Order Updated", description: `Status successfully changed to ${status}.` });
     fetchOrders();
   };
 
   const handleDelete = async (id: number) => {
     await deleteOrder(id);
-    toast({ variant: "destructive", title: "Order Removed", description: "Record deleted from ledger." });
+    toast({ variant: "destructive", title: "Order Removed", description: "Transaction cleared from the system." });
     fetchOrders();
   };
 
@@ -87,7 +87,7 @@ export default function AdminOrdersPage() {
             </TableHeader>
             <TableBody>
               {currentOrders.length === 0 ? (
-                <TableRow><TableCell colSpan={5} className="text-center py-12 text-muted-foreground italic">No matches found.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} className="text-center py-12 text-muted-foreground italic">No matches found in the ledger.</TableCell></TableRow>
               ) : currentOrders.map((order) => (
                 <TableRow key={order.id} className="hover:bg-stone-50/50 transition-colors">
                   <TableCell className="font-black font-mono text-primary text-xs">{order.order_number}</TableCell>
