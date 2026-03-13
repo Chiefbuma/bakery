@@ -1,15 +1,13 @@
-
 'use server';
 
 import type { OrderPayload } from './types';
 
-// Server-side actions should always use relative paths when possible or internal proxies
+// Use an internal proxy or relative URL for server-side fetches to ensure protocol consistency
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 
 /**
  * Places an order by sending the data to the backend API.
- * The backend is expected to save the order with a 'pending' payment status
- * and return the order number and confirmed deposit amount.
+ * Uses the native Node.js fetch in the server environment.
  */
 export async function placeOrder(payload: OrderPayload): Promise<{ success: boolean; orderNumber: string; error?: string; depositAmount: number }> {
   try {
@@ -23,7 +21,7 @@ export async function placeOrder(payload: OrderPayload): Promise<{ success: bool
     });
 
     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to place order. The server returned an invalid response.' }));
+        const errorData = await response.json().catch(() => ({ message: 'Failed to place order.' }));
         throw new Error(errorData.message || 'Failed to place order.');
     }
     
@@ -37,14 +35,19 @@ export async function placeOrder(payload: OrderPayload): Promise<{ success: bool
 
   } catch (e) {
     const error = e instanceof Error ? e.message : 'An unknown error occurred.';
-    console.error('Failed to place order:', error);
-    return { success: false, error: 'Could not place your order. Please ensure the database is connected.', orderNumber: '', depositAmount: 0 };
+    console.error('[PLACE_ORDER_SERVER_ACTION_ERROR]', error);
+    return { 
+      success: false, 
+      error: 'Could not process order. Please try again or contact support.', 
+      orderNumber: '', 
+      depositAmount: 0 
+    };
   }
 }
 
 /**
- * Logs a client-side error message to the server's console.
+ * Log server-side events for diagnostics.
  */
-export async function logError(errorMessage: string) {
-  console.error('[CLIENT_ACTION_ERROR]', errorMessage);
+export async function logServerEvent(message: string) {
+  console.log('[SERVER_LOG]', message);
 }

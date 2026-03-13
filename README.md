@@ -12,36 +12,45 @@ This high-performance eCommerce and Bakery Management platform is optimized for 
 ## 2. Production Deployment (cPanel / CloudLinux)
 
 ### A. Routing & HTTPS Redirect (403/404 Resolution)
-To force HTTPS and prevent 404 errors on deep links (e.g., `/admin/portal/dashboard`), ensure your application root contains a `.htaccess` file with the following rules:
+To force HTTPS and prevent 404 errors on deep links (e.g., `/admin/portal/dashboard`), ensure your application root contains a `.htaccess` file with the following rules. Replace the Passenger paths with your specific server paths.
 
 ```apache
-# Force HTTPS
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN
+PassengerAppRoot "/home/gledcapi/domains/whiskedelights.co.ke"
+PassengerBaseURI "/"
+PassengerNodejs "/home/gledcapi/nodevenv/domains/whiskedelights.co.ke/20/bin/node"
+PassengerAppType node
+PassengerStartupFile server.js
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END
+
+# --- Force HTTPS & Application Routing ---
 RewriteEngine On
+RewriteBase /
+
+# Force HTTPS
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-# Standard cPanel Node.js Proxy Rewrite
-RewriteBase /
+# Standard Node.js Rewrite (Solves 404 on Refresh/Mobile)
 RewriteRule ^index\.html$ - [L]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule . /server.js [L]
 
-# CloudLinux/LiteSpeed Environment Variables
 <IfModule Litespeed>
   SetEnv DB_HOST localhost
   SetEnv DB_USER gledcapi_whiskedelight
   SetEnv DB_DATABASE gledcapi_whiskedelight
   SetEnv DB_PASSWORD KJfaAahFykuuL3k692FW
   SetEnv JWT_SECRET pk_live_8d9017d3458e0213efd55c219527b9171482e87d3efd55c219527b9171482e87d
-  SetEnv NEXT_PUBLIC_API_URL https://whiskedelights.co.ke/api
+  SetEnv NEXT_PUBLIC_API_URL /api
 </IfModule>
 ```
 
 ### B. Database Initialization
 1. Open **phpMyAdmin**.
 2. Select your database: `gledcapi_whiskedelight`.
-3. Go to the **Import** tab and upload the `schema.sql` file.
+3. Go to the **Import** tab and upload the `schema.sql` file provided in this repository.
 4. This will create all required tables and initialize the primary admin account.
 
 ### C. Default Credentials

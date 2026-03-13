@@ -1,27 +1,23 @@
-'use client';
-
 /**
  * @fileOverview WhiskeDelights Production Service Layer
  * Optimized for production with resilient JSON parsing and relative pathing.
- * Prevents abnormal loading behavior by using isolated service states.
  */
 
 import type { Cake, SpecialOffer, CustomizationOptions, Order, LoginCredentials, SpecialOfferUpdatePayload, CustomizationCategory, User } from '@/lib/types';
 
 const API_URL = '/api';
 
-const getHeaders = () => {
+// Helper to get auth token safely from localStorage
+const getAuthHeaders = () => {
   if (typeof window === 'undefined') return { 'Content-Type': 'application/json' };
   const token = localStorage.getItem('authToken');
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
   return headers;
 };
 
-/**
- * Safely parses JSON responses. Prevents "Unexpected end of JSON input" 
- * by checking response status and content-type before parsing.
- */
 async function safeParseJson(response: Response) {
   const contentType = response.headers.get('content-type');
   const text = await response.text();
@@ -43,6 +39,8 @@ async function safeParseJson(response: Response) {
   }
 }
 
+// --- CATALOG SERVICES ---
+
 export async function getCakes(): Promise<Cake[]> {
   try {
     const res = await fetch(`${API_URL}/cakes`, { cache: 'no-store' });
@@ -57,7 +55,7 @@ export async function getCakes(): Promise<Cake[]> {
 export async function createCake(cake: any): Promise<void> {
   const res = await fetch(`${API_URL}/cakes`, {
     method: 'POST',
-    headers: getHeaders(),
+    headers: getAuthHeaders(),
     body: JSON.stringify(cake),
   });
   if (!res.ok) throw new Error('Failed to register creation');
@@ -66,7 +64,7 @@ export async function createCake(cake: any): Promise<void> {
 export async function updateCake(id: string, updated: any): Promise<void> {
   const res = await fetch(`${API_URL}/cakes/${id}`, {
     method: 'PUT',
-    headers: getHeaders(),
+    headers: getAuthHeaders(),
     body: JSON.stringify(updated),
   });
   if (!res.ok) throw new Error('Failed to update masterpiece');
@@ -75,7 +73,7 @@ export async function updateCake(id: string, updated: any): Promise<void> {
 export async function deleteCake(cakeId: string): Promise<void> {
   const res = await fetch(`${API_URL}/cakes/${cakeId}`, {
     method: 'DELETE',
-    headers: getHeaders(),
+    headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Failed to remove cake');
 }
@@ -92,6 +90,8 @@ export async function uploadImage(file: File): Promise<string> {
   return data.url;
 }
 
+// --- CUSTOMIZATION SERVICES ---
+
 export async function getCustomizationOptions(): Promise<CustomizationOptions> {
   try {
     const res = await fetch(`${API_URL}/customizations`, { cache: 'no-store' });
@@ -105,7 +105,7 @@ export async function getCustomizationOptions(): Promise<CustomizationOptions> {
 export async function createCustomizationOption(category: CustomizationCategory, data: any): Promise<void> {
   const res = await fetch(`${API_URL}/customizations/${category}`, {
     method: 'POST',
-    headers: getHeaders(),
+    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error(`Failed to add ${category}`);
@@ -114,7 +114,7 @@ export async function createCustomizationOption(category: CustomizationCategory,
 export async function updateCustomizationOption(category: CustomizationCategory, id: string, data: any): Promise<void> {
   const res = await fetch(`${API_URL}/customizations/${category}/${id}`, {
     method: 'PUT',
-    headers: getHeaders(),
+    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error(`Failed to update ${category}`);
@@ -123,14 +123,16 @@ export async function updateCustomizationOption(category: CustomizationCategory,
 export async function deleteCustomizationOption(category: CustomizationCategory, id: string): Promise<void> {
   const res = await fetch(`${API_URL}/customizations/${category}/${id}`, {
     method: 'DELETE',
-    headers: getHeaders(),
+    headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error(`Failed to remove ${category}`);
 }
 
+// --- ORDER SERVICES ---
+
 export async function getOrders(): Promise<Order[]> {
   try {
-    const res = await fetch(`${API_URL}/orders`, { headers: getHeaders(), cache: 'no-store' });
+    const res = await fetch(`${API_URL}/orders`, { headers: getAuthHeaders(), cache: 'no-store' });
     const data = await safeParseJson(res);
     return data || [];
   } catch (error) {
@@ -141,7 +143,7 @@ export async function getOrders(): Promise<Order[]> {
 export async function updateOrderStatus(orderId: number, status: string): Promise<void> {
   const res = await fetch(`${API_URL}/orders/${orderId}/status`, {
     method: 'PUT',
-    headers: getHeaders(),
+    headers: getAuthHeaders(),
     body: JSON.stringify({ status }),
   });
   if (!res.ok) throw new Error('Failed to update job status');
@@ -150,14 +152,16 @@ export async function updateOrderStatus(orderId: number, status: string): Promis
 export async function deleteOrder(orderId: number): Promise<void> {
   const res = await fetch(`${API_URL}/orders/${orderId}`, {
     method: 'DELETE',
-    headers: getHeaders(),
+    headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Failed to clear transaction');
 }
 
+// --- USER SERVICES ---
+
 export async function getUsers(): Promise<User[]> {
   try {
-    const res = await fetch(`${API_URL}/users`, { headers: getHeaders() });
+    const res = await fetch(`${API_URL}/users`, { headers: getAuthHeaders() });
     const data = await safeParseJson(res);
     return data || [];
   } catch (error) {
@@ -168,7 +172,7 @@ export async function getUsers(): Promise<User[]> {
 export async function createUser(data: any): Promise<void> {
   const res = await fetch(`${API_URL}/users`, {
     method: 'POST',
-    headers: getHeaders(),
+    headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error('Personnel registration failed');
@@ -177,10 +181,12 @@ export async function createUser(data: any): Promise<void> {
 export async function deleteUser(id: string): Promise<void> {
   const res = await fetch(`${API_URL}/users/${id}`, {
     method: 'DELETE',
-    headers: getHeaders(),
+    headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Access revocation failed');
 }
+
+// --- OFFER SERVICES ---
 
 export async function getSpecialOffer(): Promise<SpecialOffer | null> {
   try {
@@ -194,11 +200,13 @@ export async function getSpecialOffer(): Promise<SpecialOffer | null> {
 export async function updateSpecialOffer(payload: SpecialOfferUpdatePayload): Promise<void> {
   const res = await fetch(`${API_URL}/special-offer`, {
     method: 'PUT',
-    headers: getHeaders(),
+    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error('Daily special update failed');
 }
+
+// --- AUTH SERVICES ---
 
 export async function loginAdmin(credentials: LoginCredentials): Promise<{ token: string }> {
   const res = await fetch(`${API_URL}/auth/login`, {
@@ -213,7 +221,7 @@ export async function loginAdmin(credentials: LoginCredentials): Promise<{ token
   }
 
   const data = await safeParseJson(res);
-  if (data?.token) {
+  if (data?.token && typeof window !== 'undefined') {
     localStorage.setItem('authToken', data.token);
     localStorage.setItem('isAdminLoggedIn', 'true');
   }
