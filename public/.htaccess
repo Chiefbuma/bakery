@@ -1,0 +1,14 @@
+# WhiskeDelights Routing Configuration
+# Ensures Next.js client-side routes are handled correctly on Shared Hosting
+
+RewriteEngine On
+RewriteBase /
+
+# Force HTTPS (Optional but recommended)
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Route all requests to the Node.js entry point if not a physical file
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ /server.js [L]

@@ -1,4 +1,3 @@
-
 # WhiskeDelights Artisanal Bakery | Production Management System
 
 A high-performance eCommerce and Bakery Management platform designed for artisanal operations, featuring atomic transaction integrity and secure administrative auditing.
@@ -7,32 +6,40 @@ A high-performance eCommerce and Bakery Management platform designed for artisan
 The system is built with a decoupled architecture that prioritizes data integrity and security:
 - **Frontend**: Next.js 15 (App Router) with React 19.
 - **Backend API**: Secure Next.js API Routes serving as a bridge between the React frontend and the MySQL persistence layer.
-- **Database**: MySQL 8.0 with optimized indexing on audit-critical columns.
+- **Database**: MySQL 8.0 with optimized indexing on audit-critical columns (`order_status`, `created_at`).
 
-## 2. Design Principles
-### Precision Auditing (5-Record Rule)
-The administrative portal is strictly standardized to show **5 records per page**. This design principle reduces cognitive load for bakery staff, ensuring every artisanal job is audited with zero errors.
+## 2. Shared Hosting Deployment (cPanel)
+To prevent 404 errors on mobile and ensure nested routes work correctly, follow these steps:
 
-### Security by Isolation
-- Administrative routes require a valid JWT via Bearer token.
-- Database credentials and API keys are managed exclusively through environment variables.
-- Relative API paths are used to prevent CORS preflight blocks.
+### A. Standalone Build
+1. Run `npm run build` locally.
+2. The `.next/standalone` folder is your production package.
 
-## 3. Production Deployment
-The app is configured for **Standalone Output**. This generates a minimal `.next/standalone` folder containing only the required production files.
+### B. Routing Fix (Apache/LiteSpeed)
+If your server uses Apache (standard for cPanel), ensure you have a `.htaccess` file in your application root (where `server.js` is) with the following content to proxy all requests to the Node.js process:
+```apache
+RewriteEngine On
+RewriteBase /
+RewriteRule ^index\.html$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.js [L]
+```
+*Note: Most cPanel Node.js setups handle this automatically through the "Application Manager". If you see a 404 on mobile, ensure your "Application URL" in cPanel is set to use HTTPS if your SSL is active.*
 
-### Step-by-Step Deployment:
-1. **Database**: Import `schema.sql` into your MySQL database via phpMyAdmin.
-2. **Build**: Run `npm run build` locally.
-3. **Upload**: Upload the contents of `.next/standalone` to your server's application root.
-4. **Environment**: Configure the `.env` variables in your server's Node.js panel.
-5. **Static Assets**: Ensure `.next/static` and `public` folders are accessible in the production root.
+## 3. Database Initialization
+1. Open **phpMyAdmin**.
+2. Select your database: `gledcapi_whiskedelights`.
+3. Click the **Import** tab.
+4. Upload the provided `schema.sql` file.
+5. This initializes all tables and the default admin user.
 
 ## 4. Default Admin Access
 - **Email**: `admin@whiskedelights.com`
 - **Password**: `admin123`
 
 ## 5. Environment Configuration
+Ensure your cPanel Environment Variables match your database and Paystack keys exactly.
 ```bash
 DB_HOST=localhost
 DB_DATABASE=gledcapi_whiskedelights

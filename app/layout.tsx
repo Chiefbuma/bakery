@@ -1,4 +1,3 @@
-
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
@@ -7,8 +6,8 @@ import { Toaster } from '@/components/ui/toaster';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Wamaghach Kahua-ini Hotel | Management System',
-  description: 'Premium Hotel Management, POS, and Inventory System',
+  title: 'WhiskeDelights | Artisanal Bakery Management',
+  description: 'High-performance Production Management and eCommerce System',
 };
 
 export default function RootLayout({
