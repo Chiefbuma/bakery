@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { ShoppingBag, LayoutDashboard, Package, Settings, Star, LogOut, Menu, X, Utensils, Users, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ShoppingBag, LayoutDashboard, Package, Settings, Star, LogOut, Menu, X, Utensils, Users, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
