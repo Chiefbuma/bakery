@@ -1,10 +1,9 @@
-
 'use client';
 
 /**
  * @fileOverview WhiskeDelights Production Service Layer
  * Optimized for production with resilient JSON parsing and relative pathing.
- * Prevents CORS preflight errors by using local origin requests.
+ * Prevents abnormal loading behavior by using isolated service states.
  */
 
 import type { Cake, SpecialOffer, CustomizationOptions, Order, LoginCredentials, SpecialOfferUpdatePayload, CustomizationCategory, User } from '@/lib/types';
@@ -19,9 +18,23 @@ const getHeaders = () => {
   return headers;
 };
 
+/**
+ * Safely parses JSON responses. Prevents "Unexpected end of JSON input" 
+ * by checking response status and content-type before parsing.
+ */
 async function safeParseJson(response: Response) {
+  const contentType = response.headers.get('content-type');
   const text = await response.text();
-  if (!text) return null;
+  
+  if (!response.ok) {
+    console.error(`[API_ERROR] ${response.status}: ${text.substring(0, 100)}`);
+    return null;
+  }
+
+  if (!text || !contentType || !contentType.includes('application/json')) {
+    return null;
+  }
+
   try {
     return JSON.parse(text);
   } catch (e) {
@@ -33,7 +46,6 @@ async function safeParseJson(response: Response) {
 export async function getCakes(): Promise<Cake[]> {
   try {
     const res = await fetch(`${API_URL}/cakes`, { cache: 'no-store' });
-    if (!res.ok) return [];
     const data = await safeParseJson(res);
     return data || [];
   } catch (error) {
@@ -75,15 +87,14 @@ export async function uploadImage(file: File): Promise<string> {
     method: 'POST',
     body: formData,
   });
-  if (!res.ok) throw new Error('Image storage failed');
   const data = await safeParseJson(res);
-  return data?.url || '';
+  if (!data?.url) throw new Error('Image storage failed');
+  return data.url;
 }
 
 export async function getCustomizationOptions(): Promise<CustomizationOptions> {
   try {
     const res = await fetch(`${API_URL}/customizations`, { cache: 'no-store' });
-    if (!res.ok) return { flavors: [], sizes: [], colors: [], toppings: [] };
     const data = await safeParseJson(res);
     return data || { flavors: [], sizes: [], colors: [], toppings: [] };
   } catch (error) {
@@ -120,7 +131,6 @@ export async function deleteCustomizationOption(category: CustomizationCategory,
 export async function getOrders(): Promise<Order[]> {
   try {
     const res = await fetch(`${API_URL}/orders`, { headers: getHeaders(), cache: 'no-store' });
-    if (!res.ok) return [];
     const data = await safeParseJson(res);
     return data || [];
   } catch (error) {
@@ -148,7 +158,6 @@ export async function deleteOrder(orderId: number): Promise<void> {
 export async function getUsers(): Promise<User[]> {
   try {
     const res = await fetch(`${API_URL}/users`, { headers: getHeaders() });
-    if (!res.ok) return [];
     const data = await safeParseJson(res);
     return data || [];
   } catch (error) {
@@ -176,7 +185,6 @@ export async function deleteUser(id: string): Promise<void> {
 export async function getSpecialOffer(): Promise<SpecialOffer | null> {
   try {
     const res = await fetch(`${API_URL}/special-offer`, { cache: 'no-store' });
-    if (!res.ok) return null;
     return await safeParseJson(res);
   } catch (error) {
     return null;
@@ -198,7 +206,12 @@ export async function loginAdmin(credentials: LoginCredentials): Promise<{ token
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(credentials),
   });
-  if (!res.ok) throw new Error('Invalid credentials');
+  
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(errorText || 'Invalid credentials');
+  }
+
   const data = await safeParseJson(res);
   if (data?.token) {
     localStorage.setItem('authToken', data.token);
