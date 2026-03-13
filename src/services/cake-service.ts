@@ -4,11 +4,13 @@
 /**
  * @fileOverview WhiskeDelights Production Service Layer
  * Optimized for production with resilient JSON parsing and error handling.
+ * Uses relative paths to prevent CORS issues in mixed HTTP/HTTPS environments.
  */
 
 import type { Cake, SpecialOffer, CustomizationOptions, Order, LoginCredentials, SpecialOfferUpdatePayload, CustomizationCategory, User } from '@/lib/types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+// Use relative path for client-side to prevent CORS issues
+const API_URL = '/api';
 
 const getHeaders = () => {
   const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
@@ -17,10 +19,6 @@ const getHeaders = () => {
   return headers;
 };
 
-/**
- * Safely parses JSON from a fetch response.
- * Prevents 'Unexpected end of JSON input' errors.
- */
 async function safeParseJson(response: Response) {
   const text = await response.text();
   if (!text) return null;
@@ -32,7 +30,6 @@ async function safeParseJson(response: Response) {
   }
 }
 
-// --- CAKES ---
 export async function getCakes(): Promise<Cake[]> {
   try {
     const res = await fetch(`${API_URL}/cakes`, { cache: 'no-store' });
@@ -41,7 +38,7 @@ export async function getCakes(): Promise<Cake[]> {
     return data || [];
   } catch (error) {
     console.error('[GET_CAKES_ERROR]', error);
-    return []; // Return empty array to prevent mapping errors on undefined
+    return [];
   }
 }
 
@@ -83,7 +80,6 @@ export async function uploadImage(file: File): Promise<string> {
   return data?.url || '';
 }
 
-// --- CUSTOMIZATIONS ---
 export async function getCustomizationOptions(): Promise<CustomizationOptions> {
   try {
     const res = await fetch(`${API_URL}/customizations`, { cache: 'no-store' });
@@ -113,7 +109,6 @@ export async function deleteCustomizationOption(category: CustomizationCategory,
   if (!res.ok) throw new Error(`Failed to remove ${category}`);
 }
 
-// --- ORDERS ---
 export async function getOrders(): Promise<Order[]> {
   try {
     const res = await fetch(`${API_URL}/orders`, { headers: getHeaders(), cache: 'no-store' });
@@ -143,7 +138,6 @@ export async function deleteOrder(orderId: number): Promise<void> {
   if (!res.ok) throw new Error('Failed to clear transaction');
 }
 
-// --- USERS ---
 export async function getUsers(): Promise<User[]> {
   try {
     const res = await fetch(`${API_URL}/users`, { headers: getHeaders() });
@@ -173,7 +167,6 @@ export async function deleteUser(id: string): Promise<void> {
   if (!res.ok) throw new Error('Access revocation failed');
 }
 
-// --- OFFERS ---
 export async function getSpecialOffer(): Promise<SpecialOffer | null> {
   try {
     const res = await fetch(`${API_URL}/special-offer`, { cache: 'no-store' });
@@ -195,7 +188,6 @@ export async function updateSpecialOffer(payload: SpecialOfferUpdatePayload): Pr
   if (!res.ok) throw new Error('Daily special update failed');
 }
 
-// --- AUTH ---
 export async function loginAdmin(credentials: LoginCredentials): Promise<{ token: string }> {
   const res = await fetch(`${API_URL}/auth/login`, {
     method: 'POST',

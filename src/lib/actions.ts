@@ -3,7 +3,8 @@
 
 import type { OrderPayload } from './types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+// Server-side actions should always use relative paths when possible or internal proxies
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 
 /**
  * Places an order by sending the data to the backend API.
@@ -12,10 +13,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
  */
 export async function placeOrder(payload: OrderPayload): Promise<{ success: boolean; orderNumber: string; error?: string; depositAmount: number }> {
   try {
-    if (!API_URL) {
-      throw new Error("API URL is not configured. Cannot place order.");
-    }
-    
     const response = await fetch(`${API_URL}/orders`, {
         method: 'POST',
         headers: {
@@ -41,18 +38,12 @@ export async function placeOrder(payload: OrderPayload): Promise<{ success: bool
   } catch (e) {
     const error = e instanceof Error ? e.message : 'An unknown error occurred.';
     console.error('Failed to place order:', error);
-    // Log the error for server-side debugging
-    await logError(`placeOrder server action failed: ${error}`);
-    return { success: false, error: 'Could not place your order due to an internal server error. Please try again.', orderNumber: '', depositAmount: 0 };
+    return { success: false, error: 'Could not place your order. Please ensure the database is connected.', orderNumber: '', depositAmount: 0 };
   }
 }
 
-
 /**
  * Logs a client-side error message to the server's console.
- * This is useful for capturing errors that happen in the user's browser,
- * such as payment modal issues, without exposing details to the client.
- * @param errorMessage The error message to log.
  */
 export async function logError(errorMessage: string) {
   console.error('[CLIENT_ACTION_ERROR]', errorMessage);
