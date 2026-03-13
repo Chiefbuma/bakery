@@ -1,3 +1,2 @@
-
 import { redirect } from 'next/navigation';
-export default function LegacyCustomizationsPage() { redirect('/admin/pos'); }
+export default function Neutralized() { redirect('/admin/customizations'); }

@@ -1,27 +1,30 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { ShoppingBag, LayoutDashboard, Package, Settings, Star, LogOut, Menu, X } from 'lucide-react';
+import { ShoppingBag, LayoutDashboard, Package, Settings, Star, LogOut, Menu, X, Utensils } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-  // Simple pseudo-auth check
   useEffect(() => {
     const isLoggedIn = localStorage.getItem('isAdminLoggedIn');
     if (!isLoggedIn && pathname !== '/admin/login') {
-      router.push('/admin/login');
+      router.replace('/admin/login');
+    } else {
+      setIsCheckingAuth(false);
     }
   }, [pathname, router]);
 
   if (pathname === '/admin/login') return <>{children}</>;
+  if (isCheckingAuth) return null;
 
   const navItems = [
     { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
@@ -39,13 +42,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen bg-stone-50 flex">
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-stone-900 text-white transition-transform duration-300 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static`}>
+      <aside className={cn(
+        "fixed inset-y-0 left-0 z-50 w-64 bg-stone-900 text-white transition-transform duration-300 transform lg:translate-x-0 lg:static",
+        isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
         <div className="h-full flex flex-col p-6">
           <div className="flex items-center gap-3 mb-10">
             <div className="h-10 w-10 bg-primary rounded-xl flex items-center justify-center">
-              <Package className="h-6 w-6 text-white" />
+              <Utensils className="h-6 w-6 text-white" />
             </div>
-            <span className="text-xl font-black font-headline text-primary">Admin</span>
+            <span className="text-xl font-black font-headline text-primary">Artisan Panel</span>
           </div>
 
           <nav className="flex-1 space-y-2">
@@ -53,7 +59,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Link key={item.href} href={item.href}>
                 <Button 
                   variant="ghost" 
-                  className={`w-full justify-start gap-3 h-12 text-sm font-bold ${pathname === item.href ? 'bg-primary text-white hover:bg-primary/90' : 'text-stone-400 hover:text-white hover:bg-white/10'}`}
+                  className={cn(
+                    "w-full justify-start gap-3 h-12 text-sm font-bold",
+                    pathname === item.href 
+                      ? "bg-primary text-white hover:bg-primary/90" 
+                      : "text-stone-400 hover:text-white hover:bg-white/10"
+                  )}
                 >
                   <item.icon className="h-5 w-5" />
                   {item.label}
