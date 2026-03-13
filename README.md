@@ -1,45 +1,44 @@
-# WhiskeDelights Artisanal Bakery | Production Management System
 
-A high-performance eCommerce and Bakery Management platform designed for artisanal operations, featuring atomic transaction integrity and secure administrative auditing.
+# WhiskeDelights Artisanal Bakery | Production System
 
-## 1. Production Architecture
-The system is built with a decoupled architecture that prioritizes data integrity and security:
-- **Frontend**: Next.js 15 (App Router) with React 19.
-- **Backend API**: Secure Next.js API Routes serving as a bridge between the React frontend and the MySQL persistence layer.
-- **Database**: MySQL 8.0 with optimized indexing on audit-critical columns (`order_status`, `created_at`).
+A high-performance eCommerce and Bakery Management platform optimized for precision auditing and secure administrative control.
 
-## 2. Shared Hosting Deployment (cPanel)
-To prevent 404 errors on mobile and ensure nested routes work correctly, follow these steps:
+## 1. System Design Principles
+- **Atomic Persistence**: All orders are handled via MySQL transactions to ensure data integrity between headers and line items.
+- **Auditing Optimization**: Administrative views are strictly limited to 5 records per page to prevent cognitive overload and ensure high-precision auditing.
+- **Security-First API**: All mutations require a valid JWT (JSON Web Token) and are protected by a production-grade verification layer.
+- **Decoupled Architecture**: Built with Next.js 15 App Router, utilizing standalone builds for minimal server overhead.
 
-### A. Standalone Build
-1. Run `npm run build` locally.
-2. The `.next/standalone` folder is your production package.
+## 2. Production Deployment (cPanel / Shared Hosting)
 
-### B. Routing Fix (Apache/LiteSpeed)
-If your server uses Apache (standard for cPanel), ensure you have a `.htaccess` file in your application root (where `server.js` is) with the following content to proxy all requests to the Node.js process:
+### A. Routing & Access Fix (403/404 Resolution)
+To prevent 404 errors on deep links and 403 Forbidden errors on mobile, ensure your application root contains a `.htaccess` file with the following configuration. This proxies all client-side routes to the Node.js process:
+
 ```apache
+# Standard cPanel Node.js Proxy Rewrite
 RewriteEngine On
 RewriteBase /
 RewriteRule ^index\.html$ - [L]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule . /index.js [L]
+RewriteRule . /server.js [L]
 ```
-*Note: Most cPanel Node.js setups handle this automatically through the "Application Manager". If you see a 404 on mobile, ensure your "Application URL" in cPanel is set to use HTTPS if your SSL is active.*
 
-## 3. Database Initialization
+*Note: Ensure the "Startup File" in your cPanel Node.js selector is set to `server.js`.*
+
+### B. Database Initialization
 1. Open **phpMyAdmin**.
-2. Select your database: `gledcapi_whiskedelights`.
-3. Click the **Import** tab.
-4. Upload the provided `schema.sql` file.
-5. This initializes all tables and the default admin user.
+2. Select database: `gledcapi_whiskedelights`.
+3. Go to the **Import** tab and upload the provided `schema.sql`.
+4. This initializes all tables and the primary admin account.
 
-## 4. Default Admin Access
+### C. Default Credentials
+- **Access URL**: `https://whiskedelights.co.ke/admin/login`
 - **Email**: `admin@whiskedelights.com`
 - **Password**: `admin123`
 
-## 5. Environment Configuration
-Ensure your cPanel Environment Variables match your database and Paystack keys exactly.
+## 3. Environment Variables
+Ensure these are set in your cPanel Environment Variables panel:
 ```bash
 DB_HOST=localhost
 DB_DATABASE=gledcapi_whiskedelights
