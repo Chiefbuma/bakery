@@ -1,9 +1,8 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getCustomizationOptions, deleteCustomizationOption } from '@/services/cake-service';
-import type { CustomizationOptions, CustomizationCategory, CustomizationData } from '@/lib/types';
+import { getCustomizationOptions, createCustomizationOption, updateCustomizationOption, deleteCustomizationOption } from '@/services/cake-service';
+import type { CustomizationOptions, CustomizationCategory } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -11,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatPrice } from '@/lib/utils';
 import { Trash2, Edit, Plus, ChevronLeft, ChevronRight, Settings, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -23,13 +23,13 @@ export default function AdminCustomizationsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
   const recordsPerPage = 5;
 
-  // Form State
   const [formData, setFormData] = useState({
     name: '',
     price: 0,
-    detail: '', // Serves, Hex Value, or Description
+    detail: '',
   });
 
   useEffect(() => {
@@ -37,11 +37,14 @@ export default function AdminCustomizationsPage() {
   }, []);
 
   const fetchOptions = async () => {
+    setLoading(true);
     try {
       const data = await getCustomizationOptions();
       setOptions(data);
     } catch (error) {
       toast({ variant: "destructive", title: "Sync Failed", description: "Could not load variants." });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -61,9 +64,9 @@ export default function AdminCustomizationsPage() {
       setFormData({
         name: item.name,
         price: item.price,
-        detail: activeTab === 'flavors' ? item.description : 
-                activeTab === 'sizes' ? item.serves : 
-                activeTab === 'colors' ? item.hex_value : ''
+        detail: activeTab === 'flavors' ? (item.description || '') : 
+                activeTab === 'sizes' ? (item.serves || '') : 
+                activeTab === 'colors' ? (item.hex_value || '') : ''
       });
     } else {
       setEditingItem(null);
@@ -74,12 +77,32 @@ export default function AdminCustomizationsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({ title: editingItem ? "Variant Updated" : "Variant Added", description: `${formData.name} saved to ${activeTab}.` });
-    setIsDialogOpen(false);
-    fetchOptions();
+    try {
+      const payload: any = { 
+        name: formData.name, 
+        price: Number(formData.price)
+      };
+      
+      if (activeTab === 'flavors') payload.description = formData.detail;
+      if (activeTab === 'sizes') payload.serves = formData.detail;
+      if (activeTab === 'colors') payload.hex_value = formData.detail;
+
+      if (editingItem) {
+        await updateCustomizationOption(activeTab, editingItem.id, payload);
+      } else {
+        await createCustomizationOption(activeTab, payload);
+      }
+      
+      toast({ title: editingItem ? "Variant Updated" : "Variant Added", description: `${formData.name} saved successfully.` });
+      setIsDialogOpen(false);
+      fetchOptions();
+    } catch (error) {
+      toast({ variant: "destructive", title: "Process Failed", description: "Could not save variant." });
+    }
   };
 
-  if (!options) return <div className="flex items-center justify-center h-64"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>;
+  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="animate-spin h-8 w-8 text-primary" /></div>;
+  if (!options) return null;
 
   const currentList = options[activeTab] as any[];
   const totalPages = Math.max(1, Math.ceil(currentList.length / recordsPerPage));
@@ -88,8 +111,8 @@ export default function AdminCustomizationsPage() {
   const getDetailLabel = () => {
     switch (activeTab) {
       case 'flavors': return 'Flavor Description';
-      case 'sizes': return 'Servings Info';
-      case 'colors': return 'Hex Color Code';
+      case 'sizes': return 'Servings Info (e.g. 6-8 people)';
+      case 'colors': return 'Hex Color Code (e.g. #FFFFFF)';
       default: return 'Additional Info';
     }
   };
@@ -119,7 +142,7 @@ export default function AdminCustomizationsPage() {
           <CardHeader className="bg-stone-900 text-white">
             <CardTitle className="text-sm uppercase tracking-[0.2em] font-black flex items-center gap-2">
               <Settings className="h-4 w-4" />
-              Pricing & Variants
+              {activeTab} Settings (Auditing View)
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -176,18 +199,37 @@ export default function AdminCustomizationsPage() {
                <DialogDescription>Configure pricing and details for this {activeTab.slice(0, -1)}.</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-               <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Option Name</Label>
-                  <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="e.g. Premium Gold" className="h-12 border-2 rounded-xl" required />
+               <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Category</Label>
+                    <Select value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+                      <SelectTrigger className="h-12 border-2 rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="flavors">Flavors</SelectItem>
+                        <SelectItem value="sizes">Sizes</SelectItem>
+                        <SelectItem value="colors">Frosting</SelectItem>
+                        <SelectItem value="toppings">Toppings</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Option Name</Label>
+                    <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="e.g. Belgian Truffle" className="h-12 border-2 rounded-xl" required />
+                  </div>
                </div>
+               
                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Premium Price Add-on</Label>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Premium Price Add-on (Ksh)</Label>
                   <Input type="number" value={formData.price} onChange={e => setFormData({...formData, price: parseInt(e.target.value)})} className="h-12 border-2 rounded-xl" required />
                </div>
+               
                <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{getDetailLabel()}</Label>
                   <Input value={formData.detail} onChange={e => setFormData({...formData, detail: e.target.value})} placeholder={activeTab === 'colors' ? '#000000' : 'Additional context...'} className="h-12 border-2 rounded-xl" />
                </div>
+               
                <DialogFooter className="pt-4">
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="h-12 rounded-xl">Cancel</Button>
                   <Button type="submit" className="h-12 rounded-xl px-8 font-black">Save Variant</Button>

@@ -1,8 +1,8 @@
-
 'use client';
 
-import { useState, useMemo, use } from 'react';
-import { CAKES, CUSTOMIZATION_OPTIONS } from '@/lib/data';
+import { useState, useEffect, useMemo, use } from 'react';
+import { getCakes, getCustomizationOptions } from '@/services/cake-service';
+import type { Cake, CustomizationOptions } from '@/lib/types';
 import { formatPrice } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
-import { ShoppingCart, ArrowLeft, Star, Info, Minus, Plus } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, Star, Info, Minus, Plus, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -20,36 +20,74 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
   const { id } = use(params);
   const router = useRouter();
   const { toast } = useToast();
-  const cake = CAKES.find(c => c.id === id);
+  
+  const [cake, setCake] = useState<Cake | null>(null);
+  const [options, setOptions] = useState<CustomizationOptions | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [quantity, setQuantity] = useState(1);
-  const [flavorId, setFlavorId] = useState(cake?.defaultFlavorId || 'f1');
+  const [flavorId, setFlavorId] = useState('f1');
   const [sizeId, setSizeId] = useState('s1');
   const [colorId, setColorId] = useState('c1');
   const [selectedToppings, setSelectedToppings] = useState<string[]>([]);
 
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [cakeList, customizationOptions] = await Promise.all([
+          getCakes(),
+          getCustomizationOptions()
+        ]);
+        const foundCake = cakeList.find(c => c.id === id);
+        setCake(foundCake || null);
+        setOptions(customizationOptions);
+        if (foundCake?.defaultFlavorId) {
+          setFlavorId(foundCake.defaultFlavorId);
+        }
+      } catch (error) {
+        console.error('Failed to load cake details', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadData();
+  }, [id]);
+
   const totalPrice = useMemo(() => {
-    if (!cake) return 0;
+    if (!cake || !options) return 0;
     let total = cake.base_price;
     
     if (cake.customizable) {
-      const flavor = CUSTOMIZATION_OPTIONS.flavors.find(f => f.id === flavorId);
-      const size = CUSTOMIZATION_OPTIONS.sizes.find(s => s.id === sizeId);
-      const color = CUSTOMIZATION_OPTIONS.colors.find(c => c.id === colorId);
+      const flavor = options.flavors.find(f => f.id === flavorId);
+      const size = options.sizes.find(s => s.id === sizeId);
+      const color = options.colors.find(c => c.id === colorId);
       const toppingsPrice = selectedToppings.reduce((acc, tid) => {
-        return acc + (CUSTOMIZATION_OPTIONS.toppings.find(t => t.id === tid)?.price || 0);
+        return acc + (options.toppings.find(t => t.id === tid)?.price || 0);
       }, 0);
 
       total += (flavor?.price || 0) + (size?.price || 0) + (color?.price || 0) + toppingsPrice;
     }
 
     return total * quantity;
-  }, [cake, quantity, flavorId, sizeId, colorId, selectedToppings]);
+  }, [cake, options, quantity, flavorId, sizeId, colorId, selectedToppings]);
 
-  if (!cake) return <div>Cake not found</div>;
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center space-y-4">
+        <Loader2 className="h-12 w-12 text-primary animate-spin" />
+        <p className="text-stone-500 font-bold uppercase tracking-widest text-xs">Preparing the Recipe...</p>
+      </div>
+    );
+  }
+
+  if (!cake || !options) return (
+    <div className="min-h-screen flex flex-col items-center justify-center">
+      <h1 className="text-2xl font-black">Cake Not Found</h1>
+      <Link href="/"><Button className="mt-4">Return Home</Button></Link>
+    </div>
+  );
 
   const handleAddToCart = () => {
-    // In a real app, this would update a global cart state or localStorage
     toast({
       title: "Added to cart!",
       description: `${quantity}x ${cake.name} successfully added.`,
@@ -72,7 +110,7 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
             <span>Back to Gallery</span>
           </Link>
           <div className="text-xl font-black font-headline text-primary">WhiskeDelights</div>
-          <div className="w-20"></div> {/* Spacer */}
+          <div className="w-20"></div>
         </div>
       </header>
 
@@ -81,20 +119,12 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
         <div className="space-y-6">
           <div className="relative aspect-square w-full rounded-2xl overflow-hidden shadow-2xl border">
             <Image 
-              src={cake.image_data_uri || ''} 
+              src={cake.image_data_uri || 'https://picsum.photos/seed/cake-detail/600/600'} 
               alt={cake.name}
               fill
               className="object-cover"
               priority
             />
-          </div>
-          <div className="grid grid-cols-4 gap-4">
-             {/* Thumbnail placeholders */}
-             {[1,2,3,4].map(i => (
-                <div key={i} className="aspect-square rounded-lg bg-stone-100 border overflow-hidden relative opacity-50 hover:opacity-100 transition-opacity cursor-pointer">
-                  <Image src={cake.image_data_uri || ''} alt="Alt view" fill className="object-cover" />
-                </div>
-             ))}
           </div>
         </div>
 
@@ -105,7 +135,7 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
                <Badge variant="outline" className="font-bold">{cake.category}</Badge>
                <div className="flex items-center text-sm font-bold">
                  <Star className="h-4 w-4 text-primary fill-primary mr-1" />
-                 {cake.rating} <span className="text-muted-foreground ml-1 font-medium">({cake.orders_count}+ orders)</span>
+                 {cake.rating || 'New'} <span className="text-muted-foreground ml-1 font-medium">({cake.orders_count}+ orders)</span>
                </div>
             </div>
             <h1 className="text-4xl font-black font-headline leading-tight">{cake.name}</h1>
@@ -122,7 +152,7 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
               <div className="space-y-4">
                 <Label className="text-base font-black">Choose Flavor</Label>
                 <RadioGroup value={flavorId} onValueChange={setFlavorId} className="grid sm:grid-cols-2 gap-3">
-                  {CUSTOMIZATION_OPTIONS.flavors.map(flavor => (
+                  {options.flavors.map(flavor => (
                     <div key={flavor.id} className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer ${flavorId === flavor.id ? 'border-primary bg-primary/5' : 'border-stone-100'}`}>
                       <div className="flex items-center gap-3">
                         <RadioGroupItem value={flavor.id} id={flavor.id} />
@@ -141,7 +171,7 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
               <div className="space-y-4">
                 <Label className="text-base font-black">Pick Your Size</Label>
                 <RadioGroup value={sizeId} onValueChange={setSizeId} className="grid grid-cols-3 gap-3">
-                  {CUSTOMIZATION_OPTIONS.sizes.map(size => (
+                  {options.sizes.map(size => (
                     <div key={size.id} className={`flex flex-col items-center p-3 rounded-xl border-2 transition-all cursor-pointer text-center ${sizeId === size.id ? 'border-primary bg-primary/5' : 'border-stone-100'}`}>
                       <RadioGroupItem value={size.id} id={size.id} className="sr-only" />
                       <span className="font-bold text-sm">{size.name}</span>
@@ -156,7 +186,7 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
               <div className="space-y-4">
                 <Label className="text-base font-black">Frosting Theme</Label>
                 <div className="flex flex-wrap gap-4">
-                  {CUSTOMIZATION_OPTIONS.colors.map(color => (
+                  {options.colors.map(color => (
                     <button 
                       key={color.id} 
                       onClick={() => setColorId(color.id)}
@@ -173,7 +203,7 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
               <div className="space-y-4">
                 <Label className="text-base font-black">Extra Decorations</Label>
                 <div className="grid sm:grid-cols-2 gap-3">
-                  {CUSTOMIZATION_OPTIONS.toppings.map(topping => (
+                  {options.toppings.map(topping => (
                     <div key={topping.id} className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer ${selectedToppings.includes(topping.id) ? 'border-primary bg-primary/5' : 'border-stone-100'}`} onClick={() => toggleTopping(topping.id)}>
                       <div className="flex items-center gap-3">
                         <Checkbox checked={selectedToppings.includes(topping.id)} onCheckedChange={() => toggleTopping(topping.id)} />
@@ -197,7 +227,6 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
 
           <Separator />
 
-          {/* Pricing & Cart Action */}
           <div className="space-y-6 pt-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4 bg-stone-100 p-1.5 rounded-full border">

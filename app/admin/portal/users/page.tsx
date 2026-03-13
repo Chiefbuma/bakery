@@ -1,33 +1,45 @@
-
 'use client';
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { getUsers, createUser, deleteUser } from '@/services/cake-service';
 import type { User } from "@/lib/types";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus, Trash2, Edit, ChevronLeft, ChevronRight, Search, Users } from "lucide-react";
+import { UserPlus, Trash2, Edit, ChevronLeft, ChevronRight, Search, Users, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion } from "framer-motion";
 
-const MOCK_USERS: User[] = [
-  { id: '1', name: 'Master Baker', email: 'admin@whiskedelights.com', role: 'admin', createdAt: new Date().toISOString() },
-  { id: '2', name: 'Artisan Staff', email: 'staff@whiskedelights.com', role: 'staff', createdAt: new Date().toISOString() },
-];
-
 export default function AdminUsersPage() {
-    const [users, setUsers] = useState<User[]>(MOCK_USERS);
+    const [users, setUsers] = useState<User[]>([]);
+    const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
-    const ITEMS_PER_PAGE = 5; // Strict 5 record pagination
+    const ITEMS_PER_PAGE = 5;
 
     const { toast } = useToast();
+
+    useEffect(() => {
+        fetchUsers();
+    }, []);
+
+    const fetchUsers = async () => {
+        setLoading(true);
+        try {
+            const data = await getUsers();
+            setUsers(data);
+        } catch (error) {
+            toast({ variant: "destructive", title: "Sync Failed", description: "Could not load staff list." });
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const filteredUsers = useMemo(() => 
         users.filter(u => 
@@ -39,13 +51,25 @@ export default function AdminUsersPage() {
     const totalPages = Math.max(1, Math.ceil(filteredUsers.length / ITEMS_PER_PAGE));
     const paginatedUsers = filteredUsers.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
-    const handleDelete = (id: string) => {
-        if (users.find(u => u.id === id)?.email === 'admin@whiskedelights.com') {
-            toast({ variant: "destructive", title: "Action Restricted", description: "Primary admin cannot be removed." });
+    const handleDelete = async (id: string) => {
+        const user = users.find(u => u.id === id);
+        if (user?.email === 'admin@whiskedelights.com') {
+            toast({ variant: "destructive", title: "Restricted", description: "Primary admin cannot be removed." });
             return;
         }
-        setUsers(users.filter(u => u.id !== id));
+        await deleteUser(id);
         toast({ title: "Personnel Removed", description: "Access revoked." });
+        fetchUsers();
+    };
+
+    const [form, setForm] = useState({ name: '', email: '', role: 'staff' });
+
+    const handleCreate = async () => {
+        await createUser(form);
+        toast({ title: "Staff Registered", description: `${form.name} added to portal.` });
+        setIsDialogOpen(false);
+        setForm({ name: '', email: '', role: 'staff' });
+        fetchUsers();
     };
 
     return (
@@ -66,7 +90,7 @@ export default function AdminUsersPage() {
                     <div className="flex items-center justify-between">
                         <CardTitle className="text-sm uppercase tracking-[0.2em] font-black flex items-center gap-2">
                             <Users className="h-4 w-4" />
-                            Active Accounts
+                            Active Staff Accounts
                         </CardTitle>
                         <div className="relative w-64">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400" />
@@ -90,7 +114,9 @@ export default function AdminUsersPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {paginatedUsers.length === 0 ? (
+                            {loading ? (
+                                <TableRow><TableCell colSpan={4} className="h-32 text-center"><Loader2 className="animate-spin inline-block" /></TableCell></TableRow>
+                            ) : paginatedUsers.length === 0 ? (
                                 <TableRow><TableCell colSpan={4} className="h-24 text-center text-muted-foreground italic">No records found.</TableCell></TableRow>
                             ) : paginatedUsers.map((u) => (
                                 <TableRow key={u.id} className="hover:bg-stone-50/50 transition-colors">
@@ -135,11 +161,15 @@ export default function AdminUsersPage() {
                     <div className="space-y-4 pt-4">
                         <div className="space-y-2">
                             <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Full Name</Label>
-                            <Input placeholder="Artisan Baker" className="h-12 border-2 rounded-xl" />
+                            <Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Artisan Baker" className="h-12 border-2 rounded-xl" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Email Address</Label>
+                            <Input value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="staff@whiskedelights.com" className="h-12 border-2 rounded-xl" />
                         </div>
                         <div className="space-y-2">
                             <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Authority Level</Label>
-                            <Select defaultValue="staff">
+                            <Select value={form.role} onValueChange={v => setForm({...form, role: v})}>
                                 <SelectTrigger className="h-12 border-2 rounded-xl"><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="admin">Administrator</SelectItem>
@@ -150,7 +180,7 @@ export default function AdminUsersPage() {
                     </div>
                     <DialogFooter className="pt-6">
                         <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="h-12 rounded-xl">Cancel</Button>
-                        <Button className="h-12 rounded-xl px-8 font-black" onClick={() => { setIsDialogOpen(false); toast({ title: "Profile Created" }); }}>Save Profile</Button>
+                        <Button className="h-12 rounded-xl px-8 font-black" onClick={handleCreate}>Save Profile</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

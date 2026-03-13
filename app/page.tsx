@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { CAKES, SPECIAL_OFFER } from '@/lib/data';
+import { useState, useEffect, useMemo } from 'react';
+import { getCakes, getSpecialOffer } from '@/services/cake-service';
+import type { Cake, SpecialOffer } from '@/lib/types';
 import { formatPrice } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Star, ShoppingBasket, ArrowRight, Sparkles, Search } from 'lucide-react';
+import { Star, ShoppingBasket, ArrowRight, Sparkles, Search, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
@@ -17,14 +18,46 @@ import { Input } from '@/components/ui/input';
 export default function BakeryLandingPage() {
   const [filter, setFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
-  
-  const categories = ['All', ...Array.from(new Set(CAKES.map(c => c.category)))];
+  const [cakes, setCakes] = useState<Cake[]>([]);
+  const [specialOffer, setSpecialOffer] = useState<SpecialOffer | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredCakes = CAKES.filter(c => {
-    const matchesFilter = filter === 'All' || c.category === filter;
-    const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesFilter && matchesSearch;
-  });
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [cakeList, offer] = await Promise.all([getCakes(), getSpecialOffer()]);
+        setCakes(cakeList || []);
+        setSpecialOffer(offer);
+      } catch (error) {
+        console.error('Failed to load landing page data', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  const categories = useMemo(() => {
+    const cats = ['All', ...Array.from(new Set(cakes.map(c => c.category)))];
+    return cats;
+  }, [cakes]);
+
+  const filteredCakes = useMemo(() => {
+    return cakes.filter(c => {
+      const matchesFilter = filter === 'All' || c.category === filter;
+      const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesFilter && matchesSearch;
+    });
+  }, [cakes, filter, searchQuery]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-stone-950 flex flex-col items-center justify-center space-y-4">
+        <Loader2 className="h-12 w-12 text-primary animate-spin" />
+        <p className="text-stone-400 font-bold tracking-widest uppercase text-xs">Pre-heating the Oven...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-white">
@@ -68,60 +101,62 @@ export default function BakeryLandingPage() {
             </div>
           </motion.div>
 
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.8 }} 
-            animate={{ opacity: 1, scale: 1 }}
-            className="relative flex flex-col items-center gap-8"
-          >
-            <div className="absolute inset-0 bg-primary/20 blur-[120px] rounded-full scale-75" />
-            
-            {/* Square Placeholder for Special Offer */}
-            <div className="relative aspect-square w-full max-w-lg mx-auto group">
-              <div className="relative h-full w-full rounded-[2.5rem] overflow-hidden border-[12px] border-white/5 shadow-2xl bg-stone-900">
-                <Image 
-                  src={SPECIAL_OFFER.cake.image_data_uri || ''} 
-                  alt={SPECIAL_OFFER.cake.name}
-                  fill
-                  className="object-cover group-hover:scale-110 transition-transform duration-1000"
-                  priority
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-              </div>
-
-              {/* Glossy Special Offer Card */}
-              <div className="absolute -bottom-10 -left-10 bg-white/10 backdrop-blur-2xl border border-white/20 p-6 rounded-3xl shadow-2xl max-w-[240px]">
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge className="bg-primary text-white border-none text-[10px] font-black uppercase">Daily Special</Badge>
+          {specialOffer && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.8 }} 
+              animate={{ opacity: 1, scale: 1 }}
+              className="relative flex flex-col items-center gap-8"
+            >
+              <div className="absolute inset-0 bg-primary/20 blur-[120px] rounded-full scale-75" />
+              
+              {/* Square Placeholder for Special Offer */}
+              <div className="relative aspect-square w-full max-w-lg mx-auto group">
+                <div className="relative h-full w-full rounded-[2.5rem] overflow-hidden border-[12px] border-white/5 shadow-2xl bg-stone-900">
+                  <Image 
+                    src={specialOffer.cake.image_data_uri || 'https://picsum.photos/seed/special/600/600'} 
+                    alt={specialOffer.cake.name}
+                    fill
+                    className="object-cover group-hover:scale-110 transition-transform duration-1000"
+                    priority
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                 </div>
-                <h3 className="text-white font-black text-lg leading-tight mb-1">{SPECIAL_OFFER.cake.name}</h3>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-primary font-black text-2xl">{formatPrice(SPECIAL_OFFER.special_price)}</span>
-                  <span className="text-stone-500 text-sm line-through">{formatPrice(SPECIAL_OFFER.original_price)}</span>
+
+                {/* Glossy Special Offer Card */}
+                <div className="absolute -bottom-10 -left-10 bg-white/10 backdrop-blur-2xl border border-white/20 p-6 rounded-3xl shadow-2xl max-w-[240px]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge className="bg-primary text-white border-none text-[10px] font-black uppercase">Daily Special</Badge>
+                  </div>
+                  <h3 className="text-white font-black text-lg leading-tight mb-1">{specialOffer.cake.name}</h3>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-primary font-black text-2xl">{formatPrice(specialOffer.special_price)}</span>
+                    <span className="text-stone-500 text-sm line-through">{formatPrice(specialOffer.original_price)}</span>
+                  </div>
+                </div>
+
+                <div className="absolute -top-5 -right-5 h-32 w-32 bg-primary rounded-full flex flex-col items-center justify-center text-white shadow-xl rotate-12 z-20">
+                  <span className="text-[10px] uppercase font-black tracking-widest opacity-80">Save</span>
+                  <span className="text-4xl font-black">{specialOffer.discount_percentage}%</span>
                 </div>
               </div>
 
-              <div className="absolute -top-5 -right-5 h-32 w-32 bg-primary rounded-full flex flex-col items-center justify-center text-white shadow-xl rotate-12 z-20">
-                <span className="text-[10px] uppercase font-black tracking-widest opacity-80">Save</span>
-                <span className="text-4xl font-black">{SPECIAL_OFFER.discount_percentage}%</span>
-              </div>
-            </div>
-
-            {/* Glossy Transparent Claim Offer Button placed near the cake */}
-            <Link href={`/cakes/${SPECIAL_OFFER.cake.id}`} className="w-full max-w-lg">
-              <Button 
-                variant="outline" 
-                size="lg" 
-                className="w-full h-16 text-xl font-black border-white/20 text-white bg-white/10 backdrop-blur-2xl hover:bg-white/20 transition-all shadow-2xl rounded-2xl group"
-              >
-                Claim Offer Now
-                <ArrowRight className="ml-2 h-6 w-6 group-hover:translate-x-2 transition-transform" />
-              </Button>
-            </Link>
-          </motion.div>
+              {/* Glossy Transparent Claim Offer Button */}
+              <Link href={`/cakes/${specialOffer.cake.id}`} className="w-full max-w-lg">
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="w-full h-16 text-xl font-black border-white/20 text-white bg-white/10 backdrop-blur-2xl hover:bg-white/20 transition-all shadow-2xl rounded-2xl group"
+                >
+                  Claim Offer Now
+                  <ArrowRight className="ml-2 h-6 w-6 group-hover:translate-x-2 transition-transform" />
+                </Button>
+              </Link>
+            </motion.div>
+          )}
         </div>
       </section>
 
-      {/* Featured Collections with Vertical Scrollable Gallery */}
+      {/* Featured Collections */}
       <section id="menu" className="py-24 container mx-auto px-6">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
           <div className="space-y-4">
@@ -150,14 +185,14 @@ export default function BakeryLandingPage() {
           </div>
         </div>
 
-        {/* Catalog Scrollable View - Fixed height with vertical scroll */}
+        {/* Catalog Scrollable View */}
         <div className="h-[900px] overflow-y-auto pr-4 custom-scrollbar bg-stone-50/30 rounded-[3rem] p-8 border">
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-10">
             {filteredCakes.map((cake) => (
               <motion.div key={cake.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <Card className="group overflow-hidden border-none bg-white shadow-sm hover:shadow-2xl transition-all duration-500 rounded-[2.5rem]">
                   <div className="relative h-72 overflow-hidden">
-                    <Image src={cake.image_data_uri || ''} alt={cake.name} fill className="object-cover group-hover:scale-110 transition-transform duration-700" />
+                    <Image src={cake.image_data_uri || 'https://picsum.photos/seed/cake/600/400'} alt={cake.name} fill className="object-cover group-hover:scale-110 transition-transform duration-700" />
                     <div className="absolute top-4 right-4">
                       <Badge className="bg-white/95 text-black border-none px-3 py-1 font-black shadow-md">
                         <Star className="h-3 w-3 fill-primary text-primary mr-1" /> {cake.rating}
@@ -186,7 +221,7 @@ export default function BakeryLandingPage() {
         </div>
       </section>
 
-      {/* Signature Footer with Icons */}
+      {/* Signature Footer */}
       <footer className="py-20 border-t bg-stone-50">
         <div className="container mx-auto px-6 grid md:grid-cols-3 gap-12 items-center">
           <div className="flex items-center gap-3">
