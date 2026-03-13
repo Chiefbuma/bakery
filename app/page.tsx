@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { 
   Star, 
   ArrowRight, 
@@ -17,10 +16,6 @@ import {
   Loader2, 
   Utensils, 
   Clock, 
-  MapPin, 
-  Phone, 
-  Mail,
-  Send,
   Heart
 } from 'lucide-react';
 import Link from 'next/link';
@@ -36,7 +31,6 @@ export default function BakeryLandingPage() {
   const [specialOffer, setSpecialOffer] = useState<SpecialOffer | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [navigatingId, setNavigatingId] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -65,14 +59,6 @@ export default function BakeryLandingPage() {
       return matchesFilter && matchesSearch;
     });
   }, [cakes, filter, searchQuery]);
-
-  const handleContactSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsSubmitting(false);
-    alert("Thank you! Your message has been sent to our master bakers.");
-  };
 
   if (isLoading) {
     return (
@@ -106,8 +92,7 @@ export default function BakeryLandingPage() {
           </div>
           <nav className="hidden md:flex items-center gap-8 text-[9px] font-black uppercase tracking-widest text-stone-500">
             <Link href="#menu" className="hover:text-primary transition-colors">Artisanal Gallery</Link>
-            <Link href="#about" className="hover:text-primary transition-colors">Our Story</Link>
-            <Link href="#contact" className="hover:text-primary transition-colors">Connect</Link>
+            <Link href="/" className="hover:text-primary transition-colors">Home</Link>
           </nav>
           <div className="flex items-center gap-4">
             <Link href="#menu">
@@ -157,9 +142,6 @@ export default function BakeryLandingPage() {
                 <Link href="#menu" className="flex-1">
                   <Button className="w-full h-12 text-[10px] font-black rounded-xl shadow-2xl shadow-primary/20">Explore Gallery</Button>
                 </Link>
-                <Link href="#contact" className="flex-1">
-                  <Button variant="outline" className="w-full h-12 text-[10px] font-black rounded-xl border-white/20 text-white hover:bg-white/10">Custom Order</Button>
-                </Link>
               </div>
             </div>
           </motion.div>
@@ -207,76 +189,6 @@ export default function BakeryLandingPage() {
               </div>
             </motion.div>
           )}
-        </div>
-      </section>
-
-      {/* Our Story Section */}
-      <section id="about" className="py-24 bg-stone-50 overflow-hidden">
-        <div className="container mx-auto px-6">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <motion.div 
-              initial={{ opacity: 0, x: -40 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="relative"
-            >
-              <div className="relative aspect-[4/5] rounded-[3rem] overflow-hidden shadow-2xl">
-                <Image 
-                  src="https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&q=80&w=1000" 
-                  alt="Baking with passion"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              <div className="absolute -bottom-10 -right-10 bg-white p-8 rounded-[2rem] shadow-xl max-w-xs hidden md:block border">
-                <p className="text-[9px] font-black uppercase tracking-widest text-primary mb-2">Our Promise</p>
-                <p className="text-sm font-bold leading-relaxed italic">"We don't just bake cakes; we create centerpieces for your life's most beautiful chapters."</p>
-                <div className="mt-4 flex items-center gap-2">
-                  <div className="h-0.5 w-8 bg-primary"></div>
-                  <span className="text-[8px] font-black uppercase tracking-widest text-stone-400">Master Baker</span>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div 
-              initial={{ opacity: 0, x: 40 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="space-y-8"
-            >
-              <div className="space-y-4">
-                <Badge variant="outline" className="border-primary text-primary font-black uppercase tracking-widest text-[8px] px-3">Our Story</Badge>
-                <h2 className="text-4xl md:text-5xl font-black font-headline tracking-tighter leading-tight">
-                  Handcrafted in Nyeri, <br/>
-                  <span className="text-primary italic">Born from Passion.</span>
-                </h2>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Founded in the heart of Othaya, WhiskeDelights began as a small home kitchen with a single mission: to redefine what a celebration tastes like. We believe that every ingredient matters, from the finest Belgian chocolate to the local farm-fresh berries.
-                </p>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Our artisanal approach blends time-honored techniques with contemporary design, ensuring that every creation is as visually stunning as it is delicious. We take pride in being a part of your weddings, birthdays, and "just because" moments.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-8 pt-4">
-                <div className="space-y-2">
-                  <h4 className="text-2xl font-black text-primary font-headline">100%</h4>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-stone-400">Natural Ingredients</p>
-                </div>
-                <div className="space-y-2">
-                  <h4 className="text-2xl font-black text-primary font-headline">500+</h4>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-stone-400">Happy Celebrations</p>
-                </div>
-              </div>
-
-              <Link href="#menu">
-                <Button className="rounded-xl font-black px-8 h-14 text-[10px] gap-2 group shadow-xl shadow-primary/20">
-                  Visit Our Gallery
-                  <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
-            </motion.div>
-          </div>
         </div>
       </section>
 
@@ -377,96 +289,6 @@ export default function BakeryLandingPage() {
         </div>
       </section>
 
-      {/* Connect Section */}
-      <section id="contact" className="py-24 relative overflow-hidden bg-stone-900 text-white">
-        <div className="container mx-auto px-6 relative z-10">
-          <div className="grid lg:grid-cols-5 gap-16">
-            <div className="lg:col-span-2 space-y-12">
-              <div className="space-y-4">
-                <Badge className="bg-primary text-white font-black uppercase tracking-widest text-[7px] px-3">Connect With Us</Badge>
-                <h2 className="text-4xl md:text-5xl font-black font-headline tracking-tighter">
-                  Let's Discuss <br/>
-                  <span className="text-primary italic">Your Celebration.</span>
-                </h2>
-                <p className="text-sm text-stone-400 leading-relaxed font-medium">
-                  Whether you have a specific vision or need guidance on choosing the perfect flavor, our master bakers are here to help.
-                </p>
-              </div>
-
-              <div className="space-y-6">
-                <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/10 group hover:border-primary/50 transition-colors">
-                  <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary shrink-0">
-                    <MapPin className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-stone-300">Visit Our Kitchen</h4>
-                    <p className="text-sm font-medium">Othaya Main Road, Othaya Town</p>
-                    <p className="text-xs text-stone-500">Nyeri County, Kenya</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/10 group hover:border-primary/50 transition-colors">
-                  <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary shrink-0">
-                    <Phone className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-stone-300">Call Us Directly</h4>
-                    <p className="text-sm font-medium">+254 700 000 000</p>
-                    <p className="text-xs text-stone-500">Mon - Sat: 8am - 7pm</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/10 group hover:border-primary/50 transition-colors">
-                  <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary shrink-0">
-                    <Mail className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-stone-300">General Inquiry</h4>
-                    <p className="text-sm font-medium">hello@whiskedelights.com</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="lg:col-span-3">
-              <Card className="bg-white border-none shadow-2xl rounded-[3rem] p-8 md:p-12 overflow-hidden relative">
-                <form onSubmit={handleContactSubmit} className="space-y-6 relative z-10">
-                  <div className="grid sm:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-[9px] font-black uppercase tracking-widest text-stone-400 ml-1">Your Name</label>
-                      <Input placeholder="John Doe" className="h-12 border-2 rounded-xl text-stone-900 font-bold focus:border-primary/50" required />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[9px] font-black uppercase tracking-widest text-stone-400 ml-1">Email Address</label>
-                      <Input type="email" placeholder="john@example.com" className="h-12 border-2 rounded-xl text-stone-900 font-bold focus:border-primary/50" required />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label className="text-[9px] font-black uppercase tracking-widest text-stone-400 ml-1">Occasion / Topic</label>
-                    <Input placeholder="e.g. Wedding Cake Inquiry" className="h-12 border-2 rounded-xl text-stone-900 font-bold focus:border-primary/50" required />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[9px] font-black uppercase tracking-widest text-stone-400 ml-1">Message Details</label>
-                    <Textarea placeholder="Tell us about your dream cake..." className="min-h-[150px] border-2 rounded-2xl text-stone-900 font-bold focus:border-primary/50" required />
-                  </div>
-
-                  <Button className="w-full h-14 rounded-2xl font-black text-[10px] uppercase tracking-widest gap-3 shadow-xl shadow-primary/20" disabled={isSubmitting}>
-                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                    {isSubmitting ? 'Sending Request...' : 'Send Message'}
-                  </Button>
-                </form>
-                <div className="absolute top-0 right-0 p-8 opacity-5">
-                  <Heart className="h-64 w-64 fill-primary" />
-                </div>
-              </Card>
-            </div>
-          </div>
-        </div>
-        <div className="absolute inset-0 bg-primary/5 blur-[120px] rounded-full scale-150 -z-0" />
-      </section>
-
       {/* Signature Footer */}
       <footer className="py-16 border-t bg-stone-50">
         <div className="container mx-auto px-6">
@@ -493,8 +315,7 @@ export default function BakeryLandingPage() {
               <h4 className="font-black uppercase tracking-widest text-[8px] text-stone-400">Navigation</h4>
               <ul className="space-y-3 text-[9px] font-black text-muted-foreground uppercase tracking-widest">
                 <li><Link href="#menu" className="hover:text-primary transition-colors">The Gallery</Link></li>
-                <li><Link href="#about" className="hover:text-primary transition-colors">Our Story</Link></li>
-                <li><Link href="#contact" className="hover:text-primary transition-colors">Connect</Link></li>
+                <li><Link href="/" className="hover:text-primary transition-colors">Home</Link></li>
               </ul>
             </div>
 
