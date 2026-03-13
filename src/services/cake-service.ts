@@ -101,6 +101,15 @@ export async function createCustomizationOption(category: CustomizationCategory,
   if (!res.ok) throw new Error(`Failed to add ${category}`);
 }
 
+export async function updateCustomizationOption(category: CustomizationCategory, id: string, data: any): Promise<void> {
+  const res = await fetch(`${API_URL}/customizations/${category}/${id}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(`Failed to update ${category}`);
+}
+
 export async function deleteCustomizationOption(category: CustomizationCategory, id: string): Promise<void> {
   const res = await fetch(`${API_URL}/customizations/${category}/${id}`, {
     method: 'DELETE',

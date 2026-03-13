@@ -1,55 +1,44 @@
-# WhiskeDelights Artisanal Bakery | Enterprise Management System
 
-A production-grade eCommerce and Bakery Management platform designed for high-precision artisanal operations.
+# WhiskeDelights Artisanal Bakery | Production Management System
 
-## 1. System Overview
+A high-performance eCommerce and Bakery Management platform designed for artisanal operations, featuring atomic transaction integrity and secure administrative auditing.
 
-WhiskeDelights is a full-stack Next.js application built to manage specialized bakery operations, from customer-facing artisanal galleries to internal transaction auditing.
+## 1. Production Architecture
+The system is built with a decoupled architecture that prioritizes data integrity and security:
+- **Frontend**: Next.js 15 (App Router) with React 19.
+- **Backend API**: Secure Next.js API Routes serving as a bridge between the React frontend and the MySQL persistence layer.
+- **Database**: MySQL 8.0 with optimized indexing on audit-critical columns.
 
-### Core Technology Stack
-- **Frontend**: Next.js 15 (App Router), React 19, Tailwind CSS, Framer Motion.
-- **Backend**: Next.js API Routes with secure JWT authentication.
-- **Database**: MySQL 8.0 (Relational integrity with atomic transactions).
-- **Security**: Bcrypt password hashing and Token-based Auth.
-- **Payments**: Integrated Paystack gateway for M-Pesa and Card deposits.
+## 2. Design Principles
+### Precision Auditing (5-Record Rule)
+The administrative portal is strictly standardized to show **5 records per page**. This design principle reduces cognitive load for bakery staff, ensuring every artisanal job is audited with zero errors.
 
-## 2. Architectural Principles
+### Security by Isolation
+- Administrative routes require a valid JWT via Bearer token.
+- Database credentials and API keys are managed exclusively through environment variables.
+- Relative API paths are used to prevent CORS preflight blocks.
 
-### Atomic Transaction Integrity
-The system utilizes MySQL transactions for order placement. This ensures that an order header and its multiple line items are saved in an "all-or-nothing" operation, preventing data corruption during network instability.
+## 3. Production Deployment
+The app is configured for **Standalone Output**. This generates a minimal `.next/standalone` folder containing only the required production files.
 
-### High-Precision Auditing
-All administrative modules (**Orders, Catalog, Personnel**) strictly follow a **5-records-per-page** pagination rule. This reduces cognitive load for administrators and ensures every artisanal job is audited with precision.
+### Step-by-Step Deployment:
+1. **Database**: Import `schema.sql` into your MySQL database via phpMyAdmin.
+2. **Build**: Run `npm run build` locally.
+3. **Upload**: Upload the contents of `.next/standalone` to your server's application root.
+4. **Environment**: Configure the `.env` variables in your server's Node.js panel.
+5. **Static Assets**: Ensure `.next/static` and `public` folders are accessible in the production root.
 
-### Security by Design
-- **Authenticated APIs**: Admin routes verify JSON Web Tokens (JWT) before processing data mutations.
-- **Credential Protection**: Passwords are never stored in plain text; they use standard Bcrypt hashing with 10 salt rounds.
-- **Sanitized I/O**: Input validation prevents SQL injection and cross-site scripting (XSS).
+## 4. Default Admin Access
+- **Email**: `admin@whiskedelights.com`
+- **Password**: `admin123`
 
-## 3. Production Deployment (Standalone Folder)
-
-Next.js is configured for `standalone` output. This means that running `npm run build` will create a minimal production bundle.
-
-### a. Deployment Steps
-1. **Environment Setup**: Ensure your Node.js version is 20.x or higher.
-2. **Database Migration**: Import `schema.sql` into your MySQL database via phpMyAdmin.
-3. **Environment Variables**: Configure your `.env` variables or server environment settings.
-4. **Build the Project**:
-   ```bash
-   npm run build
-   ```
-5. **Prepare for Upload**:
-   - The `.next/standalone` folder contains the core application.
-   - Copy the `public` folder and `.next/static` folder into the `.next/standalone` folder.
-   - On the server, point your Node.js entry point to `server.js` inside the standalone folder.
-
-### b. Shared Hosting (cPanel)
-1. Upload the contents of `.next/standalone` to your application root.
-2. Set the "Application Startup File" in cPanel to `server.js`.
-3. Use a `.htaccess` file to proxy requests to the Node.js port if necessary.
-
-## 4. Operational Features
-- **Daily Special Editor**: Update the homepage feature with live previews.
-- **Customization Engine**: Manage flavors, sizes, and toppings with premium pricing.
-- **Transaction Ledger**: Full lifecycle management of orders (Processing -> Complete).
-- **Staff Directory**: Register personnel with role-based authority.
+## 5. Environment Configuration
+```bash
+DB_HOST=localhost
+DB_DATABASE=gledcapi_whiskedelights
+DB_USER=gledcapi_whiskedelights
+DB_PASSWORD=your_secure_password
+JWT_SECRET=your_long_random_jwt_secret
+NEXT_PUBLIC_API_URL=https://whiskedelights.co.ke/api
+NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_live_...
+```

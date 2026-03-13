@@ -13,7 +13,8 @@ export async function GET(req: NextRequest) {
     const [rows]: any = await pool.query('SELECT * FROM orders ORDER BY created_at DESC');
     return NextResponse.json(rows);
   } catch (error) {
-    return NextResponse.json({ error: "Ledger failure" }, { status: 500 });
+    console.error('[ORDERS_LEDGER_ERROR]', error);
+    return NextResponse.json({ error: "Failed to load order ledger" }, { status: 500 });
   }
 }
 
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     await connection.rollback();
     console.error('[ORDER_PLACEMENT_ERROR]', error);
-    return NextResponse.json({ error: "Processing failed" }, { status: 500 });
+    return NextResponse.json({ error: "Order processing failed" }, { status: 500 });
   } finally {
     connection.release();
   }
