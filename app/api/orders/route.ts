@@ -1,22 +1,23 @@
-import { NextResponse } from 'next/server';
+
+import { NextResponse, NextRequest } from 'next/server';
 import pool from '@/lib/db';
+import { verifyAuth } from '@/lib/auth-utils';
 
 export const dynamic = 'force-dynamic';
 
-/**
- * @fileOverview Bakery Orders API (DB Backed)
- */
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const auth = verifyAuth(req);
+  if (!auth.authenticated) return NextResponse.json({ error: auth.error }, { status: 401 });
+
   try {
     const [rows]: any = await pool.query('SELECT * FROM orders ORDER BY created_at DESC');
     return NextResponse.json(rows);
   } catch (error) {
-    console.error('Fetch Orders Error:', error);
-    return NextResponse.json({ error: "Failed to fetch ledger" }, { status: 500 });
+    return NextResponse.json({ error: "Ledger failure" }, { status: 500 });
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const connection = await pool.getConnection();
   try {
     const body = await req.json();
@@ -26,7 +27,7 @@ export async function POST(req: Request) {
     await connection.beginTransaction();
 
     const [orderResult]: any = await connection.query(
-      'INSERT INTO orders (order_number, customer_name, customer_phone, delivery_method, delivery_address, delivery_date, total_price, deposit_amount, payment_status, order_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO orders (order_number, customer_name, customer_phone, delivery_method, delivery_address, delivery_date, total_price, deposit_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       [
         orderNumber,
         deliveryInfo.name,
@@ -35,9 +36,7 @@ export async function POST(req: Request) {
         deliveryInfo.address,
         deliveryInfo.delivery_date,
         totalPrice,
-        depositAmount,
-        'pending',
-        'processing'
+        depositAmount
       ]
     );
 
@@ -54,8 +53,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ orderNumber, depositAmount });
   } catch (error) {
     await connection.rollback();
-    console.error('Place Order Error:', error);
-    return NextResponse.json({ error: "Failed to process order" }, { status: 500 });
+    console.error('[ORDER_PLACEMENT_ERROR]', error);
+    return NextResponse.json({ error: "Processing failed" }, { status: 500 });
   } finally {
     connection.release();
   }

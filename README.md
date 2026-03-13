@@ -1,54 +1,44 @@
-# Wamaghach Kahua-ini Hotel | Enterprise Management System
 
-A production-grade Hotel Management, POS, and Analytics platform designed for multi-departmental operational control.
+# WhiskeDelights Artisanal Bakery | Enterprise Management System
+
+A production-grade eCommerce and Bakery Management platform designed for high-precision artisanal operations.
 
 ## 1. System Overview
 
-The Wamaghach system is a full-stack Next.js application designed to centralize operations for a diversified hotel business including Restaurant, Bar, Car Wash, Accommodation, and Entertainment modules.
+WhiskeDelights is a full-stack Next.js application built to manage specialized bakery operations, from customer-facing artisanal galleries to internal transaction auditing.
 
-### Core Technologies
-- **Frontend**: Next.js 15 (App Router), React 19, Tailwind CSS, Shadcn/UI, Framer Motion.
-- **Backend**: Next.js API Routes (Serverless ready), Node.js.
-- **Database**: MySQL 8.0 (Atomic transactions, relational integrity).
-- **Authentication**: JWT (JSON Web Tokens) with Bcrypt password hashing.
-- **Payments**: Integrated M-Pesa (via Paystack) and Cash management.
+### Core Technology Stack
+- **Frontend**: Next.js 15 (App Router), React 19, Tailwind CSS, Framer Motion.
+- **Backend**: Next.js API Routes with secure JWT authentication.
+- **Database**: MySQL 8.0 (Relational integrity with atomic transactions).
+- **Security**: Bcrypt password hashing and Token-based Auth.
+- **Payments**: Integrated Paystack gateway for M-Pesa and Card deposits.
 
-## 2. Business Logic & Workflow
+## 2. Architectural Principles
 
-### POS & Inventory Synchronization
-- **Strict Stock Control**: The POS terminal validates real-time inventory. Items with zero stock are automatically disabled to prevent over-selling.
-- **Recipe-to-COGS Mapping**: Unique "Production Recipes" allow the system to map a sellable product (e.g., Chicken Tikka) to its raw ingredients (e.g., Chicken, Oil, Spices). When a sale occurs, raw supplies are deducted proportionally.
-- **Atomic Transactions**: Sales are processed using MySQL transactions. The system ensures the order record is created, inventory is deducted, and line items are saved in a single "all-or-nothing" operation to prevent data corruption.
+### Atomic Transaction Integrity
+The system utilizes MySQL transactions for order placement. This ensures that an order header and its multiple line items are saved in an "all-or-nothing" operation, preventing data corruption during network instability.
 
-### Financial Auditing
-- **Departmental P&L**: The system calculates "Net Operational Profit" per department by subtracting COGS (calculated via recipes or manual costs) and OpEx (utilities, rent, salaries) from Gross Revenue.
-- **MTD (Month-to-Date) Comparison**: The dashboard provides a side-by-side comparative analysis between the current month and the previous month to track growth trends.
+### High-Precision Auditing
+All administrative modules (**Orders, Catalog, Personnel**) strictly follow a **5-records-per-page** pagination rule. This reduces cognitive load for administrators and ensures every artisanal job is audited with precision.
 
-## 3. Security Architecture
+### Security by Design
+- **Authenticated APIs**: Admin routes verify JSON Web Tokens (JWT) before processing data mutations.
+- **Credential Protection**: Passwords are never stored in plain text; they use standard Bcrypt hashing with 10 salt rounds.
+- **Sanitized I/O**: Input validation prevents SQL injection and cross-site scripting (XSS).
 
-- **Password Hashing**: All user credentials are encrypted using `bcryptjs` with 10 salt rounds. Plain-text passwords are never stored.
-- **Role-Based Access Control (RBAC)**: 
-  - `Staff`: Access to POS Terminal and basic operational tools.
-  - `Admin`: Full access to Financial Dashboards, Inventory Pricing, User Management, and Transaction Auditing.
-- **Asynchronous Integrity**: API routes utilize Next.js 15's `await params` pattern to prevent race conditions and ensure stable parameter resolution.
+## 3. Production Deployment (Shared Hosting)
 
-## 4. Production Setup
+1. **Environment Setup**: Ensure your Node.js version is 20.x or higher.
+2. **Database Migration**: Import `schema.sql` into your MySQL database via phpMyAdmin.
+3. **Environment Variables**:
+   - `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_DATABASE`
+   - `JWT_SECRET`: A long random string.
+   - `NEXT_PUBLIC_API_URL`: Your full domain (e.g., `https://whiskedelights.co.ke/api`).
+   - `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY`: Your live key.
+4. **Build & Standalone**: Run `npm run build`. Upload the `.next/standalone` contents and `.next/static` to your server.
 
-1. **Database Deployment**:
-   - Create a MySQL database and import the `schema.sql` file provided in the root directory.
-2. **Environment Configuration**:
-   Set the following variables:
-   - `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_DATABASE`, `DB_PORT`
-   - `JWT_SECRET`: A long random string for securing session tokens.
-   - `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY`: For M-Pesa integration.
-3. **Build & Start**:
-   ```bash
-   npm run build
-   npm start
-   ```
-
-## 5. Performance Optimization
-
-- **Connection Pooling**: Utilizes `mysql2/promise` with a connection pool to handle concurrent requests efficiently.
-- **Client-Side Persistence**: The POS cart uses memoized calculations and local persistence to ensure a robust user experience even during network instability.
-- **Deep Audit Ledger**: The Orders module supports 5-record pagination and individual line-item CRUD for precise financial management.
+## 4. Operational Features
+- **Daily Special Editor**: Update the homepage feature with live previews.
+- **Customization Engine**: Manage flavors, sizes, and toppings with premium pricing.
+- **Transaction Ledger**: Full lifecycle management of orders (Processing -> Complete).

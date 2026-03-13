@@ -1,173 +1,168 @@
+
 'use client';
 
 /**
- * @fileOverview WhiskeDelights Mock Service Layer
- * Centralizes all bakery operations using a persistent in-memory mock data store.
+ * @fileOverview WhiskeDelights Production Service Layer
+ * Centralizes all bakery operations via real REST API calls to the Next.js backend.
  */
 
 import type { Cake, SpecialOffer, CustomizationOptions, Order, LoginCredentials, SpecialOfferUpdatePayload, CustomizationCategory, User } from '@/lib/types';
-import { 
-  MOCK_CAKES, 
-  MOCK_FLAVORS, 
-  MOCK_SIZES, 
-  MOCK_COLORS, 
-  MOCK_TOPPINGS, 
-  MOCK_ORDERS, 
-  MOCK_USERS 
-} from '@/lib/data';
 
-// --- IN-MEMORY DATA STORE (Simulating a DB) ---
-let cakes = [...MOCK_CAKES];
-let flavors = [...MOCK_FLAVORS];
-let sizes = [...MOCK_SIZES];
-let colors = [...MOCK_COLORS];
-let toppings = [...MOCK_TOPPINGS];
-let orders = [...MOCK_ORDERS];
-let users = [...MOCK_USERS];
-let activeSpecialOffer: SpecialOffer = {
-  cake: cakes[0],
-  discount_percentage: 20,
-  original_price: cakes[0].base_price,
-  special_price: cakes[0].base_price * 0.8,
-  savings: cakes[0].base_price * 0.2
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+const getHeaders = () => {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return headers;
 };
-
-// --- HELPER (Reduced delays for better performance) ---
-const delay = (ms: number = 200) => new Promise(resolve => setTimeout(resolve, ms));
 
 // --- CAKES ---
 export async function getCakes(): Promise<Cake[]> {
-  await delay();
-  return [...cakes];
+  const res = await fetch(`${API_URL}/cakes`, { cache: 'no-store' });
+  if (!res.ok) throw new Error('Failed to fetch catalog');
+  return res.json();
 }
 
 export async function createCake(cake: any): Promise<void> {
-  await delay();
-  cakes.push({
-    ...cake,
-    orders_count: 0,
-    rating: 0,
-    id: cake.name.toLowerCase().replace(/ /g, '-')
+  const res = await fetch(`${API_URL}/cakes`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(cake),
   });
+  if (!res.ok) throw new Error('Failed to register creation');
 }
 
 export async function updateCake(id: string, updated: any): Promise<void> {
-  await delay();
-  cakes = cakes.map(c => c.id === id ? { ...c, ...updated } : c);
+  const res = await fetch(`${API_URL}/cakes/${id}`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(updated),
+  });
+  if (!res.ok) throw new Error('Failed to update masterpiece');
 }
 
 export async function deleteCake(cakeId: string): Promise<void> {
-  await delay();
-  cakes = cakes.filter(c => c.id !== cakeId);
+  const res = await fetch(`${API_URL}/cakes/${cakeId}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to remove cake');
 }
 
 export async function uploadImage(file: File): Promise<string> {
-  await delay(500); // Faster simulated upload
-  return `https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&q=80&w=600&sig=${Math.random()}`;
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(`${API_URL}/upload`, {
+    method: 'POST',
+    body: formData,
+  });
+  if (!res.ok) throw new Error('Image storage failed');
+  const data = await res.json();
+  return data.url;
 }
 
 // --- CUSTOMIZATIONS ---
 export async function getCustomizationOptions(): Promise<CustomizationOptions> {
-  await delay();
-  return {
-    flavors: [...flavors],
-    sizes: [...sizes],
-    colors: [...colors],
-    toppings: [...toppings]
-  };
+  const res = await fetch(`${API_URL}/customizations`, { cache: 'no-store' });
+  if (!res.ok) throw new Error('Failed to load variants');
+  return res.json();
 }
 
 export async function createCustomizationOption(category: CustomizationCategory, data: any): Promise<void> {
-  await delay();
-  const newItem = { ...data, id: `m-${Date.now()}` };
-  if (category === 'flavors') flavors.push(newItem);
-  if (category === 'sizes') sizes.push(newItem);
-  if (category === 'colors') colors.push(newItem);
-  if (category === 'toppings') toppings.push(newItem);
-}
-
-export async function updateCustomizationOption(category: CustomizationCategory, id: string, data: any): Promise<void> {
-  await delay();
-  const updater = (items: any[]) => items.map(i => i.id === id ? { ...i, ...data } : i);
-  if (category === 'flavors') flavors = updater(flavors);
-  if (category === 'sizes') sizes = updater(sizes);
-  if (category === 'colors') colors = updater(colors);
-  if (category === 'toppings') toppings = updater(toppings);
+  const res = await fetch(`${API_URL}/customizations/${category}`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(`Failed to add ${category}`);
 }
 
 export async function deleteCustomizationOption(category: CustomizationCategory, id: string): Promise<void> {
-  await delay();
-  if (category === 'flavors') flavors = flavors.filter(i => i.id !== id);
-  if (category === 'sizes') sizes = sizes.filter(i => i.id !== id);
-  if (category === 'colors') colors = colors.filter(i => i.id !== id);
-  if (category === 'toppings') toppings = toppings.filter(i => i.id !== id);
+  const res = await fetch(`${API_URL}/customizations/${category}/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error(`Failed to remove ${category}`);
 }
 
 // --- ORDERS ---
 export async function getOrders(): Promise<Order[]> {
-  await delay();
-  return [...orders].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  const res = await fetch(`${API_URL}/orders`, { headers: getHeaders(), cache: 'no-store' });
+  if (!res.ok) throw new Error('Failed to retrieve ledger');
+  return res.json();
 }
 
 export async function updateOrderStatus(orderId: number, status: string): Promise<void> {
-  await delay();
-  orders = orders.map(o => o.id === orderId ? { ...o, order_status: status as any } : o);
+  const res = await fetch(`${API_URL}/orders/${orderId}/status`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) throw new Error('Failed to update job status');
 }
 
 export async function deleteOrder(orderId: number): Promise<void> {
-  await delay();
-  orders = orders.filter(o => o.id !== orderId);
+  const res = await fetch(`${API_URL}/orders/${orderId}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to clear transaction');
 }
 
 // --- USERS ---
 export async function getUsers(): Promise<User[]> {
-  await delay();
-  return [...users];
+  const res = await fetch(`${API_URL}/users`, { headers: getHeaders() });
+  if (!res.ok) throw new Error('Failed to load personnel');
+  return res.json();
 }
 
 export async function createUser(data: any): Promise<void> {
-  await delay();
-  users.push({
-    ...data,
-    id: `u-${Date.now()}`,
-    createdAt: new Date().toISOString()
+  const res = await fetch(`${API_URL}/users`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(data),
   });
+  if (!res.ok) throw new Error('Personnel registration failed');
 }
 
 export async function deleteUser(id: string): Promise<void> {
-  await delay();
-  users = users.filter(u => u.id !== id);
+  const res = await fetch(`${API_URL}/users/${id}`, {
+    method: 'DELETE',
+    headers: getHeaders(),
+  });
+  if (!res.ok) throw new Error('Access revocation failed');
 }
 
 // --- OFFERS ---
 export async function getSpecialOffer(): Promise<SpecialOffer | null> {
-  await delay();
-  return activeSpecialOffer;
+  const res = await fetch(`${API_URL}/special-offer`, { cache: 'no-store' });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error('Failed to fetch offer');
+  return res.json();
 }
 
 export async function updateSpecialOffer(payload: SpecialOfferUpdatePayload): Promise<void> {
-  await delay();
-  const cake = cakes.find(c => c.id === payload.cake_id);
-  if (cake) {
-    activeSpecialOffer = {
-      cake,
-      discount_percentage: payload.discount_percentage,
-      original_price: cake.base_price,
-      special_price: cake.base_price * (1 - payload.discount_percentage / 100),
-      savings: cake.base_price * (payload.discount_percentage / 100)
-    };
-  }
+  const res = await fetch(`${API_URL}/special-offer`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error('Daily special update failed');
 }
 
 // --- AUTH ---
 export async function loginAdmin(credentials: LoginCredentials): Promise<{ token: string }> {
-  await delay(500);
-  if (credentials.email === 'admin@whiskedelights.com' && credentials.password === 'admin123') {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('authToken', 'mock-jwt-token');
-      localStorage.setItem('isAdminLoggedIn', 'true');
-    }
-    return { token: 'mock-jwt-token' };
+  const res = await fetch(`${API_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(credentials),
+  });
+  if (!res.ok) throw new Error('Invalid credentials');
+  const data = await res.json();
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('authToken', data.token);
+    localStorage.setItem('isAdminLoggedIn', 'true');
   }
-  throw new Error('Invalid credentials');
+  return data;
 }

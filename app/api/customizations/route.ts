@@ -4,9 +4,6 @@ import pool from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
-/**
- * @fileOverview WhiskeDelights Customizations API
- */
 export async function GET() {
   try {
     const [flavors] = await pool.query('SELECT * FROM flavors ORDER BY name ASC');
@@ -21,7 +18,6 @@ export async function GET() {
       toppings
     });
   } catch (error) {
-    console.error('Fetch Customizations Error:', error);
-    return NextResponse.json({ error: "Failed to fetch config" }, { status: 500 });
+    return NextResponse.json({ error: "Config failure" }, { status: 500 });
   }
 }
