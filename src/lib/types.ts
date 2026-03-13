@@ -56,11 +56,27 @@ export interface CustomizationOptions {
   toppings: Topping[];
 }
 
+export type CustomizationCategory = 'flavors' | 'sizes' | 'colors' | 'toppings';
+
+export type CustomizationData = Flavor | Size | Color | Topping;
+
 export interface Customizations {
   flavor: string | null;
   size: string | null;
   color: string | null;
   toppings: string[];
+}
+
+export interface DeliveryInfo {
+  name: string;
+  phone: string;
+  address: string;
+  delivery_date: string;
+  delivery_time: string;
+  delivery_method: 'delivery' | 'pickup';
+  pickup_location: string;
+  special_instructions: string;
+  coordinates: { lat: number; lng: number } | null;
 }
 
 export interface CartItem {
@@ -73,15 +89,11 @@ export interface CartItem {
   customizations?: Customizations;
 }
 
-export interface DeliveryInfo {
-  name: string;
-  phone: string;
-  address: string;
-  delivery_date: string;
-  delivery_time: string;
-  delivery_method: 'delivery' | 'pickup';
-  pickup_location: string;
-  special_instructions: string;
+export interface OrderPayload {
+    items: CartItem[];
+    deliveryInfo: DeliveryInfo;
+    totalPrice: number;
+    depositAmount: number;
 }
 
 export interface Order {
@@ -91,12 +103,25 @@ export interface Order {
   customer_phone: string;
   delivery_method: 'delivery' | 'pickup';
   delivery_address?: string;
+  latitude?: number;
+  longitude?: number;
   pickup_location?: string;
   delivery_date?: string;
+  special_instructions?: string;
   total_price: number;
   deposit_amount: number;
   payment_status: 'pending' | 'paid';
   order_status: 'processing' | 'complete' | 'cancelled';
-  created_at: string;
+  created_at: string; // ISO date string
   items: CartItem[];
+}
+
+export interface LoginCredentials {
+    email: string;
+    password: string;
+}
+
+export interface SpecialOfferUpdatePayload {
+    cake_id: string;
+    discount_percentage: number;
 }
