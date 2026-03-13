@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Star, ShoppingBasket, ArrowRight, Sparkles, Search, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { InstagramIcon } from '@/components/icons/instagram-icon';
 import { WhatsappIcon } from '@/components/icons/whatsapp-icon';
 import { Input } from '@/components/ui/input';
@@ -39,8 +39,7 @@ export default function BakeryLandingPage() {
 
   const categories = useMemo(() => {
     if (!cakes.length) return ['All'];
-    const cats = ['All', ...Array.from(new Set(cakes.map(c => c.category)))];
-    return cats;
+    return ['All', ...Array.from(new Set(cakes.map(c => c.category)))];
   }, [cakes]);
 
   const filteredCakes = useMemo(() => {
@@ -54,14 +53,24 @@ export default function BakeryLandingPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-stone-950 flex flex-col items-center justify-center space-y-4">
-        <Loader2 className="h-12 w-12 text-primary animate-spin" />
-        <p className="text-stone-400 font-bold tracking-widest uppercase text-xs">Pre-heating the Oven...</p>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-6"
+        >
+          <Loader2 className="h-16 w-16 text-primary animate-spin" />
+          <p className="text-stone-400 font-black tracking-[0.3em] uppercase text-xs animate-pulse">Pre-heating the Oven...</p>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-white">
+    <motion.div 
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }}
+      className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-white"
+    >
       {/* Premium Glossy Hero Section */}
       <section className="relative min-h-[90vh] flex items-center overflow-hidden bg-stone-950">
         <div className="absolute inset-0 z-0">
@@ -80,7 +89,7 @@ export default function BakeryLandingPage() {
           <motion.div 
             initial={{ opacity: 0, x: -40 }} 
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
             className="space-y-8"
           >
             <div className="bg-white/10 backdrop-blur-2xl border border-white/20 p-8 md:p-12 rounded-[2.5rem] shadow-2xl space-y-8">
@@ -105,6 +114,7 @@ export default function BakeryLandingPage() {
             <motion.div 
               initial={{ opacity: 0, scale: 0.8 }} 
               animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
               className="relative flex flex-col items-center gap-8"
             >
               <div className="absolute inset-0 bg-primary/20 blur-[120px] rounded-full scale-75" />
@@ -156,25 +166,30 @@ export default function BakeryLandingPage() {
       {/* Featured Collections */}
       <section id="menu" className="py-24 container mx-auto px-6">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
-          <div className="space-y-4">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="space-y-4"
+          >
             <h2 className="text-5xl font-black font-headline tracking-tight">Artisanal Gallery</h2>
             <div className="relative w-full max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
                 placeholder="Search catalog..." 
-                className="pl-10 h-12 rounded-xl"
+                className="pl-10 h-12 rounded-xl border-2 focus:border-primary/50"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-          </div>
+          </motion.div>
           <div className="flex flex-wrap gap-2">
             {categories.map(cat => (
               <Button 
                 key={cat} 
                 variant={filter === cat ? "default" : "outline"}
                 onClick={() => setFilter(cat)}
-                className="rounded-full px-6 font-bold"
+                className="rounded-full px-6 font-bold h-10 shadow-sm"
               >
                 {cat}
               </Button>
@@ -182,38 +197,56 @@ export default function BakeryLandingPage() {
           </div>
         </div>
 
-        <div className="h-[900px] overflow-y-auto pr-4 custom-scrollbar bg-stone-50/30 rounded-[3rem] p-8 border">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-10">
-            {filteredCakes.map((cake) => (
-              <motion.div key={cake.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <Card className="group overflow-hidden border-none bg-white shadow-sm hover:shadow-2xl transition-all duration-500 rounded-[2.5rem]">
-                  <div className="relative h-72 overflow-hidden">
-                    <Image src={cake.image_data_uri || 'https://picsum.photos/seed/cake/600/400'} alt={cake.name} fill className="object-cover group-hover:scale-110 transition-transform duration-700" />
-                    <div className="absolute top-4 right-4">
-                      <Badge className="bg-white/95 text-black border-none px-3 py-1 font-black shadow-md">
-                        <Star className="h-3 w-3 fill-primary text-primary mr-1" /> {cake.rating}
-                      </Badge>
-                    </div>
-                  </div>
-                  <CardContent className="p-8">
-                    <div className="flex justify-between items-start mb-6">
-                      <div>
-                        <span className="text-[10px] font-black text-primary uppercase tracking-widest">{cake.category}</span>
-                        <h3 className="text-2xl font-black">{cake.name}</h3>
+        <div className="h-[800px] overflow-y-auto pr-4 custom-scrollbar bg-stone-50/50 rounded-[3rem] p-8 border shadow-inner">
+          <AnimatePresence mode="popLayout">
+            <motion.div 
+              layout
+              className="grid sm:grid-cols-2 lg:grid-cols-3 gap-10"
+            >
+              {filteredCakes.map((cake) => (
+                <motion.div 
+                  key={cake.id} 
+                  layout
+                  initial={{ opacity: 0, scale: 0.9 }} 
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Card className="group overflow-hidden border-none bg-white shadow-sm hover:shadow-2xl transition-all duration-500 rounded-[2.5rem]">
+                    <div className="relative h-72 overflow-hidden">
+                      <Image src={cake.image_data_uri || 'https://picsum.photos/seed/cake/600/400'} alt={cake.name} fill className="object-cover group-hover:scale-110 transition-transform duration-700" />
+                      <div className="absolute top-4 right-4">
+                        <Badge className="bg-white/95 text-black border-none px-3 py-1 font-black shadow-md">
+                          <Star className="h-3 w-3 fill-primary text-primary mr-1" /> {cake.rating || 'New'}
+                        </Badge>
                       </div>
-                      <span className="text-xl font-black text-primary">{formatPrice(cake.base_price)}</span>
                     </div>
-                    <Link href={`/cakes/${cake.id}`}>
-                      <Button className="w-full h-14 rounded-2xl gap-2 font-black shadow-lg shadow-primary/10">
-                        {cake.customizable ? 'Customize' : 'Order Now'}
-                        <ArrowRight className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
+                    <CardContent className="p-8">
+                      <div className="flex justify-between items-start mb-6">
+                        <div>
+                          <span className="text-[10px] font-black text-primary uppercase tracking-widest">{cake.category}</span>
+                          <h3 className="text-2xl font-black">{cake.name}</h3>
+                        </div>
+                        <span className="text-xl font-black text-primary">{formatPrice(cake.base_price)}</span>
+                      </div>
+                      <Link href={`/cakes/${cake.id}`}>
+                        <Button className="w-full h-14 rounded-2xl gap-2 font-black shadow-lg shadow-primary/10 hover:shadow-primary/20 transition-all">
+                          {cake.customizable ? 'Customize' : 'Order Now'}
+                          <ArrowRight className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </motion.div>
+          </AnimatePresence>
+          {filteredCakes.length === 0 && (
+            <div className="h-full flex flex-col items-center justify-center text-stone-400">
+              <Sparkles className="h-12 w-12 mb-4 opacity-20" />
+              <p className="font-bold uppercase tracking-widest text-sm italic">No masterpieces match your search</p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -242,6 +275,6 @@ export default function BakeryLandingPage() {
           </div>
         </div>
       </footer>
-    </div>
+    </motion.div>
   );
 }

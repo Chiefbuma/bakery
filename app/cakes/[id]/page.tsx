@@ -15,6 +15,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { motion } from 'framer-motion';
 
 export default function CakeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -24,6 +25,7 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
   const [cake, setCake] = useState<Cake | null>(null);
   const [options, setOptions] = useState<CustomizationOptions | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAdding, setIsAdding] = useState(false);
 
   const [quantity, setQuantity] = useState(1);
   const [flavorId, setFlavorId] = useState('f1');
@@ -87,7 +89,10 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
     </div>
   );
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
+    setIsAdding(true);
+    // Simulate brief delay for feedback
+    await new Promise(resolve => setTimeout(resolve, 800));
     toast({
       title: "Added to cart!",
       description: `${quantity}x ${cake.name} successfully added.`,
@@ -102,7 +107,11 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <motion.div 
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }}
+      className="min-h-screen bg-background pb-20"
+    >
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b">
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 text-sm font-bold hover:text-primary transition-colors">
@@ -116,7 +125,11 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
 
       <main className="container mx-auto px-6 py-12 grid lg:grid-cols-2 gap-16">
         {/* Left: Product Media */}
-        <div className="space-y-6">
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="space-y-6"
+        >
           <div className="relative aspect-square w-full rounded-2xl overflow-hidden shadow-2xl border">
             <Image 
               src={cake.image_data_uri || 'https://picsum.photos/seed/cake-detail/600/600'} 
@@ -126,13 +139,17 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
               priority
             />
           </div>
-        </div>
+        </motion.div>
 
         {/* Right: Customization & Info */}
-        <div className="space-y-8">
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="space-y-8"
+        >
           <div className="space-y-4">
             <div className="flex items-center gap-4">
-               <Badge variant="outline" className="font-bold">{cake.category}</Badge>
+               <Badge variant="outline" className="font-bold border-primary text-primary">{cake.category}</Badge>
                <div className="flex items-center text-sm font-bold">
                  <Star className="h-4 w-4 text-primary fill-primary mr-1" />
                  {cake.rating || 'New'} <span className="text-muted-foreground ml-1 font-medium">({cake.orders_count}+ orders)</span>
@@ -153,7 +170,7 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
                 <Label className="text-base font-black">Choose Flavor</Label>
                 <RadioGroup value={flavorId} onValueChange={setFlavorId} className="grid sm:grid-cols-2 gap-3">
                   {options.flavors.map(flavor => (
-                    <div key={flavor.id} className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer ${flavorId === flavor.id ? 'border-primary bg-primary/5' : 'border-stone-100'}`}>
+                    <div key={flavor.id} className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer ${flavorId === flavor.id ? 'border-primary bg-primary/5' : 'border-stone-100 hover:border-primary/30'}`} onClick={() => setFlavorId(flavor.id)}>
                       <div className="flex items-center gap-3">
                         <RadioGroupItem value={flavor.id} id={flavor.id} />
                         <div>
@@ -172,7 +189,7 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
                 <Label className="text-base font-black">Pick Your Size</Label>
                 <RadioGroup value={sizeId} onValueChange={setSizeId} className="grid grid-cols-3 gap-3">
                   {options.sizes.map(size => (
-                    <div key={size.id} className={`flex flex-col items-center p-3 rounded-xl border-2 transition-all cursor-pointer text-center ${sizeId === size.id ? 'border-primary bg-primary/5' : 'border-stone-100'}`}>
+                    <div key={size.id} className={`flex flex-col items-center p-3 rounded-xl border-2 transition-all cursor-pointer text-center ${sizeId === size.id ? 'border-primary bg-primary/5' : 'border-stone-100 hover:border-primary/30'}`} onClick={() => setSizeId(size.id)}>
                       <RadioGroupItem value={size.id} id={size.id} className="sr-only" />
                       <span className="font-bold text-sm">{size.name}</span>
                       <span className="text-[10px] text-muted-foreground">{size.serves}</span>
@@ -190,7 +207,7 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
                     <button 
                       key={color.id} 
                       onClick={() => setColorId(color.id)}
-                      className={`group flex items-center gap-2 p-1.5 pr-4 rounded-full border-2 transition-all ${colorId === color.id ? 'border-primary bg-primary/5' : 'border-stone-100'}`}
+                      className={`group flex items-center gap-2 p-1.5 pr-4 rounded-full border-2 transition-all ${colorId === color.id ? 'border-primary bg-primary/5' : 'border-stone-100 hover:border-primary/30'}`}
                     >
                       <div className="h-6 w-6 rounded-full border border-stone-200" style={{ backgroundColor: color.hex_value }} />
                       <span className="text-xs font-bold">{color.name}</span>
@@ -204,7 +221,7 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
                 <Label className="text-base font-black">Extra Decorations</Label>
                 <div className="grid sm:grid-cols-2 gap-3">
                   {options.toppings.map(topping => (
-                    <div key={topping.id} className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer ${selectedToppings.includes(topping.id) ? 'border-primary bg-primary/5' : 'border-stone-100'}`} onClick={() => toggleTopping(topping.id)}>
+                    <div key={topping.id} className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer ${selectedToppings.includes(topping.id) ? 'border-primary bg-primary/5' : 'border-stone-100 hover:border-primary/30'}`} onClick={() => toggleTopping(topping.id)}>
                       <div className="flex items-center gap-3">
                         <Checkbox checked={selectedToppings.includes(topping.id)} onCheckedChange={() => toggleTopping(topping.id)} />
                         <span className="text-sm font-bold">{topping.name}</span>
@@ -240,16 +257,16 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
               </div>
             </div>
 
-            <Button size="lg" className="w-full h-16 text-xl font-black gap-3 shadow-xl hover:shadow-2xl transition-all" onClick={handleAddToCart}>
-              <ShoppingCart className="h-6 w-6" />
-              Place Order
+            <Button size="lg" className="w-full h-16 text-xl font-black gap-3 shadow-xl hover:shadow-2xl transition-all" onClick={handleAddToCart} disabled={isAdding}>
+              {isAdding ? <Loader2 className="h-6 w-6 animate-spin" /> : <ShoppingCart className="h-6 w-6" />}
+              {isAdding ? 'Adding to Cart...' : 'Place Order'}
             </Button>
-            <p className="text-center text-xs text-muted-foreground font-medium">
+            <p className="text-center text-[10px] text-muted-foreground font-medium">
               Ready for pickup or delivery within <span className="text-foreground font-bold">{cake.ready_time}</span>
             </p>
           </div>
-        </div>
+        </motion.div>
       </main>
-    </div>
+    </motion.div>
   );
 }
