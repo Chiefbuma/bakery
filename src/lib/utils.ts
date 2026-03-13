@@ -14,7 +14,9 @@ export function formatPrice(amount: number | string | null | undefined): string 
 
   let value: number;
   if (typeof amount === 'string') {
-    value = parseFloat(amount.replace(/[^0-9.]/g, ''));
+    // Remove currency prefix and commas before parsing
+    const sanitized = amount.replace(/[Ksh,]/g, '').trim();
+    value = parseFloat(sanitized);
   } else {
     value = amount;
   }
@@ -28,5 +30,5 @@ export function formatPrice(amount: number | string | null | undefined): string 
     currency: 'KES',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(value);
+  }).format(value).replace('KES', 'Ksh');
 }

@@ -12,7 +12,7 @@ This high-performance eCommerce and Bakery Management platform is optimized for 
 ## 2. Production Deployment (cPanel / CloudLinux)
 
 ### A. Routing & HTTPS Redirect (403/404 Resolution)
-To force HTTPS and prevent 404 errors on deep links (e.g., `/admin/portal/dashboard`), ensure your application root contains a `.htaccess` file with the following rules. Replace the Passenger paths with your specific server paths.
+To force HTTPS and prevent 403/404 errors on deep links (e.g., `/admin/portal/dashboard`), ensure your application root contains a `.htaccess` file with the following rules. Replace the Passenger paths with your specific server paths.
 
 ```apache
 # DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN
@@ -30,6 +30,9 @@ RewriteBase /
 # Force HTTPS
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Prevent directory listing (Fixes 403 Forbidden)
+Options -Indexes
 
 # Standard Node.js Rewrite (Solves 404 on Refresh/Mobile)
 RewriteRule ^index\.html$ - [L]
