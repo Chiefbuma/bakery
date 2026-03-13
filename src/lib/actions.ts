@@ -2,16 +2,20 @@
 
 import type { OrderPayload } from './types';
 
-// Use an internal proxy or relative URL for server-side fetches to ensure protocol consistency
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+// Use relative API URL for consistent protocol handling
+const API_URL = '/api';
 
 /**
  * Places an order by sending the data to the backend API.
- * Uses the native Node.js fetch in the server environment.
+ * Uses robust parsing to prevent "Unexpected end of JSON input" errors.
  */
 export async function placeOrder(payload: OrderPayload): Promise<{ success: boolean; orderNumber: string; error?: string; depositAmount: number }> {
   try {
-    const response = await fetch(`${API_URL}/orders`, {
+    // Note: Since this is a server action, it might need the full domain if called from a non-relative context,
+    // but Next.js usually handles internal routing. For CloudLinux/Passenger, we ensure absolute consistency.
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+    
+    const response = await fetch(`${baseUrl}/orders`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -20,12 +24,21 @@ export async function placeOrder(payload: OrderPayload): Promise<{ success: bool
         cache: 'no-store',
     });
 
+    const text = await response.text();
+    
     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to place order.' }));
-        throw new Error(errorData.message || 'Failed to place order.');
+        let message = 'Order placement failed.';
+        try {
+          const errorData = JSON.parse(text);
+          message = errorData.message || message;
+        } catch (e) {
+          // If not JSON, it's likely an HTML error page from the server
+          console.error('[PLACE_ORDER_HTML_ERROR]', text.substring(0, 100));
+        }
+        throw new Error(message);
     }
     
-    const result = await response.json();
+    const result = JSON.parse(text);
 
     return {
         success: true,
@@ -35,10 +48,10 @@ export async function placeOrder(payload: OrderPayload): Promise<{ success: bool
 
   } catch (e) {
     const error = e instanceof Error ? e.message : 'An unknown error occurred.';
-    console.error('[PLACE_ORDER_SERVER_ACTION_ERROR]', error);
+    console.error('[PLACE_ORDER_ACTION_CRITICAL_ERROR]', error);
     return { 
       success: false, 
-      error: 'Could not process order. Please try again or contact support.', 
+      error: error, 
       orderNumber: '', 
       depositAmount: 0 
     };

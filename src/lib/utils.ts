@@ -25,6 +25,7 @@ export function formatPrice(amount: number | string | null | undefined): string 
     return 'Ksh 0';
   }
 
+  // Use KES currency formatting but replace label with Ksh for local brand consistency
   return new Intl.NumberFormat('en-KE', {
     style: 'currency',
     currency: 'KES',

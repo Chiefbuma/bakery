@@ -12,40 +12,41 @@ This high-performance eCommerce and Bakery Management platform is optimized for 
 ## 2. Production Deployment (cPanel / CloudLinux)
 
 ### A. Routing & HTTPS Redirect (403/404 Resolution)
-To force HTTPS and prevent 403/404 errors on deep links (e.g., `/admin/portal/dashboard`), ensure your application root contains a `.htaccess` file with the following rules. Replace the Passenger paths with your specific server paths.
+To force HTTPS and prevent 403/404 errors on deep links (e.g., `/admin/portal/dashboard`), your `.htaccess` file MUST contain these specific rewrite rules. Replace the Passenger paths with your specific server paths.
 
 ```apache
-# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN
+# --- PASSENGER CONFIGURATION ---
 PassengerAppRoot "/home/gledcapi/domains/whiskedelights.co.ke"
 PassengerBaseURI "/"
 PassengerNodejs "/home/gledcapi/nodevenv/domains/whiskedelights.co.ke/20/bin/node"
 PassengerAppType node
 PassengerStartupFile server.js
-# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END
+PassengerAppEnv production
 
-# --- Force HTTPS & Application Routing ---
+# --- FORCE HTTPS & ROUTING ---
 RewriteEngine On
 RewriteBase /
 
-# Force HTTPS
+# 1. Force HTTPS
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-# Prevent directory listing (Fixes 403 Forbidden)
+# 2. Prevent directory listing (Fixes 403 Forbidden)
 Options -Indexes
 
-# Standard Node.js Rewrite (Solves 404 on Refresh/Mobile)
+# 3. Handle App Router deep links (Fixes 404 on Refresh)
 RewriteRule ^index\.html$ - [L]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule . /server.js [L]
 
+# --- ENVIRONMENT VARIABLES ---
 <IfModule Litespeed>
   SetEnv DB_HOST localhost
   SetEnv DB_USER gledcapi_whiskedelight
   SetEnv DB_DATABASE gledcapi_whiskedelight
   SetEnv DB_PASSWORD KJfaAahFykuuL3k692FW
-  SetEnv JWT_SECRET pk_live_8d9017d3458e0213efd55c219527b9171482e87d3efd55c219527b9171482e87d
+  SetEnv JWT_SECRET your_secure_jwt_secret_here
   SetEnv NEXT_PUBLIC_API_URL /api
 </IfModule>
 ```

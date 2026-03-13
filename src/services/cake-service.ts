@@ -1,11 +1,42 @@
 /**
  * @fileOverview WhiskeDelights Production Service Layer
- * Optimized for production with resilient JSON parsing and relative pathing.
+ * Hardened for production with extremely resilient JSON parsing to prevent "Unexpected end of JSON input" errors.
  */
 
 import type { Cake, SpecialOffer, CustomizationOptions, Order, LoginCredentials, SpecialOfferUpdatePayload, CustomizationCategory, User } from '@/lib/types';
 
+// Use relative path to automatically match protocol (HTTP/HTTPS) and domain
 const API_URL = '/api';
+
+/**
+ * Robust JSON parser that handles empty responses, HTML error pages, or malformed data.
+ * Prevents "Unexpected end of JSON input" crashes.
+ */
+async function safeParseJson(response: Response) {
+  try {
+    const text = await response.text();
+    
+    if (!response.ok) {
+      console.warn(`[API_RESPONSE_NOT_OK] ${response.status}: ${text.substring(0, 100)}`);
+      return null;
+    }
+
+    if (!text || text.trim().length === 0) {
+      return null;
+    }
+
+    // Check if it's HTML (likely an error page from Passenger/Apache)
+    if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+      console.warn('[API_RETURNED_HTML_INSTEAD_OF_JSON]');
+      return null;
+    }
+
+    return JSON.parse(text);
+  } catch (e) {
+    console.error('[JSON_PARSE_CRITICAL_FAILURE]', e);
+    return null;
+  }
+}
 
 // Helper to get auth token safely from localStorage
 const getAuthHeaders = () => {
@@ -18,27 +49,6 @@ const getAuthHeaders = () => {
   return headers;
 };
 
-async function safeParseJson(response: Response) {
-  const contentType = response.headers.get('content-type');
-  const text = await response.text();
-  
-  if (!response.ok) {
-    console.error(`[API_ERROR] ${response.status}: ${text.substring(0, 100)}`);
-    return null;
-  }
-
-  if (!text || !contentType || !contentType.includes('application/json')) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(text);
-  } catch (e) {
-    console.error('[JSON_PARSE_ERROR]', text.substring(0, 100));
-    return null;
-  }
-}
-
 // --- CATALOG SERVICES ---
 
 export async function getCakes(): Promise<Cake[]> {
@@ -47,7 +57,7 @@ export async function getCakes(): Promise<Cake[]> {
     const data = await safeParseJson(res);
     return data || [];
   } catch (error) {
-    console.error('[GET_CAKES_ERROR]', error);
+    console.error('[GET_CAKES_SERVICE_ERROR]', error);
     return [];
   }
 }
