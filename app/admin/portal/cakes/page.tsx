@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getCakes, deleteCake } from '@/services/cake-service';
+import { getCakes, createCake, updateCake, deleteCake, uploadImage } from '@/services/cake-service';
 import type { Cake } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -10,12 +10,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { formatPrice } from '@/lib/utils';
-import { Trash2, Edit, Plus, ChevronLeft, ChevronRight, Package, Loader2 } from 'lucide-react';
+import { Trash2, Edit, Plus, ChevronLeft, ChevronRight, Package, Loader2, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
+
+const CATEGORIES = ['Classic', 'Chocolate', 'Fruit', 'Specialty', 'Custom'];
 
 export default function AdminCakesPage() {
   const { toast } = useToast();
@@ -24,16 +27,17 @@ export default function AdminCakesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCake, setEditingCake] = useState<Cake | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isUploading, setIsUploading] = useState(false);
   const recordsPerPage = 5;
 
-  // Form State
   const [formData, setFormData] = useState({
     name: '',
     category: 'Classic',
     base_price: 0,
     description: '',
     ready_time: '24h',
-    customizable: true
+    customizable: true,
+    image_data_uri: ''
   });
 
   useEffect(() => {
@@ -49,6 +53,21 @@ export default function AdminCakesPage() {
       toast({ variant: "destructive", title: "Sync Error", description: "Failed to load catalog." });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploading(true);
+    try {
+      const url = await uploadImage(file);
+      setFormData(prev => ({ ...prev, image_data_uri: url }));
+      toast({ title: "Image Uploaded", description: "Masterpiece preview updated." });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Upload Failed", description: "Could not save image." });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -71,7 +90,8 @@ export default function AdminCakesPage() {
         base_price: cake.base_price,
         description: cake.description,
         ready_time: cake.ready_time,
-        customizable: cake.customizable
+        customizable: cake.customizable,
+        image_data_uri: cake.image_data_uri || ''
       });
     } else {
       setEditingCake(null);
@@ -81,7 +101,8 @@ export default function AdminCakesPage() {
         base_price: 0,
         description: '',
         ready_time: '24h',
-        customizable: true
+        customizable: true,
+        image_data_uri: ''
       });
     }
     setIsDialogOpen(true);
@@ -89,10 +110,18 @@ export default function AdminCakesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, this would call the POST/PUT API
-    toast({ title: editingCake ? "Cake Updated" : "Cake Created", description: `${formData.name} saved to catalog.` });
-    setIsDialogOpen(false);
-    fetchCakes();
+    try {
+      if (editingCake) {
+        await updateCake(editingCake.id, formData);
+      } else {
+        await createCake({ ...formData, id: formData.name.toLowerCase().replace(/ /g, '-') });
+      }
+      toast({ title: editingCake ? "Cake Updated" : "Cake Created", description: `${formData.name} saved to catalog.` });
+      setIsDialogOpen(false);
+      fetchCakes();
+    } catch (error) {
+      toast({ variant: "destructive", title: "Submit Failed", description: "Could not save masterpiece." });
+    }
   };
 
   const totalPages = Math.max(1, Math.ceil(cakes.length / recordsPerPage));
@@ -179,14 +208,39 @@ export default function AdminCakesPage() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-6 pt-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Cake Name</Label>
-                <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Belgian Truffle" className="h-12 border-2 rounded-xl" required />
+            <div className="flex gap-6 items-start">
+              <div className="relative h-40 w-40 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center bg-stone-50 overflow-hidden shrink-0 group">
+                {formData.image_data_uri ? (
+                  <>
+                    <Image src={formData.image_data_uri} alt="Preview" fill className="object-cover" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Label htmlFor="image-upload" className="cursor-pointer text-white text-[10px] font-black uppercase">Change Photo</Label>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {isUploading ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : <Upload className="h-6 w-6 text-stone-300" />}
+                    <Label htmlFor="image-upload" className="cursor-pointer mt-2 text-[10px] font-black uppercase text-stone-400">Add Photo</Label>
+                  </>
+                )}
+                <input id="image-upload" type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
               </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Category</Label>
-                <Input value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} placeholder="Chocolate" className="h-12 border-2 rounded-xl" required />
+              <div className="flex-1 space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Cake Name</Label>
+                  <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Belgian Truffle" className="h-12 border-2 rounded-xl" required />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Category</Label>
+                  <Select value={formData.category} onValueChange={v => setFormData({...formData, category: v})}>
+                    <SelectTrigger className="h-12 border-2 rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
 
@@ -213,7 +267,7 @@ export default function AdminCakesPage() {
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="h-12 rounded-xl">Cancel</Button>
-              <Button type="submit" className="h-12 rounded-xl px-8 font-black">Save Masterpiece</Button>
+              <Button type="submit" className="h-12 rounded-xl px-8 font-black" disabled={isUploading}>Save Masterpiece</Button>
             </DialogFooter>
           </form>
         </DialogContent>

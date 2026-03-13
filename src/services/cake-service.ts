@@ -19,13 +19,15 @@ const getAuthHeaders = () => {
     return headers;
 };
 
+// --- Cakes ---
+
 export async function getCakes(): Promise<Cake[]> {
   const res = await fetch(`${API_URL}/cakes`);
   if (!res.ok) throw new Error('Failed to fetch cakes');
   return res.json();
 }
 
-export async function createCake(cake: Partial<Cake>): Promise<void> {
+export async function createCake(cake: any): Promise<void> {
   const res = await fetch(`${API_URL}/cakes`, {
     method: 'POST',
     headers: getAuthHeaders(),
@@ -34,17 +36,36 @@ export async function createCake(cake: Partial<Cake>): Promise<void> {
   if (!res.ok) throw new Error('Failed to create cake');
 }
 
-export async function getOrders(): Promise<Order[]> {
-    const res = await fetch(`${API_URL}/orders`, { headers: getAuthHeaders() });
-    if (!res.ok) throw new Error('Failed to fetch orders');
-    return res.json();
+export async function updateCake(id: string, cake: any): Promise<void> {
+  const res = await fetch(`${API_URL}/cakes/${id}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(cake),
+  });
+  if (!res.ok) throw new Error('Failed to update cake');
 }
 
-export async function getSpecialOffer(): Promise<SpecialOffer | null> {
-    const res = await fetch(`${API_URL}/special-offer`);
-    if (!res.ok) return null;
-    return res.json();
+export async function deleteCake(cakeId: string): Promise<void> {
+    const res = await fetch(`${API_URL}/cakes/${cakeId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to remove item');
 }
+
+export async function uploadImage(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(`${API_URL}/upload`, {
+    method: 'POST',
+    body: formData,
+  });
+  if (!res.ok) throw new Error('Upload failed');
+  const data = await res.json();
+  return data.url;
+}
+
+// --- Customizations ---
 
 export async function getCustomizationOptions(): Promise<CustomizationOptions> {
     const res = await fetch(`${API_URL}/customizations`);
@@ -52,7 +73,41 @@ export async function getCustomizationOptions(): Promise<CustomizationOptions> {
     return res.json();
 }
 
-export async function updateOrderStatus(orderId: number, status: 'processing' | 'complete' | 'cancelled'): Promise<void> {
+export async function createCustomizationOption(category: CustomizationCategory, data: any): Promise<void> {
+  const res = await fetch(`${API_URL}/customizations/${category}`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(`Failed to add ${category}`);
+}
+
+export async function updateCustomizationOption(category: CustomizationCategory, id: string, data: any): Promise<void> {
+  const res = await fetch(`${API_URL}/customizations/${category}/${id}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(`Failed to update ${category}`);
+}
+
+export async function deleteCustomizationOption(category: CustomizationCategory, id: string): Promise<void> {
+    const res = await fetch(`${API_URL}/customizations/${category}/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error(`Failed to delete ${category} option`);
+}
+
+// --- Orders ---
+
+export async function getOrders(): Promise<Order[]> {
+    const res = await fetch(`${API_URL}/orders`, { headers: getAuthHeaders() });
+    if (!res.ok) throw new Error('Failed to fetch orders');
+    return res.json();
+}
+
+export async function updateOrderStatus(orderId: number, status: string): Promise<void> {
     const res = await fetch(`${API_URL}/orders/${orderId}/status`, {
         method: 'PUT',
         headers: getAuthHeaders(),
@@ -69,12 +124,12 @@ export async function deleteOrder(orderId: number): Promise<void> {
     if (!res.ok) throw new Error('Failed to clear record');
 }
 
-export async function deleteCake(cakeId: string): Promise<void> {
-    const res = await fetch(`${API_URL}/cakes/${cakeId}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
-    });
-    if (!res.ok) throw new Error('Failed to remove item');
+// --- Auth & Offers ---
+
+export async function getSpecialOffer(): Promise<SpecialOffer | null> {
+    const res = await fetch(`${API_URL}/special-offer`);
+    if (!res.ok) return null;
+    return res.json();
 }
 
 export async function updateSpecialOffer(payload: SpecialOfferUpdatePayload): Promise<void> {
@@ -99,12 +154,4 @@ export async function loginAdmin(credentials: LoginCredentials): Promise<{ token
         localStorage.setItem('isAdminLoggedIn', 'true');
     }
     return data;
-}
-
-export async function deleteCustomizationOption(category: CustomizationCategory, id: string): Promise<void> {
-    const res = await fetch(`${API_URL}/customizations/${category}/${id}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
-    });
-    if (!res.ok) throw new Error(`Failed to delete ${category} option`);
 }
