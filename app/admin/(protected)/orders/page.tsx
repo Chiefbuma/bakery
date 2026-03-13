@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 /**
- * RESOLVED: Moved to app/admin/orders/page.tsx to fix parallel route conflict.
+ * NEUTRALIZED: Hotel logic removed. 
+ * Please use /admin/portal/orders for bakery management.
  */
-export default function RedirectToMain() { redirect('/admin/orders'); }
+export default function Redirect() { redirect('/admin/portal/orders'); }

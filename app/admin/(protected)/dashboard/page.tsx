@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
 /**
- * RESOLVED: Moved to app/admin/dashboard/page.tsx to fix parallel route conflict.
+ * Redirecting to portal.
  */
-export default function RedirectToMain() { redirect('/admin/dashboard'); }
+export default function Redirect() { redirect('/admin/portal/dashboard'); }

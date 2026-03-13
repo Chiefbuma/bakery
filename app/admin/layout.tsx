@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -27,12 +28,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (isCheckingAuth) return null;
 
   const navItems = [
-    { label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-    { label: 'Orders', href: '/admin/orders', icon: ShoppingBag },
-    { label: 'Cakes', href: '/admin/cakes', icon: Package },
-    { label: 'Customizations', href: '/admin/customizations', icon: Settings },
+    { label: 'Dashboard', href: '/admin/portal/dashboard', icon: LayoutDashboard },
+    { label: 'Orders', href: '/admin/portal/orders', icon: ShoppingBag },
+    { label: 'Cakes', href: '/admin/portal/cakes', icon: Package },
+    { label: 'Customizations', href: '/admin/portal/customizations', icon: Settings },
     { label: 'Special Offers', href: '/admin/offers', icon: Star },
-    { label: 'Users', href: '/admin/users', icon: Users },
+    { label: 'Staff Directory', href: '/admin/portal/users', icon: Users },
   ];
 
   const handleLogout = () => {
@@ -52,7 +53,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="h-10 w-10 bg-primary rounded-xl flex items-center justify-center">
               <Utensils className="h-6 w-6 text-white" />
             </div>
-            <span className="text-xl font-black font-headline text-primary">Artisan Panel</span>
+            <span className="text-xl font-black font-headline text-primary">Artisan Portal</span>
           </div>
 
           <nav className="flex-1 space-y-2">
@@ -93,7 +94,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {navItems.find(i => i.href === pathname)?.label || 'WhiskeDelights Panel'}
           </div>
           <Link href="/" target="_blank">
-            <Button variant="outline" size="sm" className="font-bold border-primary text-primary hover:bg-primary/5">View Storefront</Button>
+            <Button variant="outline" size="sm" className="font-bold border-primary text-primary hover:bg-primary/5">Storefront</Button>
           </Link>
         </header>
         

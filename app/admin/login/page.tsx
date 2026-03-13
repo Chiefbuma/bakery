@@ -7,7 +7,7 @@ import { loginAdmin } from '@/services/cake-service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Package, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -24,10 +24,10 @@ export default function AdminLoginPage() {
     try {
       await loginAdmin({ email, password });
       localStorage.setItem('isAdminLoggedIn', 'true');
-      toast({ title: "Welcome back!", description: "Authenticated successfully." });
-      router.push('/admin/dashboard');
+      toast({ title: "Welcome back!", description: "Access granted." });
+      router.push('/admin/portal/dashboard');
     } catch (err) {
-      toast({ variant: "destructive", title: "Login Failed", description: "Invalid credentials provided." });
+      toast({ variant: "destructive", title: "Login Failed", description: "Invalid credentials." });
     } finally {
       setIsLoading(false);
     }
@@ -40,15 +40,15 @@ export default function AdminLoginPage() {
           <div className="inline-flex h-16 w-16 bg-primary rounded-[2rem] items-center justify-center shadow-2xl shadow-primary/30 mb-4">
             <Package className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-4xl font-black font-headline tracking-tight">Owner Portal</h1>
-          <p className="text-muted-foreground font-medium">Manage your artisanal bakery operations.</p>
+          <h1 className="text-4xl font-black font-headline tracking-tight">Artisan Portal</h1>
+          <p className="text-muted-foreground font-medium">Bakery Management System Access</p>
         </div>
 
         <Card className="border-none shadow-xl">
           <CardContent className="p-8">
             <form onSubmit={handleLogin} className="space-y-6">
               <div className="space-y-2">
-                <Label className="font-black text-xs uppercase tracking-widest">Corporate Email</Label>
+                <Label className="font-black text-xs uppercase tracking-widest">Email Address</Label>
                 <Input type="email" value={email} onChange={e => setEmail(e.target.value)} className="h-12 border-2" required />
               </div>
               <div className="space-y-2">
@@ -56,15 +56,11 @@ export default function AdminLoginPage() {
                 <Input type="password" value={password} onChange={e => setPassword(e.target.value)} className="h-12 border-2" required />
               </div>
               <Button type="submit" className="w-full h-14 text-lg font-black gap-2 shadow-xl" disabled={isLoading}>
-                {isLoading ? <Loader2 className="animate-spin" /> : 'Enter Dashboard'}
+                {isLoading ? <Loader2 className="animate-spin" /> : 'Enter Portal'}
               </Button>
             </form>
           </CardContent>
         </Card>
-        
-        <p className="text-center text-xs text-muted-foreground">
-          WhiskeDelights Enterprise v1.0 • Othaya Main Branch
-        </p>
       </div>
     </div>
   );

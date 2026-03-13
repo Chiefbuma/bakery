@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
 /**
- * RESOLVED: Moved to app/admin/cakes/page.tsx to fix parallel route conflict.
+ * Redirecting to portal.
  */
-export default function RedirectToMain() { redirect('/admin/cakes'); }
+export default function Redirect() { redirect('/admin/portal/cakes'); }
