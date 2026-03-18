@@ -2,21 +2,20 @@ import mysql from 'mysql2/promise';
 
 /**
  * Optimized Database connection pool for MySQL.
- * Connections are established lazily to prevent build-time ECONNREFUSED errors.
+ * Configured specifically for cPanel/Shared hosting environments.
  */
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_DATABASE,
+  user: process.env.DB_USER || 'gledcapi_whiskedelight',
+  password: process.env.DB_PASSWORD || 'CnhXfEpdkH2nUQME6xks',
+  database: process.env.DB_DATABASE || 'gledcapi_whiskedelight',
   port: parseInt(process.env.DB_PORT || '3306'),
   waitForConnections: true,
-  connectionLimit: 10, // Increased for production
+  connectionLimit: 10,
   queueLimit: 0,
   enableKeepAlive: true,
   keepAliveInitialDelay: 10000,
   connectTimeout: 60000,
-  timezone: '+03:00', // East Africa Time
 });
 
 export default pool;
