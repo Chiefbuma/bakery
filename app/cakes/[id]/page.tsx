@@ -59,11 +59,12 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
   }, [id]);
 
   const totalPrice = useMemo(() => {
-    if (!cake) return 0;
+    const base = cake ? Number(cake.base_price) : 0;
+    if (isNaN(base)) return 0;
     
-    let total = Number(cake.base_price) || 0;
+    let total = base;
     
-    if (cake.customizable && options) {
+    if (cake?.customizable && options) {
       const flavor = options.flavors?.find(f => f.id.toString() === flavorId);
       const size = options.sizes?.find(s => s.id.toString() === sizeId);
       const color = options.colors?.find(c => c.id.toString() === colorId);
@@ -80,7 +81,8 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
       total += toppingsPrice;
     }
 
-    return (total || 0) * quantity;
+    const result = total * quantity;
+    return isNaN(result) ? 0 : result;
   }, [cake, options, quantity, flavorId, sizeId, colorId, selectedToppings]);
 
   if (isLoading) {
