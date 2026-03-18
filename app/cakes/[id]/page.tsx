@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, use } from 'react';
@@ -64,26 +63,28 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
   const totalPrice = useMemo(() => {
     if (!cake) return 0;
     
-    let total = Number(cake.base_price) || 0;
+    const base = Number(cake.base_price) || 0;
+    let addons = 0;
     
     if (cake.customizable && options) {
       const flavor = options.flavors?.find(f => f.id.toString() === flavorId);
       const size = options.sizes?.find(s => s.id.toString() === sizeId);
       const color = options.colors?.find(c => c.id.toString() === colorId);
       
-      total += Number(flavor?.price) || 0;
-      total += Number(size?.price) || 0;
-      total += Number(color?.price) || 0;
+      addons += Number(flavor?.price) || 0;
+      addons += Number(size?.price) || 0;
+      addons += Number(color?.price) || 0;
       
       const toppingsPrice = selectedToppings.reduce((acc, tid) => {
         const topping = options.toppings?.find(t => t.id.toString() === tid);
         return acc + (Number(topping?.price) || 0);
       }, 0);
 
-      total += toppingsPrice;
+      addons += toppingsPrice;
     }
 
-    const result = total * (Number(quantity) || 1);
+    const qty = Math.max(1, Number(quantity) || 1);
+    const result = (base + addons) * qty;
     return isNaN(result) || !isFinite(result) ? 0 : result;
   }, [cake, options, quantity, flavorId, sizeId, colorId, selectedToppings]);
 
@@ -146,7 +147,6 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
               fill
               className="object-cover"
               priority
-              data-ai-hint="artisanal cake"
             />
           </div>
         </motion.div>
@@ -238,7 +238,7 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
               <Info className="h-6 w-6 text-primary shrink-0 mt-0.5" />
               <div className="text-sm">
                 <p className="font-black text-primary uppercase tracking-widest text-[10px] mb-1">Standard Collection</p>
-                <p className="text-muted-foreground font-medium">This artisanal creation is baked to our signature recipe and cannot be customized. It represents the purest expression of our bakery's heritage.</p>
+                <p className="text-muted-foreground font-medium">This artisanal creation is baked to our signature recipe and cannot be customized.</p>
               </div>
             </div>
           )}
@@ -262,9 +262,6 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
               {isAdding ? <Loader2 className="h-6 w-6 animate-spin" /> : <ShoppingCart className="h-6 w-6" />}
               {isAdding ? 'Preparing Order...' : 'Place Order'}
             </Button>
-            <p className="text-center text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
-              Ready for pickup or delivery within <span className="text-foreground">{cake.ready_time}</span>
-            </p>
           </div>
         </motion.div>
       </main>

@@ -15,7 +15,7 @@ export function formatPrice(amount: number | string | null | undefined): string 
 
   let value: number;
   
-  // 2. Safely parse string inputs (removing currency symbols and commas)
+  // 2. Safely parse string inputs
   if (typeof amount === 'string') {
     const sanitized = amount.replace(/[Ksh,]/gi, '').trim();
     value = parseFloat(sanitized);

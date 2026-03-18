@@ -1,20 +1,17 @@
 # WhiskeDelights Artisanal Bakery | Production System
 
-This high-performance eCommerce and Bakery Management platform is optimized for precision auditing and secure administrative control on Passenger-based hosting environments.
+This high-performance eCommerce and Bakery Management platform is optimized for precision auditing and secure administrative control on Phusion Passenger-based hosting environments.
 
-## 1. System Design Principles
+## 1. Protocol & Routing Resolution (The 404 Fix)
 
-- **Atomic Persistence**: All orders are handled via MySQL transactions to ensure data integrity.
-- **Auditing Optimization**: Administrative views are strictly limited to **5 records per page**.
-- **Security-First API**: All administrative mutations require a valid **JSON Web Token (JWT)**.
-- **Protocol Enforcement**: The system is designed to run exclusively over **HTTPS**.
+If your app works on `http` but returns a **404 Not Found** on `https`, it is because the server is trying to find physical files instead of routing to Node.js. 
 
-## 2. Production Deployment (Passenger)
+### Why the 404 happens on HTTPS:
+Apache/LiteSpeed servers treat HTTP and HTTPS as separate entities. Without a "Catch-All" rewrite rule, the server looks for a folder (e.g., `/admin`) on the hard drive. Since your routes are virtual (Next.js), the server fails.
 
-### A. Routing & HTTPS Redirect (Fixing 404/403 Errors)
-To force HTTPS and prevent 404/403 errors, your root `.htaccess` file MUST contain these specific rewrite rules. This ensures Apache passes all deep-link requests to the Passenger startup file.
+### The Solution (.htaccess):
+Update your root `.htaccess` with these specific rules to force HTTPS and enable deep-linking:
 
-**Recommended .htaccess Configuration:**
 ```apache
 # --- PASSENGER CONFIGURATION ---
 PassengerAppRoot "/home/gledcapi/domains/whiskedelights.co.ke"
@@ -23,22 +20,21 @@ PassengerNodejs "/home/gledcapi/nodevenv/domains/whiskedelights.co.ke/20/bin/nod
 PassengerAppType node
 PassengerStartupFile server.js
 PassengerAppEnv production
-PassengerAppLogFile "/home/gledcapi/logs/passenger.log"
 PassengerFriendlyErrorPages off
 
 # --- FORCE HTTPS & ROUTING ---
 RewriteEngine On
 RewriteBase /
 
-# 1. Force HTTPS
+# 1. Force HTTPS (Prevents protocol mismatch)
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-# 2. Prevent directory listing (Fixes 403 Forbidden)
+# 2. Prevent directory listing
 Options -Indexes
 
-# 3. Handle App Router deep links (Fixes 404 on Refresh)
-# Ensure Apache passes all non-file/directory requests to Passenger
+# 3. Route all virtual paths to Passenger (Fixes 404 on Refresh/HTTPS)
+# If the request is NOT a real file and NOT a real directory, send to server.js
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule . /server.js [L]
@@ -55,17 +51,18 @@ RewriteRule . /server.js [L]
 </IfModule>
 ```
 
-### B. Database Initialization
+## 2. System Design Principles
+
+- **Atomic Persistence**: All orders are handled via MySQL transactions.
+- **Auditing Optimization**: Administrative views are strictly limited to **5 records per page**.
+- **Security-First API**: All administrative mutations require a valid JWT.
+
+## 3. Database Initialization
 1. Open **phpMyAdmin**.
 2. Select your database: `gledcapi_whiskedelight`.
 3. Go to the **Import** tab and upload the `schema.sql` file provided in the project root.
-4. This will create all required tables and initialize the primary admin account.
 
-### C. Default Credentials
+## 4. Default Credentials
 - **Access URL**: `https://whiskedelights.co.ke/admin/login`
 - **Email**: `admin@whiskedelights.com`
 - **Password**: `admin123`
-
-## 3. Build & Standalone Output
-1. Run `npm run build`.
-2. Upload the contents of `.next/standalone`, `public`, and `.next/static` to your server.
