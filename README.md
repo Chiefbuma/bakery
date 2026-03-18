@@ -1,6 +1,6 @@
 # WhiskeDelights Artisanal Bakery | Production System
 
-This high-performance eCommerce and Bakery Management platform is optimized for precision auditing and secure administrative control.
+This high-performance eCommerce and Bakery Management platform is optimized for precision auditing and secure administrative control on Passenger-based hosting environments.
 
 ## 1. System Design Principles
 
@@ -9,10 +9,10 @@ This high-performance eCommerce and Bakery Management platform is optimized for 
 - **Security-First API**: All administrative mutations require a valid **JSON Web Token (JWT)**.
 - **Protocol Enforcement**: The system is designed to run exclusively over **HTTPS**.
 
-## 2. Production Deployment (CloudLinux / Passenger)
+## 2. Production Deployment (Passenger)
 
 ### A. Routing & HTTPS Redirect (Fixing 404/403 Errors)
-To force HTTPS and prevent 404/403 errors on your application, your `.htaccess` file MUST contain these specific rewrite rules. This is essential for both mobile and desktop browsers to correctly route to the Node.js application.
+To force HTTPS and prevent 404/403 errors, your root `.htaccess` file MUST contain these specific rewrite rules. This ensures Apache passes all deep-link requests to the Passenger startup file.
 
 **Recommended .htaccess Configuration:**
 ```apache
@@ -24,6 +24,7 @@ PassengerAppType node
 PassengerStartupFile server.js
 PassengerAppEnv production
 PassengerAppLogFile "/home/gledcapi/logs/passenger.log"
+PassengerFriendlyErrorPages off
 
 # --- FORCE HTTPS & ROUTING ---
 RewriteEngine On
@@ -38,7 +39,6 @@ Options -Indexes
 
 # 3. Handle App Router deep links (Fixes 404 on Refresh)
 # Ensure Apache passes all non-file/directory requests to Passenger
-RewriteRule ^index\.html$ - [L]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule . /server.js [L]

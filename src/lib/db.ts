@@ -2,7 +2,7 @@ import mysql from 'mysql2/promise';
 
 /**
  * Optimized Database connection pool for MySQL.
- * Configured specifically for cPanel/CloudLinux Passenger environment.
+ * Configured specifically for Phusion Passenger environment with provided credentials.
  */
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',

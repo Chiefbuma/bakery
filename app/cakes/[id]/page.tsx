@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, use } from 'react';
@@ -57,6 +58,9 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
     loadData();
   }, [id]);
 
+  /**
+   * Final price calculation hardened to prevent NaN errors.
+   */
   const totalPrice = useMemo(() => {
     if (!cake) return 0;
     
@@ -80,7 +84,7 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
     }
 
     const result = total * (Number(quantity) || 1);
-    return isNaN(result) ? 0 : result;
+    return isNaN(result) || !isFinite(result) ? 0 : result;
   }, [cake, options, quantity, flavorId, sizeId, colorId, selectedToppings]);
 
   if (isLoading) {
@@ -142,6 +146,7 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
               fill
               className="object-cover"
               priority
+              data-ai-hint="artisanal cake"
             />
           </div>
         </motion.div>

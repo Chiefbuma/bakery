@@ -1,6 +1,6 @@
 /**
  * @fileOverview WhiskeDelights Production Service Layer
- * Hardened for production with extremely resilient JSON parsing.
+ * Hardened for production with extremely resilient JSON parsing and protocol-aware routing.
  */
 
 import type { Cake, SpecialOffer, CustomizationOptions, Order, LoginCredentials, SpecialOfferUpdatePayload, CustomizationCategory, User } from '@/lib/types';
@@ -9,7 +9,7 @@ import type { Cake, SpecialOffer, CustomizationOptions, Order, LoginCredentials,
 const API_URL = '/api';
 
 /**
- * Robust JSON parser that handles empty responses or malformed data.
+ * Robust JSON parser that handles empty responses or malformed data (like HTML error pages).
  * Prevents "Unexpected end of JSON input" crashes.
  */
 async function safeParseJson(response: Response) {
