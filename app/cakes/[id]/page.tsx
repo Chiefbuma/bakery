@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, use } from 'react';
@@ -59,12 +58,11 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
   }, [id]);
 
   const totalPrice = useMemo(() => {
-    const base = cake ? Number(cake.base_price) : 0;
-    if (isNaN(base)) return 0;
+    if (!cake) return 0;
     
-    let total = base;
+    let total = Number(cake.base_price) || 0;
     
-    if (cake?.customizable && options) {
+    if (cake.customizable && options) {
       const flavor = options.flavors?.find(f => f.id.toString() === flavorId);
       const size = options.sizes?.find(s => s.id.toString() === sizeId);
       const color = options.colors?.find(c => c.id.toString() === colorId);
@@ -81,7 +79,7 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
       total += toppingsPrice;
     }
 
-    const result = total * quantity;
+    const result = total * (Number(quantity) || 1);
     return isNaN(result) ? 0 : result;
   }, [cake, options, quantity, flavorId, sizeId, colorId, selectedToppings]);
 

@@ -12,7 +12,7 @@ This high-performance eCommerce and Bakery Management platform is optimized for 
 ## 2. Production Deployment (CloudLinux / Passenger)
 
 ### A. Routing & HTTPS Redirect (Fixing 404/403 Errors)
-To force HTTPS and prevent 404 errors on your application, your `.htaccess` file MUST contain these specific rewrite rules. 
+To force HTTPS and prevent 404/403 errors on your application, your `.htaccess` file MUST contain these specific rewrite rules. This is essential for both mobile and desktop browsers to correctly route to the Node.js application.
 
 **Recommended .htaccess Configuration:**
 ```apache
@@ -23,6 +23,7 @@ PassengerNodejs "/home/gledcapi/nodevenv/domains/whiskedelights.co.ke/20/bin/nod
 PassengerAppType node
 PassengerStartupFile server.js
 PassengerAppEnv production
+PassengerAppLogFile "/home/gledcapi/logs/passenger.log"
 
 # --- FORCE HTTPS & ROUTING ---
 RewriteEngine On
@@ -36,6 +37,7 @@ RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 Options -Indexes
 
 # 3. Handle App Router deep links (Fixes 404 on Refresh)
+# Ensure Apache passes all non-file/directory requests to Passenger
 RewriteRule ^index\.html$ - [L]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
@@ -48,7 +50,8 @@ RewriteRule . /server.js [L]
   SetEnv DB_DATABASE gledcapi_whiskedelight
   SetEnv DB_PASSWORD CnhXfEpdkH2nUQME6xks
   SetEnv JWT_SECRET production_secret_6xks_cnhxf
-  SetEnv NEXT_PUBLIC_API_URL /api
+  SetEnv NEXT_PUBLIC_API_URL https://whiskedelights.co.ke/api
+  SetEnv NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY pk_live_8d9017d3458e0213efd55c219527b9171482e87d
 </IfModule>
 ```
 

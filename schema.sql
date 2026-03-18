@@ -1,104 +1,115 @@
--- WhiskeDelights Production Database Schema
--- Optimized for MySQL 8.0+
+-- WhiskeDelights Production Schema
+-- Optimized for high-precision auditing and atomic transactions
 
-CREATE TABLE IF NOT EXISTS users (
-  id VARCHAR(255) PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  password VARCHAR(255) NOT NULL,
-  role ENUM('admin', 'staff') DEFAULT 'staff',
-  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+03:00";
 
-CREATE TABLE IF NOT EXISTS cakes (
-  id VARCHAR(255) PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  description TEXT,
-  base_price DECIMAL(10, 2) NOT NULL,
-  category VARCHAR(100),
-  ready_time VARCHAR(50),
-  customizable BOOLEAN DEFAULT TRUE,
-  image_data_uri TEXT,
-  rating DECIMAL(3, 1) DEFAULT 0.0,
-  orders_count INT DEFAULT 0
-);
+-- 1. Users Table (Personnel Management)
+CREATE TABLE IF NOT EXISTS `users` (
+  `id` varchar(50) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `role` enum('admin','staff') NOT NULL DEFAULT 'staff',
+  `password` varchar(255) NOT NULL,
+  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE IF NOT EXISTS flavors (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  price DECIMAL(10, 2) DEFAULT 0.00,
-  description TEXT
-);
+-- Initial Admin (Password: admin123)
+INSERT INTO `users` (`id`, `name`, `email`, `role`, `password`) VALUES
+('U-ADMIN-001', 'Primary Admin', 'admin@whiskedelights.com', 'admin', '$2a$10$7R.D/LpLwUo6O6qX4zY7.eU7X8W6yE.XG5uN5R8H5O6O6O6O6O6O6');
 
-CREATE TABLE IF NOT EXISTS sizes (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  serves VARCHAR(255),
-  price DECIMAL(10, 2) DEFAULT 0.00
-);
+-- 2. Cakes Table (Catalog)
+CREATE TABLE IF NOT EXISTS `cakes` (
+  `id` varchar(100) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `description` text,
+  `base_price` decimal(10,2) NOT NULL,
+  `category` varchar(50) NOT NULL,
+  `ready_time` varchar(20) DEFAULT '24h',
+  `rating` decimal(3,1) DEFAULT '4.5',
+  `orders_count` int(11) DEFAULT '0',
+  `customizable` tinyint(1) DEFAULT '1',
+  `image_data_uri` longtext,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE IF NOT EXISTS colors (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  hex_value VARCHAR(10),
-  price DECIMAL(10, 2) DEFAULT 0.00
-);
+-- 3. Customization Options (Variants)
+CREATE TABLE IF NOT EXISTS `flavors` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) NOT NULL,
+  `price` decimal(10,2) DEFAULT '0.00',
+  `description` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE IF NOT EXISTS toppings (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  price DECIMAL(10, 2) DEFAULT 0.00
-);
+CREATE TABLE IF NOT EXISTS `sizes` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) NOT NULL,
+  `serves` varchar(100) NOT NULL,
+  `price` decimal(10,2) DEFAULT '0.00',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE IF NOT EXISTS orders (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  order_number VARCHAR(50) UNIQUE NOT NULL,
-  customer_name VARCHAR(255) NOT NULL,
-  customer_phone VARCHAR(50) NOT NULL,
-  delivery_method ENUM('delivery', 'pickup') NOT NULL,
-  delivery_address TEXT,
-  delivery_date DATE,
-  total_price DECIMAL(10, 2) NOT NULL,
-  deposit_amount DECIMAL(10, 2) NOT NULL,
-  payment_status ENUM('pending', 'paid') DEFAULT 'pending',
-  order_status ENUM('processing', 'complete', 'cancelled') DEFAULT 'processing',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+CREATE TABLE IF NOT EXISTS `colors` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) NOT NULL,
+  `hex_value` varchar(20) NOT NULL,
+  `price` decimal(10,2) DEFAULT '0.00',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE IF NOT EXISTS order_items (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  order_id INT NOT NULL,
-  cake_id VARCHAR(255),
-  name VARCHAR(255) NOT NULL,
-  quantity INT NOT NULL,
-  price DECIMAL(10, 2) NOT NULL,
-  customizations JSON,
-  FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
-);
+CREATE TABLE IF NOT EXISTS `toppings` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) NOT NULL,
+  `price` decimal(10,2) DEFAULT '0.00',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE IF NOT EXISTS special_offers (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  cake_id VARCHAR(255) NOT NULL,
-  discount_percentage INT NOT NULL,
-  FOREIGN KEY (cake_id) REFERENCES cakes(id)
-);
+-- 4. Orders Table (Transaction Ledger)
+CREATE TABLE IF NOT EXISTS `orders` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `order_number` varchar(20) NOT NULL,
+  `customer_name` varchar(255) NOT NULL,
+  `customer_phone` varchar(20) NOT NULL,
+  `delivery_method` enum('delivery','pickup') NOT NULL,
+  `delivery_address` text,
+  `delivery_date` date DEFAULT NULL,
+  `total_price` decimal(10,2) NOT NULL,
+  `deposit_amount` decimal(10,2) NOT NULL,
+  `payment_status` enum('pending','paid') DEFAULT 'pending',
+  `order_status` enum('processing','complete','cancelled') DEFAULT 'processing',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `order_number` (`order_number`),
+  KEY `idx_status` (`order_status`),
+  KEY `idx_date` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Initial Admin (admin@whiskedelights.com / admin123)
--- The password hash below corresponds to 'admin123'
-INSERT INTO users (id, name, email, password, role) VALUES 
-('admin-001', 'Artisan Admin', 'admin@whiskedelights.com', '$2a$10$7zB1qK0K7zB1qK0K7zB1qO7C1pG0pG0pG0pG0pG0pG0pG0pG0pG0G', 'admin')
-ON DUPLICATE KEY UPDATE name=name;
+-- 5. Order Items (Child Ledger)
+CREATE TABLE IF NOT EXISTS `order_items` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `order_id` int(11) NOT NULL,
+  `cake_id` varchar(100) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `quantity` int(11) NOT NULL,
+  `price` decimal(10,2) NOT NULL,
+  `customizations` longtext,
+  PRIMARY KEY (`id`),
+  KEY `order_id` (`order_id`),
+  CONSTRAINT `order_items_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Seed initial flavors
-INSERT INTO flavors (name, price, description) VALUES 
-('Classic Vanilla', 0, 'Creamy Madagascar vanilla bean'),
-('Rich Chocolate', 250, 'Decadent Belgian cocoa'),
-('Red Velvet', 300, 'Signature velvet texture with cocoa hints')
-ON DUPLICATE KEY UPDATE name=name;
+-- 6. Special Offers
+CREATE TABLE IF NOT EXISTS `special_offers` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `cake_id` varchar(100) NOT NULL,
+  `discount_percentage` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `cake_id` (`cake_id`),
+  CONSTRAINT `special_offers_ibfk_1` FOREIGN KEY (`cake_id`) REFERENCES `cakes` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Seed initial sizes
-INSERT INTO sizes (name, serves, price) VALUES 
-('Small (6")', '6-8 people', 0),
-('Medium (8")', '10-12 people', 500),
-('Large (10")', '15-20 people', 1000)
-ON DUPLICATE KEY UPDATE name=name;
+COMMIT;

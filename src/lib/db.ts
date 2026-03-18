@@ -2,7 +2,7 @@ import mysql from 'mysql2/promise';
 
 /**
  * Optimized Database connection pool for MySQL.
- * Configured specifically for cPanel/Shared hosting environments.
+ * Configured specifically for cPanel/CloudLinux Passenger environment.
  */
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',

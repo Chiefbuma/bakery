@@ -14,22 +14,26 @@ export function formatPrice(amount: number | string | null | undefined): string 
 
   let value: number;
   if (typeof amount === 'string') {
-    // Remove currency prefix and commas before parsing
-    const sanitized = amount.replace(/[Ksh,]/g, '').trim();
+    // Remove currency prefix, commas, and whitespace before parsing
+    const sanitized = amount.replace(/[Ksh,]/gi, '').trim();
     value = parseFloat(sanitized);
   } else {
     value = amount;
   }
   
-  if (isNaN(value)) {
+  // Final check to prevent NaN in UI
+  if (isNaN(value) || !isFinite(value)) {
     return 'Ksh 0';
   }
 
-  // Use KES currency formatting but replace label with Ksh for local brand consistency
-  return new Intl.NumberFormat('en-KE', {
-    style: 'currency',
-    currency: 'KES',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value).replace('KES', 'Ksh');
+  try {
+    return new Intl.NumberFormat('en-KE', {
+      style: 'currency',
+      currency: 'KES',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value).replace('KES', 'Ksh');
+  } catch (e) {
+    return `Ksh ${Math.floor(value)}`;
+  }
 }
