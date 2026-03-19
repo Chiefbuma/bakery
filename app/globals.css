@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -23,7 +24,7 @@
     --border: 38 20% 90%;
     --input: 38 20% 90%;
     --ring: 32 69% 46%;
-    --radius: 1rem;
+    --radius: 1.5rem;
   }
 }
 
@@ -32,25 +33,26 @@
     @apply border-border;
   }
   html {
-    font-size: 15px; /* Slightly reduced base font size for premium feel */
+    font-size: 16px;
   }
   body {
     @apply bg-background text-foreground font-sans antialiased;
     letter-spacing: -0.011em;
   }
   h1, h2, h3, h4, h5, h6 {
-    @apply font-headline;
-    letter-spacing: -0.02em;
+    @apply font-headline font-black;
+    letter-spacing: -0.04em;
+    font-style: normal !important;
   }
 }
 
 .font-headline {
   font-family: 'Playfair Display', serif;
+  font-weight: 900;
 }
 
-/* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
 }
 ::-webkit-scrollbar-track {
   @apply bg-stone-100;
@@ -59,7 +61,6 @@
   @apply bg-stone-300 rounded-full hover:bg-primary/50 transition-colors;
 }
 
-/* Glassmorphism Classes */
-.glass-panel {
-  @apply bg-white/5 backdrop-blur-3xl border border-white/10 shadow-2xl;
+.shadow-2xl {
+  shadow-color: rgba(0,0,0,0.15);
 }

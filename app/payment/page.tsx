@@ -1,12 +1,14 @@
+
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { formatPrice } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle2, Copy, Loader2, Sparkles, ShoppingBag, CreditCard, ShieldCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import Script from 'next/script';
 
@@ -19,106 +21,70 @@ export default function PaymentPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderRef] = useState(`WD-${Math.floor(1000 + Math.random() * 9000)}-BK`);
 
-  // Mock order data
   const orderTotal = 3650;
   const depositAmount = 1825;
 
   const handlePaystackPayment = () => {
     if (!(window as any).PaystackPop) {
-      toast({
-        variant: "destructive",
-        title: "Payment Gateway Error",
-        description: "Could not load payment interface. Please refresh the page.",
-      });
+      toast({ variant: "destructive", title: "Gateway Failure", description: "Payment interface not ready. Refresh." });
       return;
     }
-
     setIsProcessing(true);
-
     const handler = (window as any).PaystackPop.setup({
       key: PAYSTACK_PUBLIC_KEY,
-      email: 'customer@example.com',
-      amount: depositAmount * 100, // Paystack uses Cents/Kobo
+      email: 'customer@whiskedelights.co.ke',
+      amount: depositAmount * 100,
       currency: 'KES',
       channels: ['mobile_money', 'card'],
       ref: orderRef,
-      metadata: {
-        custom_fields: [
-          {
-            display_name: "Order Number",
-            variable_name: "order_number",
-            value: orderRef
-          }
-        ]
-      },
       callback: function(response: any) {
         setIsProcessing(false);
         setIsPaid(true);
-        toast({
-          title: "Payment Successful!",
-          description: `Transaction ${response.reference} completed.`,
-        });
+        toast({ title: "Success!", description: `Deposit of ${formatPrice(depositAmount)} confirmed.` });
       },
       onClose: function() {
         setIsProcessing(false);
-        toast({
-          title: "Payment Cancelled",
-          description: "You closed the payment window.",
-        });
+        toast({ title: "Cancelled", description: "Transaction aborted by guest." });
       }
     });
-
     handler.openIframe();
   };
 
   if (isPaid) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-6 text-stone-900">
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="max-w-md w-full"
-        >
-          <Card className="border-none shadow-2xl text-center overflow-hidden rounded-[2rem]">
-            <div className="bg-primary h-2 w-full" />
-            <CardContent className="p-12 space-y-8">
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-6">
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-md w-full">
+          <Card className="border-none shadow-2xl text-center overflow-hidden rounded-[3rem] bg-white">
+            <div className="bg-primary h-3 w-full" />
+            <CardContent className="p-14 space-y-10">
               <div className="relative inline-block">
-                <div className="p-6 bg-green-50 rounded-full border border-green-100">
+                <div className="p-8 bg-green-50 rounded-[2rem] border border-green-100">
                   <CheckCircle2 className="h-16 w-16 text-green-500" />
                 </div>
-                <motion.div 
-                  animate={{ rotate: 360 }}
-                  transition={{ repeat: Infinity, duration: 8, ease: "linear" }}
-                  className="absolute -top-4 -right-4"
-                >
-                  <Sparkles className="h-10 w-10 text-primary opacity-30" />
+                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 10, ease: "linear" }} className="absolute -top-4 -right-4">
+                  <Sparkles className="h-10 w-10 text-primary opacity-40" />
                 </motion.div>
               </div>
-
-              <div className="space-y-2">
-                <h1 className="text-3xl font-black font-headline">Order Confirmed!</h1>
-                <p className="text-muted-foreground font-medium">Your deposit has been received. Our master bakers are starting on your creation.</p>
+              <div className="space-y-4">
+                <h1 className="text-4xl font-black font-headline tracking-tight">Booking Confirmed</h1>
+                <p className="text-stone-500 font-bold uppercase text-[10px] tracking-widest leading-relaxed">Deposit received. Our master bakers have been notified of your artisanal request.</p>
               </div>
-
-              <div className="p-4 bg-stone-50 rounded-xl border border-dashed border-stone-200 flex flex-col items-center gap-2">
-                <span className="text-[10px] uppercase font-black text-muted-foreground">Reference Number</span>
-                <div className="flex items-center gap-2">
-                  <code className="text-lg font-black text-primary">{orderRef}</code>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => {
+              <div className="p-6 bg-stone-50 rounded-2xl border-2 border-dashed border-stone-200 flex flex-col items-center gap-3">
+                <span className="text-[10px] uppercase font-black text-stone-400 tracking-[0.2em]">Official Reference</span>
+                <div className="flex items-center gap-3">
+                  <code className="text-2xl font-black text-primary tracking-tighter">{orderRef}</code>
+                  <Button variant="ghost" size="icon" className="h-10 w-10 text-stone-400 hover:text-primary" onClick={() => {
                     navigator.clipboard.writeText(orderRef);
-                    toast({ title: "Copied to clipboard" });
-                  }}><Copy className="h-4 w-4" /></Button>
+                    toast({ title: "Copied" });
+                  }}><Copy className="h-5 w-5" /></Button>
                 </div>
               </div>
-
-              <div className="space-y-4">
-                <Link href="/">
-                  <Button className="w-full h-12 text-lg font-black gap-2">
-                    <ShoppingBag className="h-5 w-5" />
-                    Return to Shop
-                  </Button>
-                </Link>
-              </div>
+              <Link href="/">
+                <Button className="w-full h-16 text-lg font-black gap-3 rounded-2xl shadow-xl">
+                  <ShoppingBag className="h-6 w-6" />
+                  Continue Journey
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         </motion.div>
@@ -127,73 +93,55 @@ export default function PaymentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 pb-20 text-stone-900">
+    <div className="min-h-screen bg-stone-50 pb-20">
       <Script src="https://js.paystack.co/v1/inline.js" strategy="lazyOnload" />
-      
-      <header className="bg-white border-b py-6 sticky top-0 z-50">
+      <header className="bg-white border-b py-8 sticky top-0 z-50">
         <div className="container mx-auto px-6 flex items-center justify-between">
-          <Button variant="ghost" onClick={() => router.back()} className="flex items-center gap-2 text-sm font-bold hover:text-primary">
-            <ShoppingBag className="h-4 w-4 rotate-180" />
+          <Button variant="ghost" onClick={() => router.back()} className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest hover:text-primary">
+            <ShoppingBag className="h-5 w-5 rotate-180" />
             <span>Back to Checkout</span>
           </Button>
-          <div className="text-xl font-black font-headline text-primary">Final Confirmation</div>
-          <div className="w-20"></div>
+          <div className="text-2xl font-black font-headline text-primary tracking-tighter">Secure Payment</div>
+          <div className="w-24" />
         </div>
       </header>
-
-      <main className="container mx-auto px-6 py-12 max-w-2xl">
-        <div className="space-y-8">
-          <section className="space-y-4">
-            <h2 className="text-2xl font-black">Review Your Order</h2>
-            <Card className="border-none shadow-sm overflow-hidden rounded-[2rem]">
-              <CardHeader className="bg-stone-900 text-white py-4">
-                <CardTitle className="text-sm uppercase tracking-[0.2em] font-black">Order ID: {orderRef}</CardTitle>
-              </CardHeader>
-              <CardContent className="p-6 space-y-6">
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground font-bold">Total Order Value</span>
-                    <span className="text-xl font-black">Ksh {orderTotal.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between items-center p-4 bg-primary/5 rounded-xl border border-primary/10">
-                    <div className="space-y-1">
-                      <span className="text-sm font-black text-primary uppercase tracking-widest">Required Deposit (50%)</span>
-                      <p className="text-xs text-muted-foreground font-medium">Pay now to confirm your artisanal slot.</p>
-                    </div>
-                    <span className="text-2xl font-black text-primary">Ksh {depositAmount.toLocaleString()}</span>
-                  </div>
+      <main className="container mx-auto px-6 py-16 max-w-2xl">
+        <section className="space-y-10">
+          <div className="text-center space-y-2">
+            <h2 className="text-4xl font-black tracking-tight">One Last Step</h2>
+            <p className="text-stone-400 font-black uppercase text-[10px] tracking-[0.3em]">Confirm your booking reference and pay deposit</p>
+          </div>
+          <Card className="border-none shadow-2xl overflow-hidden rounded-[3rem] bg-white">
+            <CardHeader className="bg-stone-900 text-white py-6">
+              <CardTitle className="text-[11px] uppercase tracking-[0.3em] font-black text-center">Ref Ledger ID: {orderRef}</CardTitle>
+            </CardHeader>
+            <CardContent className="p-12 space-y-10">
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <span className="text-[11px] font-black uppercase tracking-widest text-stone-400">Total Valuation</span>
+                  <span className="text-2xl font-black text-stone-900">{formatPrice(orderTotal)}</span>
                 </div>
-
-                <div className="flex items-center gap-3 p-4 bg-stone-100 rounded-xl">
-                  <ShieldCheck className="h-5 w-5 text-green-600" />
-                  <p className="text-xs font-medium text-stone-600">
-                    Secure checkout powered by <strong>Paystack</strong>. Support for M-Pesa, Visa, and Mastercard.
-                  </p>
+                <div className="p-8 bg-primary/5 rounded-3xl border-2 border-primary/20 flex flex-col gap-6">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">Deposit Requirement (50%)</span>
+                    <p className="text-xs text-stone-500 font-bold uppercase">Immediate payment confirms artisanal slot</p>
+                  </div>
+                  <span className="text-5xl font-black text-primary tracking-tighter">{formatPrice(depositAmount)}</span>
                 </div>
-
-                <Button 
-                  onClick={handlePaystackPayment} 
-                  disabled={isProcessing}
-                  className="w-full h-16 text-xl font-black gap-3 shadow-xl bg-primary hover:bg-primary/90 transition-all group relative overflow-hidden rounded-2xl"
-                >
-                  {isProcessing ? (
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  ) : (
-                    <>
-                      <CreditCard className="h-6 w-6" />
-                      Confirm & Pay Deposit
-                    </>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent pointer-events-none" />
-                </Button>
-
-                <p className="text-center text-[10px] text-muted-foreground font-medium italic">
-                  By clicking Pay, you agree to the WhiskeDelights terms of artisanal baking.
+              </div>
+              <div className="flex items-center gap-5 p-6 bg-stone-50 rounded-2xl border-2 border-stone-100">
+                <ShieldCheck className="h-8 w-8 text-green-600 shrink-0" />
+                <p className="text-[10px] font-black text-stone-500 uppercase tracking-widest leading-relaxed">
+                  Verified Payment Gateway. Supported by M-Pesa, Card & Mobile Money.
                 </p>
-              </CardContent>
-            </Card>
-          </section>
-        </div>
+              </div>
+              <Button onClick={handlePaystackPayment} disabled={isProcessing} className="w-full h-20 text-2xl font-black gap-4 shadow-2xl bg-primary hover:bg-primary/95 transition-transform hover:scale-[1.01] rounded-[2rem]">
+                {isProcessing ? <Loader2 className="h-7 w-7 animate-spin" /> : <CreditCard className="h-7 w-7" />}
+                {isProcessing ? 'Verifying Gateway...' : 'Pay Deposit Now'}
+              </Button>
+            </CardContent>
+          </Card>
+        </section>
       </main>
     </div>
   );
