@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -52,7 +51,7 @@ export default function PaymentPage() {
 
   if (isPaid) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-6 selection:bg-primary selection:text-white">
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-md w-full">
           <Card className="border-none shadow-2xl text-center overflow-hidden rounded-[3rem] bg-white">
             <div className="bg-primary h-3 w-full" />
@@ -66,8 +65,8 @@ export default function PaymentPage() {
                 </motion.div>
               </div>
               <div className="space-y-4">
-                <h1 className="text-4xl font-black font-headline tracking-tight">Booking Confirmed</h1>
-                <p className="text-stone-500 font-bold uppercase text-[10px] tracking-widest leading-relaxed">Deposit received. Our master bakers have been notified of your artisanal request.</p>
+                <h1 className="text-4xl font-black font-headline tracking-tight uppercase">Booking Confirmed</h1>
+                <p className="text-stone-500 font-black uppercase text-[10px] tracking-widest leading-relaxed">Deposit received. Our master bakers have been notified of your artisanal request.</p>
               </div>
               <div className="p-6 bg-stone-50 rounded-2xl border-2 border-dashed border-stone-200 flex flex-col items-center gap-3">
                 <span className="text-[10px] uppercase font-black text-stone-400 tracking-[0.2em]">Official Reference</span>
@@ -80,7 +79,7 @@ export default function PaymentPage() {
                 </div>
               </div>
               <Link href="/">
-                <Button className="w-full h-16 text-lg font-black gap-3 rounded-2xl shadow-xl">
+                <Button className="w-full h-16 text-lg font-black gap-3 rounded-2xl shadow-xl uppercase tracking-widest">
                   <ShoppingBag className="h-6 w-6" />
                   Continue Journey
                 </Button>
@@ -93,7 +92,7 @@ export default function PaymentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 pb-20">
+    <div className="min-h-screen bg-stone-50 pb-20 selection:bg-primary selection:text-white">
       <Script src="https://js.paystack.co/v1/inline.js" strategy="lazyOnload" />
       <header className="bg-white border-b py-8 sticky top-0 z-50">
         <div className="container mx-auto px-6 flex items-center justify-between">
@@ -108,7 +107,7 @@ export default function PaymentPage() {
       <main className="container mx-auto px-6 py-16 max-w-2xl">
         <section className="space-y-10">
           <div className="text-center space-y-2">
-            <h2 className="text-4xl font-black tracking-tight">One Last Step</h2>
+            <h2 className="text-4xl font-black tracking-tight uppercase">One Last Step</h2>
             <p className="text-stone-400 font-black uppercase text-[10px] tracking-[0.3em]">Confirm your booking reference and pay deposit</p>
           </div>
           <Card className="border-none shadow-2xl overflow-hidden rounded-[3rem] bg-white">
@@ -124,7 +123,7 @@ export default function PaymentPage() {
                 <div className="p-8 bg-primary/5 rounded-3xl border-2 border-primary/20 flex flex-col gap-6">
                   <div className="space-y-1">
                     <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">Deposit Requirement (50%)</span>
-                    <p className="text-xs text-stone-500 font-bold uppercase">Immediate payment confirms artisanal slot</p>
+                    <p className="text-[10px] text-stone-500 font-black uppercase tracking-widest">Immediate payment confirms artisanal slot</p>
                   </div>
                   <span className="text-5xl font-black text-primary tracking-tighter">{formatPrice(depositAmount)}</span>
                 </div>
@@ -135,7 +134,7 @@ export default function PaymentPage() {
                   Verified Payment Gateway. Supported by M-Pesa, Card & Mobile Money.
                 </p>
               </div>
-              <Button onClick={handlePaystackPayment} disabled={isProcessing} className="w-full h-20 text-2xl font-black gap-4 shadow-2xl bg-primary hover:bg-primary/95 transition-transform hover:scale-[1.01] rounded-[2rem]">
+              <Button onClick={handlePaystackPayment} disabled={isProcessing} className="w-full h-20 text-2xl font-black gap-4 shadow-2xl bg-primary hover:bg-primary/95 transition-transform hover:scale-[1.01] rounded-[2rem] uppercase tracking-widest">
                 {isProcessing ? <Loader2 className="h-7 w-7 animate-spin" /> : <CreditCard className="h-7 w-7" />}
                 {isProcessing ? 'Verifying Gateway...' : 'Pay Deposit Now'}
               </Button>

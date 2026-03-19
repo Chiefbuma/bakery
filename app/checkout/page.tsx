@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -26,7 +25,7 @@ export default function CheckoutPage() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 pb-20">
+    <div className="min-h-screen bg-stone-50 pb-20 selection:bg-primary selection:text-white">
       <header className="bg-white border-b py-8 sticky top-0 z-50">
         <div className="container mx-auto px-6 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:text-primary transition-colors">
@@ -41,26 +40,26 @@ export default function CheckoutPage() {
       <main className="container mx-auto px-6 py-12 grid lg:grid-cols-3 gap-12 items-start">
         <div className="lg:col-span-2 space-y-12">
           <section className="space-y-6">
-            <h2 className="text-3xl font-black flex items-center gap-4 text-stone-900">
+            <h2 className="text-3xl font-black flex items-center gap-4 text-stone-900 uppercase tracking-tighter">
               <span className="bg-primary text-white h-10 w-10 rounded-2xl flex items-center justify-center text-sm font-black shadow-lg shadow-primary/20">1</span>
               Personal Details
             </h2>
-            <Card className="border-none shadow-xl rounded-[2.5rem] overflow-hidden">
+            <Card className="border-none shadow-xl rounded-[2.5rem] overflow-hidden bg-white">
               <CardContent className="p-10 grid sm:grid-cols-2 gap-8">
                 <div className="space-y-3">
-                  <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-stone-400 block ml-1">Full Guest Name</Label>
-                  <Input placeholder="e.g. Jane Doe" className="h-14 border-2 focus:border-primary/50 rounded-2xl bg-stone-50/50" />
+                  <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-stone-900 block ml-1">Full Guest Name</Label>
+                  <Input placeholder="e.g. Jane Doe" className="h-14 border-2 focus:border-primary/50 rounded-2xl bg-stone-50/50 font-black uppercase text-[10px]" />
                 </div>
                 <div className="space-y-3">
-                  <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-stone-400 block ml-1">Phone Number</Label>
-                  <Input placeholder="+254 700 000 000" className="h-14 border-2 focus:border-primary/50 rounded-2xl bg-stone-50/50" />
+                  <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-stone-900 block ml-1">Phone Number</Label>
+                  <Input placeholder="+254 700 000 000" className="h-14 border-2 focus:border-primary/50 rounded-2xl bg-stone-50/50 font-black uppercase text-[10px]" />
                 </div>
               </CardContent>
             </Card>
           </section>
 
           <section className="space-y-6">
-            <h2 className="text-3xl font-black flex items-center gap-4 text-stone-900">
+            <h2 className="text-3xl font-black flex items-center gap-4 text-stone-900 uppercase tracking-tighter">
               <span className="bg-primary text-white h-10 w-10 rounded-2xl flex items-center justify-center text-sm font-black shadow-lg shadow-primary/20">2</span>
               Artisanal Fulfillment
             </h2>
@@ -70,7 +69,7 @@ export default function CheckoutPage() {
                    <div className={`p-10 border-b sm:border-b-0 sm:border-r flex items-start gap-6 cursor-pointer transition-all ${method === 'pickup' ? 'bg-primary/5' : 'hover:bg-stone-50/50'}`} onClick={() => setMethod('pickup')}>
                       <RadioGroupItem value="pickup" id="pickup" className="mt-1 h-5 w-5 border-2" />
                       <div>
-                        <Label htmlFor="pickup" className="text-xl font-black cursor-pointer flex items-center gap-3 text-stone-900">
+                        <Label htmlFor="pickup" className="text-xl font-black cursor-pointer flex items-center gap-3 text-stone-900 uppercase tracking-widest">
                           <Store className="h-6 w-6 text-primary" /> Shop Pickup
                         </Label>
                         <p className="text-[11px] text-stone-400 font-black uppercase tracking-widest mt-2">Othaya Main Bakery</p>
@@ -79,7 +78,7 @@ export default function CheckoutPage() {
                    <div className={`p-10 flex items-start gap-6 cursor-pointer transition-all ${method === 'delivery' ? 'bg-primary/5' : 'hover:bg-stone-50/50'}`} onClick={() => setMethod('delivery')}>
                       <RadioGroupItem value="delivery" id="delivery" className="mt-1 h-5 w-5 border-2" />
                       <div>
-                        <Label htmlFor="delivery" className="text-xl font-black cursor-pointer flex items-center gap-3 text-stone-900">
+                        <Label htmlFor="delivery" className="text-xl font-black cursor-pointer flex items-center gap-3 text-stone-900 uppercase tracking-widest">
                           <Truck className="h-6 w-6 text-primary" /> Home Delivery
                         </Label>
                         <p className="text-[11px] text-stone-400 font-black uppercase tracking-widest mt-2">Within Nyeri County</p>
@@ -90,16 +89,16 @@ export default function CheckoutPage() {
                 <div className="p-10 bg-stone-50/30 space-y-8">
                    <div className="grid sm:grid-cols-2 gap-8">
                       <div className="space-y-3">
-                        <Label className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] text-stone-400 ml-1">
+                        <Label className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] text-stone-900 ml-1">
                           <Calendar className="h-4 w-4 text-primary" /> Preferred Date
                         </Label>
-                        <Input type="date" className="h-14 border-2 rounded-2xl bg-white" />
+                        <Input type="date" className="h-14 border-2 rounded-2xl bg-white font-black" />
                       </div>
                       <div className="space-y-3">
-                        <Label className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] text-stone-400 ml-1">
+                        <Label className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] text-stone-900 ml-1">
                           <MapPin className="h-4 w-4 text-primary" /> {method === 'pickup' ? 'Bakery Point' : 'Exact Address'}
                         </Label>
-                        <Input placeholder={method === 'pickup' ? 'WhiskeDelights Othaya' : 'Street, Building, Landmark'} className="h-14 border-2 rounded-2xl bg-white" />
+                        <Input placeholder={method === 'pickup' ? 'WhiskeDelights Othaya' : 'Street, Building, Landmark'} className="h-14 border-2 rounded-2xl bg-white font-black uppercase text-[10px]" />
                       </div>
                    </div>
                 </div>
@@ -140,7 +139,7 @@ export default function CheckoutPage() {
                 </p>
               </div>
               <Button 
-                className="w-full h-20 text-xl font-black gap-3 shadow-2xl rounded-[2rem] transition-transform hover:scale-[1.02]" 
+                className="w-full h-20 text-xl font-black gap-3 shadow-2xl rounded-[2rem] transition-transform hover:scale-[1.02] uppercase tracking-[0.2em]" 
                 onClick={handleProceed}
                 disabled={isProcessing}
               >

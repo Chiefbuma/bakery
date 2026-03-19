@@ -121,25 +121,25 @@ export default function BakeryLandingPage() {
             transition={{ duration: 0.8 }}
             className="space-y-6"
           >
-            <div className="bg-white/5 backdrop-blur-3xl border border-white/10 p-8 md:p-12 rounded-[2.5rem] shadow-2xl space-y-6">
+            <div className="bg-white/5 backdrop-blur-3xl border border-white/10 p-8 md:p-12 rounded-[2.5rem] shadow-2xl space-y-8">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/20 border border-primary/30 text-primary font-black text-[7px] uppercase tracking-[0.2em]">
                 <Sparkles className="h-3 w-3 animate-pulse" />
                 <span>Nyeri's Finest Bakery</span>
               </div>
               
               <div className="space-y-4">
-                <h1 className="text-4xl md:text-6xl font-black text-white leading-[1] font-headline tracking-tighter">
-                  Baking <br/>
-                  <span className="text-primary italic">Dreams Daily</span>
+                <h1 className="text-5xl md:text-7xl font-black text-white leading-[1] font-headline tracking-tighter">
+                  Artisanal <br/>
+                  <span className="text-primary">Excellence</span>
                 </h1>
-                <p className="text-xs md:text-sm text-stone-400 max-w-lg leading-relaxed font-medium">
-                  We handcraft every creation using time-honored techniques to transform your moments into masterpieces.
+                <p className="text-xs md:text-sm text-stone-300 max-w-lg leading-relaxed font-bold uppercase tracking-widest">
+                  Masterpieces Baked Daily with Uncompromising Passion.
                 </p>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <Link href="#menu" className="flex-1">
-                  <Button className="w-full h-12 text-[10px] font-black rounded-xl shadow-2xl shadow-primary/20">Explore Gallery</Button>
+                  <Button className="w-full h-14 text-[10px] font-black rounded-xl shadow-2xl shadow-primary/20 uppercase tracking-[0.2em]">Explore Gallery</Button>
                 </Link>
               </div>
             </div>
@@ -179,7 +179,7 @@ export default function BakeryLandingPage() {
                     </div>
                   </div>
                   <Link href={`/cakes/${specialOffer.cake.id}`} className="w-full md:w-auto" onClick={() => setNavigatingId('hero-special')}>
-                    <Button className="w-full h-12 px-8 text-[10px] font-black rounded-xl bg-white text-stone-950 hover:bg-primary hover:text-white transition-all group" disabled={navigatingId === 'hero-special'}>
+                    <Button className="w-full h-12 px-8 text-[10px] font-black rounded-xl bg-white text-stone-950 hover:bg-primary hover:text-white transition-all group uppercase tracking-widest" disabled={navigatingId === 'hero-special'}>
                       {navigatingId === 'hero-special' ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Claim'}
                       <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                     </Button>
@@ -201,7 +201,7 @@ export default function BakeryLandingPage() {
             className="space-y-2 text-center md:text-left"
           >
             <h2 className="text-4xl md:text-5xl font-black font-headline tracking-tighter">Artisanal Gallery</h2>
-            <p className="text-muted-foreground font-medium text-[9px] max-w-xl uppercase tracking-widest">Browse our collection of signature recipes designed to make your celebrations memorable.</p>
+            <p className="text-muted-foreground font-black text-[9px] max-w-xl uppercase tracking-[0.3em]">Signature Recipes Crafted for Memorable Occasions</p>
           </motion.div>
 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -209,7 +209,7 @@ export default function BakeryLandingPage() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
                 placeholder="Search catalog..." 
-                className="pl-12 h-11 rounded-xl border-2 focus:border-primary/50 text-[10px]"
+                className="pl-12 h-11 rounded-xl border-2 focus:border-primary/50 text-[10px] font-black uppercase"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -262,7 +262,7 @@ export default function BakeryLandingPage() {
                       <div className="mb-6">
                         <span className="text-[7px] font-black text-primary uppercase tracking-widest block mb-1">{cake.category}</span>
                         <h3 className="text-xl md:text-2xl font-black mb-2 font-headline">{cake.name}</h3>
-                        <p className="text-muted-foreground text-[10px] line-clamp-2 leading-relaxed">{cake.description}</p>
+                        <p className="text-muted-foreground text-[10px] line-clamp-2 leading-relaxed font-bold">{cake.description}</p>
                       </div>
                       <div className="flex items-center justify-between pt-4 border-t border-stone-100">
                         <span className="text-lg font-black text-primary">{formatPrice(cake.base_price)}</span>
@@ -299,7 +299,7 @@ export default function BakeryLandingPage() {
                 </div>
                 <span className="text-2xl font-black font-headline tracking-tighter">WhiskeDelights</span>
               </div>
-              <p className="text-white/80 font-medium text-xs max-w-sm leading-relaxed uppercase tracking-wide">
+              <p className="text-white/80 font-black text-[9px] max-w-sm leading-relaxed uppercase tracking-widest">
                 Crafting premium artisanal cakes for Nyeri County and beyond. Every slice tells a story of passion and quality.
               </p>
               <div className="flex gap-4">
@@ -325,7 +325,7 @@ export default function BakeryLandingPage() {
               <ul className="space-y-4 text-[10px] font-black uppercase tracking-widest">
                 <li className="flex items-center gap-3 opacity-80"><Clock className="h-4 w-4" /> Mon - Fri: 8am - 7pm</li>
                 <li className="flex items-center gap-3 opacity-80"><Clock className="h-4 w-4" /> Saturday: 9am - 6pm</li>
-                <li className="flex items-center gap-3 text-white italic"><Star className="h-4 w-4" /> Sunday: Closed</li>
+                <li className="flex items-center gap-3 text-white"><Star className="h-4 w-4" /> Sunday: Closed</li>
               </ul>
             </div>
           </div>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, use } from 'react';
@@ -146,24 +145,24 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
               <Badge className="bg-primary text-white font-black px-4 py-1 text-[9px] uppercase tracking-[0.2em] border-none">{cake.category}</Badge>
               <div className="flex items-center text-sm font-black text-stone-700">
                 <Star className="h-4 w-4 text-primary fill-primary mr-1" />
-                {cake.rating || 'New'} <span className="text-stone-400 ml-2 font-bold">(Popular)</span>
+                {cake.rating || 'New'} <span className="text-stone-400 ml-2 font-black">(Popular)</span>
               </div>
             </div>
             <h1 className="text-5xl md:text-6xl font-black font-headline leading-none text-stone-900">{cake.name}</h1>
-            <p className="text-stone-500 font-medium text-lg leading-relaxed">{cake.description}</p>
+            <p className="text-stone-500 font-black text-lg leading-relaxed uppercase tracking-widest text-[12px] opacity-70">{cake.description}</p>
           </div>
 
           <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border space-y-10">
             {cake.customizable ? (
               <>
                 <div className="space-y-6">
-                  <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-stone-400 block border-l-4 border-primary pl-4">1. Select Flavor Profile</Label>
+                  <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-stone-900 block border-l-4 border-primary pl-4">1. Select Flavor Profile</Label>
                   <RadioGroup value={flavorId} onValueChange={setFlavorId} className="grid sm:grid-cols-2 gap-4">
                     {options.flavors?.map(flavor => (
                       <div key={flavor.id} onClick={() => setFlavorId(flavor.id.toString())} className={`flex items-center justify-between p-5 rounded-2xl border-2 transition-all cursor-pointer ${flavorId === flavor.id.toString() ? 'border-primary bg-primary/5 shadow-inner' : 'border-stone-100 hover:border-stone-200 bg-stone-50/30'}`}>
                         <div className="space-y-0.5">
                           <Label className="font-black text-sm cursor-pointer block">{flavor.name}</Label>
-                          {flavor.description && <p className="text-[10px] text-stone-400 font-bold uppercase">{flavor.description}</p>}
+                          {flavor.description && <p className="text-[10px] text-stone-400 font-black uppercase">{flavor.description}</p>}
                         </div>
                         <span className="text-xs font-black text-primary">+{formatPrice(flavor.price)}</span>
                       </div>
@@ -172,7 +171,7 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
                 </div>
 
                 <div className="space-y-6">
-                  <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-stone-400 block border-l-4 border-primary pl-4">2. Choose Dimensions</Label>
+                  <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-stone-900 block border-l-4 border-primary pl-4">2. Choose Dimensions</Label>
                   <RadioGroup value={sizeId} onValueChange={setSizeId} className="grid grid-cols-3 gap-4">
                     {options.sizes?.map(size => (
                       <div key={size.id} onClick={() => setSizeId(size.id.toString())} className={`flex flex-col items-center p-5 rounded-2xl border-2 transition-all cursor-pointer text-center ${sizeId === size.id.toString() ? 'border-primary bg-primary/5 shadow-inner' : 'border-stone-100 hover:border-stone-200 bg-stone-50/30'}`}>
@@ -185,7 +184,7 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
                 </div>
 
                 <div className="space-y-6">
-                  <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-stone-400 block border-l-4 border-primary pl-4">3. Frosting Theme</Label>
+                  <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-stone-900 block border-l-4 border-primary pl-4">3. Frosting Theme</Label>
                   <div className="flex flex-wrap gap-4">
                     {options.colors?.map(color => (
                       <button key={color.id} onClick={() => setColorId(color.id.toString())} className={`flex items-center gap-3 px-6 py-3 rounded-full border-2 transition-all ${colorId === color.id.toString() ? 'border-primary bg-primary/5' : 'border-stone-100 hover:border-stone-200'}`}>
@@ -197,7 +196,7 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
                 </div>
 
                 <div className="space-y-6">
-                  <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-stone-400 block border-l-4 border-primary pl-4">4. Additional Elements</Label>
+                  <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-stone-900 block border-l-4 border-primary pl-4">4. Additional Elements</Label>
                   <div className="grid sm:grid-cols-2 gap-4">
                     {options.toppings?.map(topping => (
                       <div key={topping.id} onClick={() => toggleTopping(topping.id.toString())} className={`flex items-center justify-between p-5 rounded-2xl border-2 transition-all cursor-pointer ${selectedToppings.includes(topping.id.toString()) ? 'border-primary bg-primary/5 shadow-inner' : 'border-stone-100 hover:border-stone-200 bg-stone-50/30'}`}>
@@ -218,7 +217,7 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
                 </div>
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-2">Signature Masterpiece</p>
-                  <p className="text-stone-400 font-bold leading-relaxed">This recipe is crafted to its specific artisanal profile and does not support custom variants.</p>
+                  <p className="text-stone-400 font-black uppercase text-[11px] tracking-widest leading-relaxed">This recipe is crafted to its specific artisanal profile and does not support custom variants.</p>
                 </div>
               </div>
             )}
@@ -236,7 +235,7 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
                 </div>
               </div>
 
-              <Button size="lg" className="w-full h-20 text-xl font-black gap-4 shadow-2xl rounded-3xl transition-transform hover:scale-[1.01]" onClick={handleAddToCart} disabled={isAdding}>
+              <Button size="lg" className="w-full h-20 text-xl font-black gap-4 shadow-2xl rounded-3xl transition-transform hover:scale-[1.01] uppercase tracking-[0.2em]" onClick={handleAddToCart} disabled={isAdding}>
                 {isAdding ? <Loader2 className="h-6 w-6 animate-spin" /> : <ShoppingCart className="h-6 w-6" />}
                 {isAdding ? 'Preparing Order...' : 'Confirm Order'}
               </Button>
