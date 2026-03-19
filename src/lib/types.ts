@@ -58,8 +58,6 @@ export interface CustomizationOptions {
 
 export type CustomizationCategory = 'flavors' | 'sizes' | 'colors' | 'toppings';
 
-export type CustomizationData = Flavor | Size | Color | Topping;
-
 export interface Customizations {
   flavor: string | null;
   size: string | null;
@@ -76,14 +74,15 @@ export interface DeliveryInfo {
   delivery_method: 'delivery' | 'pickup';
   pickup_location: string;
   special_instructions: string;
-  coordinates: { lat: number; lng: number } | null;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export interface CartItem {
-  id: string; // Unique ID for each cart item instance
+  id: string;
   name: string;
   quantity: number;
-  price: number; // Final price per item, including customizations
+  price: number;
   image_data_uri?: string | null;
   cakeId: string;
   customizations?: Customizations;
@@ -103,16 +102,15 @@ export interface Order {
   customer_phone: string;
   delivery_method: 'delivery' | 'pickup';
   delivery_address?: string;
-  latitude?: number;
-  longitude?: number;
+  latitude?: number | null;
+  longitude?: number | null;
   pickup_location?: string;
   delivery_date?: string;
-  special_instructions?: string;
   total_price: number;
   deposit_amount: number;
   payment_status: 'pending' | 'paid';
   order_status: 'processing' | 'complete' | 'cancelled';
-  created_at: string; // ISO date string
+  created_at: string;
   items: CartItem[];
 }
 

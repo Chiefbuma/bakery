@@ -28,13 +28,15 @@ export async function POST(req: NextRequest) {
     await connection.beginTransaction();
 
     const [orderResult]: any = await connection.query(
-      'INSERT INTO orders (order_number, customer_name, customer_phone, delivery_method, delivery_address, delivery_date, total_price, deposit_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO orders (order_number, customer_name, customer_phone, delivery_method, delivery_address, latitude, longitude, delivery_date, total_price, deposit_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         orderNumber,
         deliveryInfo.name,
         deliveryInfo.phone,
         deliveryInfo.delivery_method,
-        deliveryInfo.address,
+        deliveryInfo.address || deliveryInfo.pickup_location,
+        deliveryInfo.latitude,
+        deliveryInfo.longitude,
         deliveryInfo.delivery_date,
         totalPrice,
         depositAmount
@@ -48,6 +50,9 @@ export async function POST(req: NextRequest) {
         'INSERT INTO order_items (order_id, cake_id, name, quantity, price, customizations) VALUES (?, ?, ?, ?, ?, ?)',
         [orderId, item.cakeId, item.name, item.quantity, item.price, JSON.stringify(item.customizations)]
       );
+      
+      // Update popularity
+      await connection.query('UPDATE cakes SET orders_count = orders_count + 1 WHERE id = ?', [item.cakeId]);
     }
 
     await connection.commit();

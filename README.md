@@ -1,3 +1,4 @@
+
 # WhiskeDelights Artisanal Bakery | Production System
 
 This high-performance eCommerce and Bakery Management platform is optimized for precision auditing and secure administrative control on Phusion Passenger-based hosting environments.
@@ -51,17 +52,19 @@ RewriteRule . /server.js [L]
 </IfModule>
 ```
 
-## 2. System Design Principles
+## 2. Database Initialization
+Ensure your MySQL database has the latest schema including coordinates for delivery:
 
-- **Atomic Persistence**: All orders are handled via MySQL transactions.
-- **Auditing Optimization**: Administrative views are strictly limited to **5 records per page**.
-- **Security-First API**: All administrative mutations require a valid JWT.
-- **Bold Aesthetics**: High-contrast typography with zero italics for an artisanal feel.
+```sql
+ALTER TABLE orders ADD COLUMN latitude DECIMAL(10, 8) DEFAULT NULL;
+ALTER TABLE orders ADD COLUMN longitude DECIMAL(11, 8) DEFAULT NULL;
+```
 
-## 3. Database Initialization
-1. Open **phpMyAdmin**.
-2. Select your database: `gledcapi_whiskedelight`.
-3. Go to the **Import** tab and upload the `schema.sql` file provided in the project root.
+## 3. Business Rules
+- **Deposit**: 80% (Mandatory)
+- **Lead Time**: 48 Hours Minimum
+- **Primary Pickup**: Nairobi Main Bakery
+- **Style**: Bold Artisanal, No Italics, Mobile Optimized.
 
 ## 4. Default Credentials
 - **Access URL**: `https://whiskedelights.co.ke/admin/login`

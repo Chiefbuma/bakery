@@ -1,10 +1,11 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { formatPrice } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle2, Copy, Loader2, Sparkles, ShoppingBag, CreditCard, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, Copy, Loader2, Sparkles, ShoppingBag, CreditCard, ShieldCheck, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -19,13 +20,20 @@ export default function PaymentPage() {
   const [isPaid, setIsPaid] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderRef] = useState(`WD-${Math.floor(1000 + Math.random() * 9000)}-BK`);
+  
+  const [checkoutData, setCheckoutData] = useState<any>(null);
 
-  const orderTotal = 3650;
-  const depositAmount = 1825;
+  useEffect(() => {
+    const data = localStorage.getItem('temp_checkout_data');
+    if (data) setCheckoutData(JSON.parse(data));
+  }, []);
+
+  const orderTotal = checkoutData?.total || 3650;
+  const depositAmount = orderTotal * 0.8;
 
   const handlePaystackPayment = () => {
     if (!(window as any).PaystackPop) {
-      toast({ variant: "destructive", title: "Gateway Failure", description: "Payment interface not ready. Refresh." });
+      toast({ variant: "destructive", title: "Gateway Failure", description: "Payment interface not ready." });
       return;
     }
     setIsProcessing(true);
@@ -36,14 +44,14 @@ export default function PaymentPage() {
       currency: 'KES',
       channels: ['mobile_money', 'card'],
       ref: orderRef,
-      callback: function(response: any) {
+      callback: function() {
         setIsProcessing(false);
         setIsPaid(true);
         toast({ title: "Success!", description: `Deposit of ${formatPrice(depositAmount)} confirmed.` });
       },
       onClose: function() {
         setIsProcessing(false);
-        toast({ title: "Cancelled", description: "Transaction aborted by guest." });
+        toast({ title: "Cancelled", description: "Transaction aborted." });
       }
     });
     handler.openIframe();
@@ -51,37 +59,37 @@ export default function PaymentPage() {
 
   if (isPaid) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-6 selection:bg-primary selection:text-white">
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-md w-full">
-          <Card className="border-none shadow-2xl text-center overflow-hidden rounded-[3rem] bg-white">
-            <div className="bg-primary h-3 w-full" />
-            <CardContent className="p-14 space-y-10">
+          <Card className="border-none shadow-2xl text-center overflow-hidden rounded-[2.5rem] bg-white">
+            <div className="bg-primary h-2 w-full" />
+            <CardContent className="p-8 md:p-12 space-y-8">
               <div className="relative inline-block">
-                <div className="p-8 bg-green-50 rounded-[2rem] border border-green-100">
-                  <CheckCircle2 className="h-16 w-16 text-green-500" />
+                <div className="p-6 md:p-8 bg-green-50 rounded-[1.5rem] border border-green-100">
+                  <CheckCircle2 className="h-12 w-12 md:h-16 md:w-16 text-green-500" />
                 </div>
-                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 10, ease: "linear" }} className="absolute -top-4 -right-4">
-                  <Sparkles className="h-10 w-10 text-primary opacity-40" />
+                <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 10, ease: "linear" }} className="absolute -top-3 -right-3">
+                  <Sparkles className="h-8 w-8 text-primary opacity-30" />
                 </motion.div>
               </div>
-              <div className="space-y-4">
-                <h1 className="text-4xl font-black font-headline tracking-tight uppercase">Booking Confirmed</h1>
-                <p className="text-stone-500 font-black uppercase text-[10px] tracking-widest leading-relaxed">Deposit received. Our master bakers have been notified of your artisanal request.</p>
+              <div className="space-y-3">
+                <h1 className="text-3xl md:text-4xl font-black font-headline tracking-tight uppercase">Confirmed</h1>
+                <p className="text-stone-500 font-black uppercase text-[9px] tracking-widest leading-relaxed">80% Deposit received. Our masters are preparing your request.</p>
               </div>
-              <div className="p-6 bg-stone-50 rounded-2xl border-2 border-dashed border-stone-200 flex flex-col items-center gap-3">
-                <span className="text-[10px] uppercase font-black text-stone-400 tracking-[0.2em]">Official Reference</span>
-                <div className="flex items-center gap-3">
-                  <code className="text-2xl font-black text-primary tracking-tighter">{orderRef}</code>
-                  <Button variant="ghost" size="icon" className="h-10 w-10 text-stone-400 hover:text-primary" onClick={() => {
+              <div className="p-5 bg-stone-50 rounded-xl border-2 border-dashed border-stone-200 flex flex-col items-center gap-2">
+                <span className="text-[8px] uppercase font-black text-stone-400 tracking-widest">Official Ref</span>
+                <div className="flex items-center gap-2">
+                  <code className="text-xl font-black text-primary tracking-tighter">{orderRef}</code>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-stone-400" onClick={() => {
                     navigator.clipboard.writeText(orderRef);
                     toast({ title: "Copied" });
-                  }}><Copy className="h-5 w-5" /></Button>
+                  }}><Copy className="h-4 w-4" /></Button>
                 </div>
               </div>
               <Link href="/">
-                <Button className="w-full h-16 text-lg font-black gap-3 rounded-2xl shadow-xl uppercase tracking-widest">
-                  <ShoppingBag className="h-6 w-6" />
-                  Continue Journey
+                <Button className="w-full h-16 text-lg font-black gap-2 rounded-xl shadow-xl uppercase tracking-widest">
+                  <ShoppingBag className="h-5 w-5" />
+                  Continue
                 </Button>
               </Link>
             </CardContent>
@@ -94,49 +102,53 @@ export default function PaymentPage() {
   return (
     <div className="min-h-screen bg-stone-50 pb-20 selection:bg-primary selection:text-white">
       <Script src="https://js.paystack.co/v1/inline.js" strategy="lazyOnload" />
-      <header className="bg-white border-b py-8 sticky top-0 z-50">
-        <div className="container mx-auto px-6 flex items-center justify-between">
-          <Button variant="ghost" onClick={() => router.back()} className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest hover:text-primary">
-            <ShoppingBag className="h-5 w-5 rotate-180" />
-            <span>Back to Checkout</span>
+      <header className="bg-white border-b py-6 md:py-8 sticky top-0 z-50">
+        <div className="container mx-auto px-4 md:px-6 flex items-center justify-between">
+          <Button variant="ghost" onClick={() => router.back()} className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest">
+            <ArrowLeft className="h-4 w-4" />
+            <span className="hidden sm:inline">Back</span>
           </Button>
-          <div className="text-2xl font-black font-headline text-primary tracking-tighter">Secure Payment</div>
-          <div className="w-24" />
+          <div className="text-xl md:text-2xl font-black font-headline text-primary tracking-tighter">Secure Payment</div>
+          <div className="w-10 md:w-20" />
         </div>
       </header>
-      <main className="container mx-auto px-6 py-16 max-w-2xl">
-        <section className="space-y-10">
-          <div className="text-center space-y-2">
-            <h2 className="text-4xl font-black tracking-tight uppercase">One Last Step</h2>
-            <p className="text-stone-400 font-black uppercase text-[10px] tracking-[0.3em]">Confirm your booking reference and pay deposit</p>
+      <main className="container mx-auto px-4 md:px-6 py-12 md:py-16 max-w-2xl">
+        <section className="space-y-8 md:space-y-10">
+          <div className="text-center space-y-1">
+            <h2 className="text-2xl md:text-4xl font-black tracking-tight uppercase">Final Step</h2>
+            <p className="text-stone-400 font-black uppercase text-[9px] tracking-[0.2em]">Confirm Booking & Pay Deposit</p>
           </div>
-          <Card className="border-none shadow-2xl overflow-hidden rounded-[3rem] bg-white">
-            <CardHeader className="bg-stone-900 text-white py-6">
-              <CardTitle className="text-[11px] uppercase tracking-[0.3em] font-black text-center">Ref Ledger ID: {orderRef}</CardTitle>
+          <Card className="border-none shadow-2xl overflow-hidden rounded-[2.5rem] md:rounded-[3rem] bg-white">
+            <CardHeader className="bg-stone-900 text-white py-4 md:py-5">
+              <CardTitle className="text-[9px] uppercase tracking-[0.2em] font-black text-center">Reference: {orderRef}</CardTitle>
             </CardHeader>
-            <CardContent className="p-12 space-y-10">
+            <CardContent className="p-8 md:p-12 space-y-8 md:space-y-10">
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
-                  <span className="text-[11px] font-black uppercase tracking-widest text-stone-400">Total Valuation</span>
-                  <span className="text-2xl font-black text-stone-900">{formatPrice(orderTotal)}</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-stone-400">Total Value</span>
+                  <span className="text-xl md:text-2xl font-black text-stone-900">{formatPrice(orderTotal)}</span>
                 </div>
-                <div className="p-8 bg-primary/5 rounded-3xl border-2 border-primary/20 flex flex-col gap-6">
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">Deposit Requirement (50%)</span>
-                    <p className="text-[10px] text-stone-500 font-black uppercase tracking-widest">Immediate payment confirms artisanal slot</p>
+                <div className="p-6 md:p-8 bg-primary/5 rounded-[1.5rem] md:rounded-[2rem] border-2 border-primary/20 flex flex-col gap-4">
+                  <div className="space-y-0.5">
+                    <span className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">Required Deposit (80%)</span>
+                    <p className="text-[8px] text-stone-500 font-black uppercase tracking-widest">Secures your artisanal time-slot</p>
                   </div>
-                  <span className="text-5xl font-black text-primary tracking-tighter">{formatPrice(depositAmount)}</span>
+                  <span className="text-4xl md:text-5xl font-black text-primary tracking-tighter">{formatPrice(depositAmount)}</span>
                 </div>
               </div>
-              <div className="flex items-center gap-5 p-6 bg-stone-50 rounded-2xl border-2 border-stone-100">
-                <ShieldCheck className="h-8 w-8 text-green-600 shrink-0" />
-                <p className="text-[10px] font-black text-stone-500 uppercase tracking-widest leading-relaxed">
-                  Verified Payment Gateway. Supported by M-Pesa, Card & Mobile Money.
+              <div className="flex items-center gap-4 p-5 md:p-6 bg-stone-50 rounded-2xl border-2 border-stone-100">
+                <ShieldCheck className="h-6 w-6 md:h-8 md:w-8 text-green-600 shrink-0" />
+                <p className="text-[9px] font-black text-stone-500 uppercase tracking-widest leading-relaxed">
+                  Secured by Paystack Gateway. Supported by M-Pesa & Card.
                 </p>
               </div>
-              <Button onClick={handlePaystackPayment} disabled={isProcessing} className="w-full h-20 text-2xl font-black gap-4 shadow-2xl bg-primary hover:bg-primary/95 transition-transform hover:scale-[1.01] rounded-[2rem] uppercase tracking-widest">
-                {isProcessing ? <Loader2 className="h-7 w-7 animate-spin" /> : <CreditCard className="h-7 w-7" />}
-                {isProcessing ? 'Verifying Gateway...' : 'Pay Deposit Now'}
+              <Button 
+                onClick={handlePaystackPayment} 
+                disabled={isProcessing} 
+                className="w-full h-16 md:h-20 text-xl md:text-2xl font-black gap-3 shadow-2xl bg-primary hover:bg-primary/95 rounded-[1.5rem] md:rounded-[2rem] uppercase tracking-widest"
+              >
+                {isProcessing ? <Loader2 className="h-6 w-6 animate-spin" /> : <CreditCard className="h-6 w-6" />}
+                {isProcessing ? 'Verifying...' : 'Pay Deposit Now'}
               </Button>
             </CardContent>
           </Card>

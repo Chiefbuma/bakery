@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -32,7 +33,12 @@
     @apply border-border;
   }
   html {
-    font-size: 16px;
+    font-size: 14px; /* Reduced base for mobile fit */
+  }
+  @media (min-width: 768px) {
+    html {
+      font-size: 16px;
+    }
   }
   body {
     @apply bg-background text-foreground font-sans antialiased;
@@ -41,7 +47,7 @@
   h1, h2, h3, h4, h5, h6 {
     @apply font-headline font-black;
     letter-spacing: -0.04em;
-    font-style: normal !important;
+    font-style: normal !important; /* Ensure NO italics */
   }
 }
 
@@ -65,11 +71,16 @@
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }
 
-/* Global suppression of italics for bold headers */
-h1, h2, h3, h4, h5, h6, .font-headline, .font-black {
+/* Global suppression of italics */
+* {
   font-style: normal !important;
 }
 
 .font-black {
   font-weight: 900 !important;
+}
+
+/* Custom Utilities for No Wrap */
+.text-nowrap-mobile {
+  @apply whitespace-nowrap overflow-hidden text-ellipsis;
 }
