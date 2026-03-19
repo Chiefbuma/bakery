@@ -1,38 +1,97 @@
-# WhiskeDelights: Production Documentation
+# WhiskeDelights: Production Configuration
 
-This document provides the technical requirements and deployment steps for the WhiskeDelights Artisanal Bakery system.
+This platform is optimized for **Phusion Passenger** environments and requires strict database initialization for geolocation and artisanal auditing.
 
-## 1. System Architecture
-- **Framework**: Next.js 15 (App Router)
-- **Database**: MySQL 8.0 (Atomic transactions for order integrity)
-- **Auth**: JWT (JSON Web Tokens) with Bcrypt hashing
-- **UI**: Tailwind CSS + ShadCN (Optimized for 5-record auditing views)
+## 1. Protocol & Routing (Fixes 404/403)
 
-## 2. Database Setup
-1. Import the provided `schema.sql` into your MySQL database (via phpMyAdmin or CLI).
-2. The schema includes optimized indexes for high-precision auditing of orders and inventory.
-3. **Default Admin Credentials**:
-   - **Email**: `admin@whiskedelights.com`
-   - **Password**: `admin123`
+Update your root `.htaccess` to force HTTPS and enable virtual routing for Next.js. This ensures both mobile and desktop browsers can refresh pages without seeing a "Not Found" error.
 
-## 3. Deployment (cPanel / Shared Hosting)
-1. Run `npm run build` to generate the `.next/standalone` folder.
-2. Upload the contents of `.next/standalone` to your server.
-3. Configure your environment variables in the Node.js setup panel.
-4. Set the startup file to `server.js`.
+```apache
+# --- PASSENGER CONFIGURATION ---
+PassengerAppRoot "/home/gledcapi/domains/whiskedelights.co.ke"
+PassengerBaseURI "/"
+PassengerNodejs "/home/gledcapi/nodevenv/domains/whiskedelights.co.ke/20/bin/node"
+PassengerAppType node
+PassengerStartupFile server.js
+PassengerAppEnv production
+PassengerFriendlyErrorPages off
 
-## 4. Environment Variables (.env)
-```bash
-NEXT_PUBLIC_API_URL=https://your-domain.com/api
-DB_HOST=localhost
-DB_DATABASE=your_db_name
-DB_USER=your_db_user
-DB_PASSWORD=your_db_password
-JWT_SECRET=your_long_random_string
-NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=your_paystack_key
+# --- FORCE HTTPS & VIRTUAL ROUTING ---
+RewriteEngine On
+RewriteBase /
+
+# 1. Force HTTPS
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# 2. Prevent directory listing (Fixes 403 Forbidden)
+Options -Indexes
+
+# 3. Virtual Route Pass-through
+# If the request is NOT a real file and NOT a real directory, send to Passenger (server.js)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /server.js [L]
+
+# --- ENVIRONMENT VARIABLES ---
+<IfModule Litespeed>
+  SetEnv DB_HOST localhost
+  SetEnv DB_USER gledcapi_whiskedelight
+  SetEnv DB_DATABASE gledcapi_whiskedelight
+  SetEnv DB_PASSWORD CnhXfEpdkH2nUQME6xks
+  SetEnv JWT_SECRET production_secret_6xks_cnhxf
+  SetEnv NEXT_PUBLIC_API_URL https://whiskedelights.co.ke/api
+  SetEnv NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY pk_live_8d9017d3458e0213efd55c219527b9171482e87d
+</IfModule>
 ```
 
-## 5. Security Principles
-- **Protected APIs**: All administrative routes (`/api/cakes`, `/api/orders`, `/api/users`) require a valid JWT.
-- **Data Sanitization**: All inputs are validated; passwords are never stored in plain text.
-- **Standalone Mode**: The production build excludes source code and dev dependencies for a smaller, more secure footprint.
+## 2. Database Schema (Must Import)
+
+Import this schema via **phpMyAdmin** to initialize the geolocation coordinates and admin user.
+
+```sql
+CREATE TABLE IF NOT EXISTS cakes (
+    id VARCHAR(100) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    base_price DECIMAL(10, 2) NOT NULL,
+    category VARCHAR(50),
+    ready_time VARCHAR(20),
+    image_data_uri LONGTEXT,
+    rating DECIMAL(2, 1) DEFAULT 5.0,
+    orders_count INT DEFAULT 0,
+    customizable BOOLEAN DEFAULT 1
+);
+
+CREATE TABLE IF NOT EXISTS orders (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    order_number VARCHAR(50) UNIQUE NOT NULL,
+    customer_name VARCHAR(255) NOT NULL,
+    customer_phone VARCHAR(50) NOT NULL,
+    delivery_method ENUM('delivery', 'pickup') NOT NULL,
+    delivery_address TEXT,
+    latitude DECIMAL(10, 8) DEFAULT NULL,
+    longitude DECIMAL(11, 8) DEFAULT NULL,
+    delivery_date DATE,
+    total_price DECIMAL(10, 2) NOT NULL,
+    deposit_amount DECIMAL(10, 2) NOT NULL,
+    payment_status ENUM('pending', 'paid') DEFAULT 'pending',
+    order_status ENUM('processing', 'complete', 'cancelled') DEFAULT 'processing',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS users (
+    id VARCHAR(100) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role ENUM('admin', 'staff') DEFAULT 'staff',
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+## 3. Artisanal Business Rules
+- **Deposit**: 80% mandatory for all bookings.
+- **Lead Time**: 48-hour minimum (system enforced).
+- **Branding**: Kenya's Finest Bakery.
+- **Location**: Nairobi Main Bakery.

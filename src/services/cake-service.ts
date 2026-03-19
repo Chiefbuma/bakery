@@ -1,6 +1,6 @@
 /**
  * @fileOverview WhiskeDelights Production Service Layer
- * Hardened for production with resilient JSON parsing and individual recipe fetching.
+ * Hardened for production with resilient JSON parsing and consolidated module resolution.
  */
 
 import type { Cake, SpecialOffer, CustomizationOptions, Order, LoginCredentials, SpecialOfferUpdatePayload, CustomizationCategory, User } from '@/lib/types';
@@ -9,14 +9,12 @@ const API_URL = '/api';
 
 /**
  * Robust JSON parser that handles empty responses or HTML error pages from the server.
- * Prevents "Unexpected end of JSON input" crashes.
  */
 async function safeParseJson(response: Response) {
   try {
     const text = await response.text();
     if (!response.ok) return null;
     if (!text || text.trim().length === 0) return null;
-    // If server returns an HTML error page instead of JSON
     if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
         return null;
     }

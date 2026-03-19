@@ -2,18 +2,13 @@
 
 import type { OrderPayload } from './types';
 
-// Use relative API URL for consistent protocol handling
-const API_URL = '/api';
-
 /**
  * Places an order by sending the data to the backend API.
- * Uses robust parsing to prevent "Unexpected end of JSON input" errors.
  */
 export async function placeOrder(payload: OrderPayload): Promise<{ success: boolean; orderNumber: string; error?: string; depositAmount: number }> {
   try {
-    // Note: Since this is a server action, it might need the full domain if called from a non-relative context,
-    // but Next.js usually handles internal routing. For CloudLinux/Passenger, we ensure absolute consistency.
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+    // Determine the base URL for the server environment
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://whiskedelights.co.ke/api';
     
     const response = await fetch(`${baseUrl}/orders`, {
         method: 'POST',
@@ -31,10 +26,7 @@ export async function placeOrder(payload: OrderPayload): Promise<{ success: bool
         try {
           const errorData = JSON.parse(text);
           message = errorData.message || message;
-        } catch (e) {
-          // If not JSON, it's likely an HTML error page from the server
-          console.error('[PLACE_ORDER_HTML_ERROR]', text.substring(0, 100));
-        }
+        } catch (e) {}
         throw new Error(message);
     }
     
@@ -56,11 +48,4 @@ export async function placeOrder(payload: OrderPayload): Promise<{ success: bool
       depositAmount: 0 
     };
   }
-}
-
-/**
- * Log server-side events for diagnostics.
- */
-export async function logServerEvent(message: string) {
-  console.log('[SERVER_LOG]', message);
 }

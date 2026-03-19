@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -9,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, CreditCard, Truck, Store, Calendar, MapPin, Loader2, ShieldCheck, MapIcon, LocateFixed } from 'lucide-react';
+import { ArrowLeft, CreditCard, Truck, Store, Calendar, MapPin, Loader2, ShieldCheck, LocateFixed } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -70,19 +69,24 @@ export default function CheckoutPage() {
     }
 
     setIsProcessing(true);
-    // Persist temporary data for payment page simulation
-    const depositPercent = 0.8;
+    const DEPOSIT_RATE = 0.8; // Enforce 80% deposit
     const total = 3650; // Mock total for visual purposes
-    const deposit = total * depositPercent;
+    const deposit = total * DEPOSIT_RATE;
     
-    localStorage.setItem('temp_checkout_data', JSON.stringify({ ...formData, method, total, deposit }));
+    localStorage.setItem('temp_checkout_data', JSON.stringify({ 
+      ...formData, 
+      method, 
+      total, 
+      deposit,
+      pickup_location: method === 'pickup' ? 'Nairobi Main Bakery' : ''
+    }));
     
     await new Promise(resolve => setTimeout(resolve, 800));
     router.push('/payment');
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 pb-20 selection:bg-primary selection:text-white">
+    <div className="min-h-screen bg-stone-50 pb-20">
       <header className="bg-white border-b py-4 md:py-8 sticky top-0 z-50">
         <div className="container mx-auto px-4 md:px-6 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest hover:text-primary transition-colors">
@@ -97,7 +101,7 @@ export default function CheckoutPage() {
       <main className="container mx-auto px-4 md:px-6 py-8 md:py-12 grid lg:grid-cols-3 gap-8 md:gap-12 items-start">
         <div className="lg:col-span-2 space-y-8 md:space-y-12">
           <section className="space-y-4 md:space-y-6">
-            <h2 className="text-xl md:text-3xl font-black flex items-center gap-3 md:gap-4 text-stone-900 uppercase tracking-tighter">
+            <h2 className="text-xl md:text-2xl font-black flex items-center gap-3 md:gap-4 text-stone-900 uppercase tracking-tighter">
               <span className="bg-primary text-white h-8 w-8 md:h-10 md:w-10 rounded-xl md:rounded-2xl flex items-center justify-center text-xs md:text-sm font-black shadow-lg shadow-primary/20">1</span>
               Personal Details
             </h2>
@@ -126,7 +130,7 @@ export default function CheckoutPage() {
           </section>
 
           <section className="space-y-4 md:space-y-6">
-            <h2 className="text-xl md:text-3xl font-black flex items-center gap-3 md:gap-4 text-stone-900 uppercase tracking-tighter">
+            <h2 className="text-xl md:text-2xl font-black flex items-center gap-3 md:gap-4 text-stone-900 uppercase tracking-tighter">
               <span className="bg-primary text-white h-8 w-8 md:h-10 md:w-10 rounded-xl md:rounded-2xl flex items-center justify-center text-xs md:text-sm font-black shadow-lg shadow-primary/20">2</span>
               Artisanal Fulfillment
             </h2>
@@ -173,7 +177,7 @@ export default function CheckoutPage() {
                         </Label>
                         {method === 'pickup' ? (
                           <div className="h-12 md:h-14 border-2 rounded-xl md:rounded-2xl bg-stone-100 flex items-center px-4 text-[10px] font-black uppercase text-stone-600">
-                            WhiskeDelights Nairobi
+                            Nairobi Main Bakery
                           </div>
                         ) : (
                           <div className="space-y-3">
@@ -191,7 +195,7 @@ export default function CheckoutPage() {
                               disabled={isGettingLocation}
                             >
                               {isGettingLocation ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
-                              {formData.lat ? `Cords: ${formData.lat.toFixed(4)}, ${formData.lng?.toFixed(4)}` : 'Set Precise Coordinates'}
+                              {formData.lat ? `Coord: ${formData.lat.toFixed(4)}, ${formData.lng?.toFixed(4)}` : 'Set Precise Location'}
                             </Button>
                           </div>
                         )}
@@ -212,11 +216,11 @@ export default function CheckoutPage() {
               <div className="space-y-4">
                  <div className="flex justify-between items-center">
                     <span className="text-[10px] font-black uppercase tracking-widest text-stone-400">Masterpiece</span>
-                    <span className="font-black text-md md:text-lg">Ksh 3,200</span>
+                    <span className="font-black text-md">Ksh 3,200</span>
                  </div>
                  <div className="flex justify-between items-center">
                     <span className="text-[10px] font-black uppercase tracking-widest text-stone-400">Variants</span>
-                    <span className="font-black text-md md:text-lg">Ksh 450</span>
+                    <span className="font-black text-md">Ksh 450</span>
                  </div>
               </div>
               <Separator className="bg-white/10" />
@@ -227,7 +231,7 @@ export default function CheckoutPage() {
               <div className="p-4 md:p-5 bg-white/5 rounded-2xl border border-white/10 flex items-start gap-3 md:gap-4">
                 <ShieldCheck className="h-5 w-5 md:h-6 md:w-6 text-primary shrink-0" />
                 <p className="text-[9px] text-stone-400 font-black uppercase tracking-widest leading-relaxed">
-                  An 80% deposit (Ksh 2,920) is required to secure your artisanal booking.
+                  An 80% deposit (Ksh 2,920) is mandatory for artisanal booking confirmation.
                 </p>
               </div>
               <Button 
@@ -236,7 +240,7 @@ export default function CheckoutPage() {
                 disabled={isProcessing}
               >
                 {isProcessing ? <Loader2 className="h-6 w-6 animate-spin" /> : <CreditCard className="h-6 w-6" />}
-                {isProcessing ? 'Verifying...' : 'Confirm & Pay'}
+                {isProcessing ? 'Verifying...' : 'Pay Deposit'}
               </Button>
             </CardContent>
           </Card>
