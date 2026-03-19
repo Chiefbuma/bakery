@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -28,12 +27,13 @@ export default function PaymentPage() {
     if (data) setCheckoutData(JSON.parse(data));
   }, []);
 
+  // Enforce 80% Deposit Rule
   const orderTotal = checkoutData?.total || 3650;
   const depositAmount = orderTotal * 0.8;
 
   const handlePaystackPayment = () => {
     if (!(window as any).PaystackPop) {
-      toast({ variant: "destructive", title: "Gateway Failure", description: "Payment interface not ready." });
+      toast({ variant: "destructive", title: "Gateway Failure", description: "Payment engine not initialized." });
       return;
     }
     setIsProcessing(true);
@@ -47,11 +47,11 @@ export default function PaymentPage() {
       callback: function() {
         setIsProcessing(false);
         setIsPaid(true);
-        toast({ title: "Success!", description: `Deposit of ${formatPrice(depositAmount)} confirmed.` });
+        toast({ title: "Payment Confirmed", description: `Deposit of ${formatPrice(depositAmount)} received.` });
       },
       onClose: function() {
         setIsProcessing(false);
-        toast({ title: "Cancelled", description: "Transaction aborted." });
+        toast({ title: "Transaction Aborted", description: "Deposit was not completed." });
       }
     });
     handler.openIframe();
@@ -74,22 +74,22 @@ export default function PaymentPage() {
               </div>
               <div className="space-y-3">
                 <h1 className="text-3xl md:text-4xl font-black font-headline tracking-tight uppercase">Confirmed</h1>
-                <p className="text-stone-500 font-black uppercase text-[9px] tracking-widest leading-relaxed">80% Deposit received. Our masters are preparing your request.</p>
+                <p className="text-stone-500 font-black uppercase text-[9px] tracking-widest leading-relaxed">80% Deposit received. Our masters are starting your creation.</p>
               </div>
               <div className="p-5 bg-stone-50 rounded-xl border-2 border-dashed border-stone-200 flex flex-col items-center gap-2">
-                <span className="text-[8px] uppercase font-black text-stone-400 tracking-widest">Official Ref</span>
+                <span className="text-[8px] uppercase font-black text-stone-400 tracking-widest">Master Reference</span>
                 <div className="flex items-center gap-2">
                   <code className="text-xl font-black text-primary tracking-tighter">{orderRef}</code>
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-stone-400" onClick={() => {
                     navigator.clipboard.writeText(orderRef);
-                    toast({ title: "Copied" });
+                    toast({ title: "Copied to clipboard" });
                   }}><Copy className="h-4 w-4" /></Button>
                 </div>
               </div>
               <Link href="/">
                 <Button className="w-full h-16 text-lg font-black gap-2 rounded-xl shadow-xl uppercase tracking-widest">
                   <ShoppingBag className="h-5 w-5" />
-                  Continue
+                  Return Home
                 </Button>
               </Link>
             </CardContent>
@@ -108,15 +108,15 @@ export default function PaymentPage() {
             <ArrowLeft className="h-4 w-4" />
             <span className="hidden sm:inline">Back</span>
           </Button>
-          <div className="text-xl md:text-2xl font-black font-headline text-primary tracking-tighter">Secure Payment</div>
+          <div className="text-xl md:text-2xl font-black font-headline text-primary tracking-tighter">Secure Payment Gateway</div>
           <div className="w-10 md:w-20" />
         </div>
       </header>
       <main className="container mx-auto px-4 md:px-6 py-12 md:py-16 max-w-2xl">
         <section className="space-y-8 md:space-y-10">
           <div className="text-center space-y-1">
-            <h2 className="text-2xl md:text-4xl font-black tracking-tight uppercase">Final Step</h2>
-            <p className="text-stone-400 font-black uppercase text-[9px] tracking-[0.2em]">Confirm Booking & Pay Deposit</p>
+            <h2 className="text-2xl md:text-4xl font-black tracking-tight uppercase">Deposit Verification</h2>
+            <p className="text-stone-400 font-black uppercase text-[9px] tracking-[0.2em]">Mandatory 80% to Secure Artisanal Booking</p>
           </div>
           <Card className="border-none shadow-2xl overflow-hidden rounded-[2.5rem] md:rounded-[3rem] bg-white">
             <CardHeader className="bg-stone-900 text-white py-4 md:py-5">
@@ -125,13 +125,13 @@ export default function PaymentPage() {
             <CardContent className="p-8 md:p-12 space-y-8 md:space-y-10">
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
-                  <span className="text-[9px] font-black uppercase tracking-widest text-stone-400">Total Value</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-stone-400">Total Valuation</span>
                   <span className="text-xl md:text-2xl font-black text-stone-900">{formatPrice(orderTotal)}</span>
                 </div>
                 <div className="p-6 md:p-8 bg-primary/5 rounded-[1.5rem] md:rounded-[2rem] border-2 border-primary/20 flex flex-col gap-4">
                   <div className="space-y-0.5">
                     <span className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">Required Deposit (80%)</span>
-                    <p className="text-[8px] text-stone-500 font-black uppercase tracking-widest">Secures your artisanal time-slot</p>
+                    <p className="text-[8px] text-stone-500 font-black uppercase tracking-widest">Secures your artisanal creation slot</p>
                   </div>
                   <span className="text-4xl md:text-5xl font-black text-primary tracking-tighter">{formatPrice(depositAmount)}</span>
                 </div>
@@ -139,7 +139,7 @@ export default function PaymentPage() {
               <div className="flex items-center gap-4 p-5 md:p-6 bg-stone-50 rounded-2xl border-2 border-stone-100">
                 <ShieldCheck className="h-6 w-6 md:h-8 md:w-8 text-green-600 shrink-0" />
                 <p className="text-[9px] font-black text-stone-500 uppercase tracking-widest leading-relaxed">
-                  Secured by Paystack Gateway. Supported by M-Pesa & Card.
+                  Encryption Secured by Paystack. Supports M-Pesa & Card Payments.
                 </p>
               </div>
               <Button 

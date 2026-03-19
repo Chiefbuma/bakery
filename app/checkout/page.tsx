@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, CreditCard, Truck, Store, Calendar, MapPin, Loader2, ShieldCheck, LocateFixed } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -26,11 +25,11 @@ export default function CheckoutPage() {
     phone: '',
     date: '',
     address: '',
-    lat: null as number | null,
-    lng: null as number | null
+    latitude: null as number | null,
+    longitude: null as number | null
   });
 
-  // Enforce 48-hour artisanal lead time
+  // Enforce 48-hour (2 days) artisanal lead time
   const minDate = useMemo(() => {
     const d = new Date();
     d.setHours(d.getHours() + 48);
@@ -39,50 +38,51 @@ export default function CheckoutPage() {
 
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) {
-      toast({ variant: "destructive", title: "Error", description: "GPS not supported by browser." });
+      toast({ variant: "destructive", title: "GPS Error", description: "Browser does not support geolocation." });
       return;
     }
 
     setIsGettingLocation(true);
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setFormData(prev => ({ 
-          ...prev, 
-          lat: pos.coords.latitude, 
-          lng: pos.coords.longitude 
-        }));
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setFormData(prev => ({ ...prev, latitude, longitude }));
         setIsGettingLocation(false);
-        toast({ title: "Coordinates Locked", description: "GPS position recorded for delivery." });
+        toast({ title: "Location Captured", description: "Coordinates locked for delivery." });
       },
-      (err) => {
+      (error) => {
         setIsGettingLocation(false);
-        toast({ variant: "destructive", title: "GPS Error", description: "Could not retrieve location. Please check permissions." });
-      }
+        console.error('Geolocation Error:', error);
+        toast({ variant: "destructive", title: "Access Denied", description: "Please enable location services for precise delivery." });
+      },
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
     );
   };
 
   const handleProceed = async () => {
     if (!formData.name || !formData.phone || !formData.date) {
-      toast({ variant: "destructive", title: "Required", description: "Please complete guest details." });
+      toast({ variant: "destructive", title: "Required Info", description: "Please complete the guest details." });
       return;
     }
-    if (method === 'delivery' && (!formData.address || !formData.lat)) {
-      toast({ variant: "destructive", title: "Location Required", description: "Please provide an address and lock GPS coordinates for delivery." });
+    if (method === 'delivery' && (!formData.address || !formData.latitude)) {
+      toast({ variant: "destructive", title: "Action Required", description: "Please provide an address and capture GPS coordinates." });
       return;
     }
 
     setIsProcessing(true);
-    const DEPOSIT_RATE = 0.8; // Enforce 80% Deposit
-    const total = 3650; // Dynamic total placeholder
+    const total = 3650; // Mock total, in production this comes from context/cart
+    const DEPOSIT_RATE = 0.8; 
     const deposit = total * DEPOSIT_RATE;
     
-    localStorage.setItem('temp_checkout_data', JSON.stringify({ 
+    const checkoutPayload = { 
       ...formData, 
       method, 
       total, 
       deposit,
       pickup_location: method === 'pickup' ? 'Nairobi Main Bakery' : ''
-    }));
+    };
+    
+    localStorage.setItem('temp_checkout_data', JSON.stringify(checkoutPayload));
     
     await new Promise(resolve => setTimeout(resolve, 800));
     router.push('/payment');
@@ -94,9 +94,9 @@ export default function CheckoutPage() {
         <div className="container mx-auto px-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest hover:text-primary">
             <ArrowLeft className="h-4 w-4" />
-            <span>Back</span>
+            <span>Catalog</span>
           </Link>
-          <div className="text-xl font-black font-headline text-primary tracking-tighter">Checkout</div>
+          <div className="text-xl font-black font-headline text-primary tracking-tighter">Order Configuration</div>
           <div className="w-12" />
         </div>
       </header>
@@ -106,7 +106,7 @@ export default function CheckoutPage() {
           <section className="space-y-4">
             <h2 className="text-lg font-black flex items-center gap-3 text-stone-900 uppercase tracking-tighter">
               <span className="bg-primary text-white h-8 w-8 rounded-xl flex items-center justify-center text-xs font-black shadow-lg shadow-primary/20">1</span>
-              Guest Info
+              Guest Credentials
             </h2>
             <Card className="border-none shadow-xl rounded-[2rem] overflow-hidden bg-white">
               <CardContent className="p-8 grid sm:grid-cols-2 gap-6">
@@ -115,7 +115,7 @@ export default function CheckoutPage() {
                   <Input 
                     value={formData.name}
                     onChange={e => setFormData(prev => ({...prev, name: e.target.value}))}
-                    placeholder="Guest Name" 
+                    placeholder="e.g. Jane Doe" 
                     className="h-12 border-2 rounded-xl font-black text-[11px]" 
                   />
                 </div>
@@ -124,7 +124,7 @@ export default function CheckoutPage() {
                   <Input 
                     value={formData.phone}
                     onChange={e => setFormData(prev => ({...prev, phone: e.target.value}))}
-                    placeholder="+254..." 
+                    placeholder="07..." 
                     className="h-12 border-2 rounded-xl font-black text-[11px]" 
                   />
                 </div>
@@ -135,7 +135,7 @@ export default function CheckoutPage() {
           <section className="space-y-4">
             <h2 className="text-lg font-black flex items-center gap-3 text-stone-900 uppercase tracking-tighter">
               <span className="bg-primary text-white h-8 w-8 rounded-xl flex items-center justify-center text-xs font-black shadow-lg shadow-primary/20">2</span>
-              Fulfillment
+              Fulfillment Logistics
             </h2>
             <Card className="border-none shadow-xl rounded-[2rem] overflow-hidden bg-white">
               <CardContent className="p-0">
@@ -155,7 +155,7 @@ export default function CheckoutPage() {
                         <Label htmlFor="delivery" className="text-md font-black cursor-pointer flex items-center gap-2 text-stone-900 uppercase tracking-widest">
                           <Truck className="h-4 w-4 text-primary" /> Delivery
                         </Label>
-                        <p className="text-[9px] text-stone-400 font-black uppercase mt-1">Within Nairobi Area</p>
+                        <p className="text-[9px] text-stone-400 font-black uppercase mt-1">Nairobi & Environs</p>
                       </div>
                    </div>
                 </RadioGroup>
@@ -164,7 +164,7 @@ export default function CheckoutPage() {
                    <div className="grid sm:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <Label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-stone-500">
-                          <Calendar className="h-3.5 w-3.5 text-primary" /> Delivery Date (48h Min)
+                          <Calendar className="h-3.5 w-3.5 text-primary" /> Preferred Date (48h Min)
                         </Label>
                         <Input 
                           type="date" 
@@ -176,7 +176,7 @@ export default function CheckoutPage() {
                       </div>
                       <div className="space-y-2">
                         <Label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-stone-500">
-                          <MapPin className="h-3.5 w-3.5 text-primary" /> {method === 'pickup' ? 'Location' : 'Address'}
+                          <MapPin className="h-3.5 w-3.5 text-primary" /> {method === 'pickup' ? 'Station' : 'Address'}
                         </Label>
                         {method === 'pickup' ? (
                           <div className="h-12 border-2 rounded-xl bg-stone-100 flex items-center px-4 text-[10px] font-black uppercase text-stone-600">
@@ -198,7 +198,7 @@ export default function CheckoutPage() {
                               disabled={isGettingLocation}
                             >
                               {isGettingLocation ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
-                              {formData.lat ? `Locked: ${formData.lat.toFixed(4)}, ${formData.lng?.toFixed(4)}` : 'Set Exact Location'}
+                              {formData.latitude ? `Locked: ${formData.latitude.toFixed(4)}, ${formData.longitude?.toFixed(4)}` : 'Set GPS Coordinates'}
                             </Button>
                           </div>
                         )}
@@ -213,7 +213,7 @@ export default function CheckoutPage() {
         <div className="space-y-6">
           <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-stone-950 text-white">
             <CardHeader className="bg-primary text-white py-4">
-              <CardTitle className="text-[10px] uppercase tracking-[0.3em] font-black text-center">Summary</CardTitle>
+              <CardTitle className="text-[10px] uppercase tracking-[0.3em] font-black text-center">Value Summary</CardTitle>
             </CardHeader>
             <CardContent className="p-8 space-y-6">
               <div className="flex justify-between items-center py-2">
@@ -223,7 +223,7 @@ export default function CheckoutPage() {
               <div className="p-4 bg-white/5 rounded-2xl border border-white/10 flex items-start gap-3">
                 <ShieldCheck className="h-5 w-5 text-primary shrink-0" />
                 <p className="text-[9px] text-stone-400 font-black uppercase leading-relaxed">
-                  80% Deposit (Ksh 2,920) is mandatory to confirm booking.
+                  80% Artisanal Deposit (Ksh 2,920) is mandatory to confirm.
                 </p>
               </div>
               <Button 
@@ -232,7 +232,7 @@ export default function CheckoutPage() {
                 disabled={isProcessing}
               >
                 {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <CreditCard className="h-5 w-5" />}
-                {isProcessing ? 'Wait...' : 'Confirm'}
+                {isProcessing ? 'Processing...' : 'Go to Secure Payment'}
               </Button>
             </CardContent>
           </Card>

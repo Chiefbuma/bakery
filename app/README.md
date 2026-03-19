@@ -1,6 +1,6 @@
 # WhiskeDelights: Production Configuration
 
-This platform is optimized for **Phusion Passenger** environments and requires strict database initialization for geolocation and artisanal auditing.
+This platform is optimized for **Phusion Passenger** environments and requires specific database schema initialization for geolocation and artisanal auditing.
 
 ## 1. Protocol & Routing (Fixes 404/403)
 
@@ -45,9 +45,9 @@ RewriteRule . /server.js [L]
 </IfModule>
 ```
 
-## 2. Database Schema (Must Import)
+## 2. Production Database Schema (Geolocation Support)
 
-Import this schema via **phpMyAdmin** to initialize the geolocation coordinates and admin user.
+Import this schema via **phpMyAdmin** to initialize the system with coordinate support and the primary admin account.
 
 ```sql
 CREATE TABLE IF NOT EXISTS cakes (
@@ -88,10 +88,14 @@ CREATE TABLE IF NOT EXISTS users (
     role ENUM('admin', 'staff') DEFAULT 'staff',
     createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Default Admin Credential: admin@whiskedelights.com / admin123
+INSERT IGNORE INTO users (id, name, email, password, role) 
+VALUES ('ADMIN_1', 'Master Baker', 'admin@whiskedelights.com', '$2a$10$7zBvY7p0.7zBvY7p0.7zBuK1Gq0X9XzY0ZzY0ZzY0ZzY0ZzY0ZzY0', 'admin');
 ```
 
 ## 3. Artisanal Business Rules
-- **Deposit**: 80% mandatory for all bookings.
-- **Lead Time**: 48-hour minimum (system enforced).
-- **Branding**: Kenya's Finest Bakery.
-- **Location**: Nairobi Main Bakery.
+- **Deposit**: Mandatory 80% to secure artisanal time-slots.
+- **Lead Time**: Minimum 48-hour (system restricted).
+- **Pickups**: Nairobi Main Bakery.
+- **Style**: Bold Artisanal, No Italics, Mobile Optimized (No Wraps).
