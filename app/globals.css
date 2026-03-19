@@ -48,6 +48,7 @@
 .font-headline {
   font-family: 'Playfair Display', serif;
   font-weight: 900;
+  font-style: normal !important;
 }
 
 ::-webkit-scrollbar {
@@ -65,6 +66,6 @@
 }
 
 /* Global suppression of italics for bold headers */
-h1, h2, h3, .font-headline {
+h1, h2, h3, .font-headline, .font-black {
   font-style: normal !important;
 }

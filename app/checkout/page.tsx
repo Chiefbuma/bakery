@@ -81,7 +81,7 @@ export default function CheckoutPage() {
                         <Label htmlFor="delivery" className="text-xl font-black cursor-pointer flex items-center gap-3 text-stone-900 uppercase tracking-widest">
                           <Truck className="h-6 w-6 text-primary" /> Home Delivery
                         </Label>
-                        <p className="text-[11px] text-stone-400 font-black uppercase tracking-widest mt-2">Within Nyeri County</p>
+                        <p className="text-[11px] text-stone-400 font-black uppercase tracking-widest mt-2">Within Kenya</p>
                       </div>
                    </div>
                 </RadioGroup>

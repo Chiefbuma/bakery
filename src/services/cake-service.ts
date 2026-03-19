@@ -1,4 +1,3 @@
-
 /**
  * @fileOverview WhiskeDelights Production Service Layer
  * Hardened for production with resilient JSON parsing and individual recipe fetching.
@@ -8,14 +7,22 @@ import type { Cake, SpecialOffer, CustomizationOptions, Order, LoginCredentials,
 
 const API_URL = '/api';
 
+/**
+ * Robust JSON parser that handles empty responses or HTML error pages from the server.
+ * Prevents "Unexpected end of JSON input" crashes.
+ */
 async function safeParseJson(response: Response) {
   try {
     const text = await response.text();
     if (!response.ok) return null;
     if (!text || text.trim().length === 0) return null;
-    if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) return null;
+    // If server returns an HTML error page instead of JSON
+    if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+        return null;
+    }
     return JSON.parse(text);
   } catch (e) {
+    console.error('[JSON_PARSE_ERROR]', e);
     return null;
   }
 }
@@ -92,6 +99,15 @@ export async function createCustomizationOption(category: CustomizationCategory,
   if (!res.ok) throw new Error(`Failed to add ${category}`);
 }
 
+export async function updateCustomizationOption(category: CustomizationCategory, id: string, data: any): Promise<void> {
+  const res = await fetch(`${API_URL}/customizations/${category}/${id}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(`Failed to update ${category}`);
+}
+
 export async function deleteCustomizationOption(category: CustomizationCategory, id: string): Promise<void> {
   const res = await fetch(`${API_URL}/customizations/${category}/${id}`, {
     method: 'DELETE',
@@ -119,6 +135,14 @@ export async function updateOrderStatus(orderId: number, status: string): Promis
   if (!res.ok) throw new Error('Failed to update job status');
 }
 
+export async function deleteOrder(orderId: number): Promise<void> {
+  const res = await fetch(`${API_URL}/orders/${orderId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to remove order');
+}
+
 export async function getUsers(): Promise<User[]> {
   try {
     const res = await fetch(`${API_URL}/users`, { headers: getAuthHeaders() });
@@ -136,6 +160,14 @@ export async function createUser(data: any): Promise<void> {
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error('Personnel registration failed');
+}
+
+export async function deleteUser(userId: string): Promise<void> {
+  const res = await fetch(`${API_URL}/users/${userId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to revoke access');
 }
 
 export async function getSpecialOffer(): Promise<SpecialOffer | null> {

@@ -30,7 +30,7 @@ RewriteBase /
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-# 2. Prevent directory listing
+# 2. Prevent directory listing (Fixes 403 Forbidden)
 Options -Indexes
 
 # 3. Route all virtual paths to Passenger (Fixes 404 on Refresh/HTTPS)
@@ -56,6 +56,7 @@ RewriteRule . /server.js [L]
 - **Atomic Persistence**: All orders are handled via MySQL transactions.
 - **Auditing Optimization**: Administrative views are strictly limited to **5 records per page**.
 - **Security-First API**: All administrative mutations require a valid JWT.
+- **Bold Aesthetics**: High-contrast typography with zero italics for an artisanal feel.
 
 ## 3. Database Initialization
 1. Open **phpMyAdmin**.

@@ -80,7 +80,6 @@ export default function BakeryLandingPage() {
       animate={{ opacity: 1 }}
       className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-white"
     >
-      {/* Navigation Header */}
       <header className="fixed top-0 w-full z-50 bg-white/70 backdrop-blur-xl border-b border-stone-200">
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -101,7 +100,6 @@ export default function BakeryLandingPage() {
         </div>
       </header>
 
-      {/* Hero Section */}
       <section className="relative min-h-screen flex items-center pt-16 overflow-hidden bg-stone-950">
         <div className="absolute inset-0 z-0">
           <Image 
@@ -124,7 +122,7 @@ export default function BakeryLandingPage() {
             <div className="bg-white/5 backdrop-blur-3xl border border-white/10 p-8 md:p-12 rounded-[2.5rem] shadow-2xl space-y-8">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/20 border border-primary/30 text-primary font-black text-[7px] uppercase tracking-[0.2em]">
                 <Sparkles className="h-3 w-3 animate-pulse" />
-                <span>Nyeri's Finest Bakery</span>
+                <span>Kenya's Finest Bakery</span>
               </div>
               
               <div className="space-y-4">
@@ -132,8 +130,8 @@ export default function BakeryLandingPage() {
                   Artisanal <br/>
                   <span className="text-primary">Excellence</span>
                 </h1>
-                <p className="text-xs md:text-sm text-stone-300 max-w-lg leading-relaxed font-bold uppercase tracking-widest">
-                  Masterpieces Baked Daily with Uncompromising Passion.
+                <p className="text-xs md:text-sm text-stone-300 max-w-lg leading-relaxed font-black uppercase tracking-[0.2em]">
+                  Masterpieces Created Daily with Uncompromising Passion.
                 </p>
               </div>
 
@@ -175,7 +173,7 @@ export default function BakeryLandingPage() {
                     <h3 className="text-xl md:text-2xl font-black text-white font-headline">{specialOffer.cake.name}</h3>
                     <div className="flex items-baseline gap-2">
                       <span className="text-primary font-black text-xl">{formatPrice(specialOffer.special_price)}</span>
-                      <span className="text-stone-500 text-xs line-through font-bold">{formatPrice(specialOffer.original_price)}</span>
+                      <span className="text-stone-500 text-xs line-through font-black">{formatPrice(specialOffer.original_price)}</span>
                     </div>
                   </div>
                   <Link href={`/cakes/${specialOffer.cake.id}`} className="w-full md:w-auto" onClick={() => setNavigatingId('hero-special')}>
@@ -191,7 +189,6 @@ export default function BakeryLandingPage() {
         </div>
       </section>
 
-      {/* Gallery Section */}
       <section id="menu" className="py-24 container mx-auto px-6">
         <div className="flex flex-col gap-8 mb-16">
           <motion.div 
@@ -262,7 +259,7 @@ export default function BakeryLandingPage() {
                       <div className="mb-6">
                         <span className="text-[7px] font-black text-primary uppercase tracking-widest block mb-1">{cake.category}</span>
                         <h3 className="text-xl md:text-2xl font-black mb-2 font-headline">{cake.name}</h3>
-                        <p className="text-muted-foreground text-[10px] line-clamp-2 leading-relaxed font-bold">{cake.description}</p>
+                        <p className="text-muted-foreground text-[10px] line-clamp-2 leading-relaxed font-black uppercase tracking-widest opacity-60">{cake.description}</p>
                       </div>
                       <div className="flex items-center justify-between pt-4 border-t border-stone-100">
                         <span className="text-lg font-black text-primary">{formatPrice(cake.base_price)}</span>
@@ -282,13 +279,12 @@ export default function BakeryLandingPage() {
           {filteredCakes.length === 0 && (
             <div className="py-20 flex flex-col items-center justify-center text-stone-400">
               <Sparkles className="h-16 w-16 mb-4 opacity-10" />
-              <p className="font-black uppercase tracking-[0.3em] text-[9px] italic">No matches in our recipe book</p>
+              <p className="font-black uppercase tracking-[0.3em] text-[9px]">No matches in our recipe book</p>
             </div>
           )}
         </div>
       </section>
 
-      {/* Signature Footer */}
       <footer className="py-20 bg-primary text-primary-foreground">
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
@@ -300,7 +296,7 @@ export default function BakeryLandingPage() {
                 <span className="text-2xl font-black font-headline tracking-tighter">WhiskeDelights</span>
               </div>
               <p className="text-white/80 font-black text-[9px] max-w-sm leading-relaxed uppercase tracking-widest">
-                Crafting premium artisanal cakes for Nyeri County and beyond. Every slice tells a story of passion and quality.
+                Crafting premium artisanal cakes for Kenya and beyond. Every slice tells a story of passion and quality.
               </p>
               <div className="flex gap-4">
                 <Link href="#" className="h-10 w-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center hover:bg-white hover:text-primary transition-all group">
@@ -332,7 +328,7 @@ export default function BakeryLandingPage() {
           
           <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-6">
              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40">
-               © 2024 WhiskeDelights Artisanal Bakery • Nyeri, Kenya
+               © 2024 WhiskeDelights Artisanal Bakery • Kenya
              </p>
              <div className="flex gap-8 text-[9px] font-black uppercase tracking-widest text-white/40">
                <Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link>
