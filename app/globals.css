@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -33,7 +34,7 @@
     font-style: normal !important; /* Globally suppress italics */
   }
   html {
-    font-size: 13px; /* Reduced base for mobile fit without wraps */
+    font-size: 13px; /* High density mobile fit */
   }
   @media (min-width: 768px) {
     html {
@@ -57,10 +58,6 @@
 
 .font-black {
   font-weight: 900 !important;
-}
-
-.text-nowrap-mobile {
-  @apply whitespace-nowrap overflow-hidden text-ellipsis;
 }
 
 ::-webkit-scrollbar {

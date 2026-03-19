@@ -1,17 +1,14 @@
 
-# WhiskeDelights Artisanal Bakery | Production System
+# WhiskeDelights Artisanal Bakery | Production Deployment
 
-This high-performance eCommerce and Bakery Management platform is optimized for precision auditing and secure administrative control on Phusion Passenger-based hosting environments.
+This high-performance eCommerce and Bakery Management platform is optimized for **Phusion Passenger** environments.
 
-## 1. Protocol & Routing Resolution (The 404 Fix)
+## 1. Protocol & Routing Resolution (The 404/403 Fix)
 
-If your app works on `http` but returns a **404 Not Found** on `https`, it is because the server is trying to find physical files instead of routing to Node.js. 
-
-### Why the 404 happens on HTTPS:
-Apache/LiteSpeed servers treat HTTP and HTTPS as separate entities. Without a "Catch-All" rewrite rule, the server looks for a folder (e.g., `/admin`) on the hard drive. Since your routes are virtual (Next.js), the server fails.
+If your app works on `http` but returns a **404 Not Found** on `https`, or shows a **403 Forbidden** error, follow these steps:
 
 ### The Solution (.htaccess):
-Update your root `.htaccess` with these specific rules to force HTTPS and enable deep-linking:
+Update your root `.htaccess` with these specific rules to force HTTPS and enable virtual routing for Next.js.
 
 ```apache
 # --- PASSENGER CONFIGURATION ---
@@ -27,7 +24,7 @@ PassengerFriendlyErrorPages off
 RewriteEngine On
 RewriteBase /
 
-# 1. Force HTTPS (Prevents protocol mismatch)
+# 1. Force HTTPS
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
@@ -35,7 +32,6 @@ RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 Options -Indexes
 
 # 3. Route all virtual paths to Passenger (Fixes 404 on Refresh/HTTPS)
-# If the request is NOT a real file and NOT a real directory, send to server.js
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule . /server.js [L]
@@ -53,18 +49,16 @@ RewriteRule . /server.js [L]
 ```
 
 ## 2. Database Initialization
-Ensure your MySQL database has the latest schema including coordinates for delivery:
+1. Open **phpMyAdmin**.
+2. Select your database: `gledcapi_whiskedelight`.
+3. Go to the **Import** tab.
+4. Upload and execute the `schema.sql` file provided in the root directory.
 
-```sql
-ALTER TABLE orders ADD COLUMN latitude DECIMAL(10, 8) DEFAULT NULL;
-ALTER TABLE orders ADD COLUMN longitude DECIMAL(11, 8) DEFAULT NULL;
-```
-
-## 3. Business Rules
-- **Deposit**: 80% (Mandatory)
-- **Lead Time**: 48 Hours Minimum
-- **Primary Pickup**: Nairobi Main Bakery
-- **Style**: Bold Artisanal, No Italics, Mobile Optimized.
+## 3. Artisanal Business Rules
+- **Deposit**: Mandatory 80% (System Enforced).
+- **Lead Time**: Minimum 48 Hours (System Restricted).
+- **Primary Pickup**: Nairobi Main Bakery.
+- **Style**: Bold Artisanal, No Italics, Mobile Optimized (13px Base).
 
 ## 4. Default Credentials
 - **Access URL**: `https://whiskedelights.co.ke/admin/login`

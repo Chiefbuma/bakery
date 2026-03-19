@@ -1,3 +1,4 @@
+
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
@@ -7,13 +8,14 @@ export function cn(...inputs: ClassValue[]) {
 
 /**
  * Robust price formatter for the WhiskeDelights system.
- * Prevents "KshNaN" errors by defaulting to "Ksh 0" for any non-numeric or malformed input.
+ * Prevents "KshNaN" errors by defaulting to "Ksh 0" for any non-numeric input.
  */
 export function formatPrice(amount: number | string | null | undefined): string {
   if (amount === null || amount === undefined || amount === '') return 'Ksh 0';
 
   let value: number;
   if (typeof amount === 'string') {
+    // Remove currency prefix and commas before parsing
     const sanitized = amount.replace(/[Ksh,]/gi, '').trim();
     value = parseFloat(sanitized);
   } else {
@@ -32,6 +34,7 @@ export function formatPrice(amount: number | string | null | undefined): string 
       maximumFractionDigits: 0,
     }).format(value).replace('KES', 'Ksh');
   } catch (e) {
+    // Fallback formatting
     return `Ksh ${Math.floor(value).toLocaleString()}`;
   }
 }

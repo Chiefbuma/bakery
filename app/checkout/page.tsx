@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -48,11 +49,10 @@ export default function CheckoutPage() {
         const { latitude, longitude } = position.coords;
         setFormData(prev => ({ ...prev, latitude, longitude }));
         setIsGettingLocation(false);
-        toast({ title: "Location Captured", description: "Coordinates locked for delivery." });
+        toast({ title: "Location Captured", description: "Coordinates locked for delivery auditing." });
       },
       (error) => {
         setIsGettingLocation(false);
-        console.error('Geolocation Error:', error);
         toast({ variant: "destructive", title: "Access Denied", description: "Please enable location services for precise delivery." });
       },
       { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
@@ -61,18 +61,18 @@ export default function CheckoutPage() {
 
   const handleProceed = async () => {
     if (!formData.name || !formData.phone || !formData.date) {
-      toast({ variant: "destructive", title: "Required Info", description: "Please complete the guest details." });
+      toast({ variant: "destructive", title: "Required Info", description: "Please complete the guest credentials." });
       return;
     }
-    if (method === 'delivery' && (!formData.address || !formData.latitude)) {
-      toast({ variant: "destructive", title: "Action Required", description: "Please provide an address and capture GPS coordinates." });
+    if (method === 'delivery' && !formData.address) {
+      toast({ variant: "destructive", title: "Action Required", description: "Please provide a delivery address." });
       return;
     }
 
     setIsProcessing(true);
-    const total = 3650; // Mock total, in production this comes from context/cart
-    const DEPOSIT_RATE = 0.8; 
-    const deposit = total * DEPOSIT_RATE;
+    // In a real app, calculate total from cart state
+    const total = 3500; 
+    const deposit = total * 0.8; // 80% Mandatory Deposit
     
     const checkoutPayload = { 
       ...formData, 
@@ -94,7 +94,7 @@ export default function CheckoutPage() {
         <div className="container mx-auto px-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest hover:text-primary">
             <ArrowLeft className="h-4 w-4" />
-            <span>Catalog</span>
+            <span>Gallery</span>
           </Link>
           <div className="text-xl font-black font-headline text-primary tracking-tighter">Order Configuration</div>
           <div className="w-12" />
@@ -218,12 +218,12 @@ export default function CheckoutPage() {
             <CardContent className="p-8 space-y-6">
               <div className="flex justify-between items-center py-2">
                  <span className="text-xl font-black uppercase tracking-tighter text-stone-300">Total</span>
-                 <span className="text-3xl font-black text-primary tracking-tighter">Ksh 3,650</span>
+                 <span className="text-3xl font-black text-primary tracking-tighter">Ksh 3,500</span>
               </div>
               <div className="p-4 bg-white/5 rounded-2xl border border-white/10 flex items-start gap-3">
                 <ShieldCheck className="h-5 w-5 text-primary shrink-0" />
                 <p className="text-[9px] text-stone-400 font-black uppercase leading-relaxed">
-                  80% Artisanal Deposit (Ksh 2,920) is mandatory to confirm.
+                  80% Artisanal Deposit (Ksh 2,800) is mandatory to confirm.
                 </p>
               </div>
               <Button 
@@ -232,7 +232,7 @@ export default function CheckoutPage() {
                 disabled={isProcessing}
               >
                 {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <CreditCard className="h-5 w-5" />}
-                {isProcessing ? 'Processing...' : 'Go to Secure Payment'}
+                {isProcessing ? 'Processing...' : 'Secure Order Now'}
               </Button>
             </CardContent>
           </Card>
