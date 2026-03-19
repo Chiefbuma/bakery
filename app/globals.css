@@ -66,6 +66,10 @@
 }
 
 /* Global suppression of italics for bold headers */
-h1, h2, h3, .font-headline, .font-black {
+h1, h2, h3, h4, h5, h6, .font-headline, .font-black {
   font-style: normal !important;
+}
+
+.font-black {
+  font-weight: 900 !important;
 }

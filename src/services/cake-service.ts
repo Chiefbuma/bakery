@@ -63,6 +63,15 @@ export async function createCake(cake: any): Promise<void> {
   if (!res.ok) throw new Error('Failed to register creation');
 }
 
+export async function updateCake(id: string, cake: any): Promise<void> {
+  const res = await fetch(`${API_URL}/cakes/${id}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(cake),
+  });
+  if (!res.ok) throw new Error('Failed to update masterpiece');
+}
+
 export async function deleteCake(cakeId: string): Promise<void> {
   const res = await fetch(`${API_URL}/cakes/${cakeId}`, {
     method: 'DELETE',
