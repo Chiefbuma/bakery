@@ -38,7 +38,7 @@ export default function CheckoutPage() {
   // Strict 48-hour (2 days) Lead Time
   const minDate = useMemo(() => {
     const d = new Date();
-    d.setHours(d.getHours() + 48);
+    d.setDate(d.getDate() + 2); // Force +2 days
     return d.toISOString().split('T')[0];
   }, []);
 
@@ -160,7 +160,7 @@ export default function CheckoutPage() {
                         <Label htmlFor="delivery" className="text-[11px] font-black cursor-pointer flex items-center gap-2 text-stone-900 uppercase tracking-widest">
                           <Truck className="h-3 w-3 text-primary" /> Delivery
                         </Label>
-                        <p className="text-[8px] text-stone-400 font-black uppercase mt-1">Nairobi & Environs</p>
+                        <p className="text-[8px] text-stone-400 font-black uppercase mt-1">Exact Address</p>
                       </div>
                    </div>
                 </RadioGroup>
@@ -181,7 +181,7 @@ export default function CheckoutPage() {
                       </div>
                       <div className="space-y-2">
                         <Label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-stone-500">
-                          <MapPin className="h-3.5 w-3.5 text-primary" /> {method === 'pickup' ? 'Pickup Location' : 'Full Address'}
+                          <MapPin className="h-3.5 w-3.5 text-primary" /> {method === 'pickup' ? 'Hub Location' : 'Full Address'}
                         </Label>
                         {method === 'pickup' ? (
                           <div className="h-12 border-2 rounded-xl bg-stone-100 flex items-center px-4 text-[10px] font-black uppercase text-stone-600 no-wrap">
@@ -203,7 +203,7 @@ export default function CheckoutPage() {
                               disabled={isGettingLocation}
                             >
                               {isGettingLocation ? <Loader2 className="h-3 w-3 animate-spin" /> : <LocateFixed className="h-3 w-3" />}
-                              {formData.latitude ? `GPS Captured` : 'Set Exact Location'}
+                              {formData.latitude ? `GPS Coordinates Locked` : 'Set Precise Location'}
                             </Button>
                           </div>
                         )}
@@ -218,7 +218,7 @@ export default function CheckoutPage() {
         <div className="space-y-6">
           <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-stone-950 text-white">
             <CardHeader className="bg-primary text-white py-4">
-              <CardTitle className="text-[10px] uppercase tracking-[0.2em] font-black text-center">Order Summary</CardTitle>
+              <CardTitle className="text-[10px] uppercase tracking-[0.2em] font-black text-center">Valuation Summary</CardTitle>
             </CardHeader>
             <CardContent className="p-8 space-y-6">
               <div className="flex justify-between items-center py-2">
@@ -228,7 +228,7 @@ export default function CheckoutPage() {
               <div className="p-4 bg-white/5 rounded-2xl border border-white/10 flex items-start gap-3">
                 <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
                 <p className="text-[9px] text-stone-400 font-black uppercase leading-relaxed">
-                  80% Artisanal Deposit ({formatPrice((cartItem?.totalPrice || 0) * 0.8)}) is mandatory to secure slot.
+                  80% Artisanal Deposit ({formatPrice((cartItem?.totalPrice || 0) * 0.8)}) is mandatory to secure production.
                 </p>
               </div>
               <Button 
@@ -237,7 +237,7 @@ export default function CheckoutPage() {
                 disabled={isProcessing}
               >
                 {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <CreditCard className="h-5 w-5" />}
-                {isProcessing ? 'Processing...' : 'Proceed to Payment'}
+                {isProcessing ? 'Processing...' : 'Secure Booking'}
               </Button>
             </CardContent>
           </Card>

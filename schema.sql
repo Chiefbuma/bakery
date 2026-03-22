@@ -1,7 +1,3 @@
-
--- WhiskeDelights Production Database Schema
--- Optimized for Phusion Passenger & Geolocation Auditing
-
 CREATE TABLE IF NOT EXISTS cakes (
     id VARCHAR(100) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -32,17 +28,6 @@ CREATE TABLE IF NOT EXISTS orders (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS order_items (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    order_id INT,
-    cake_id VARCHAR(100),
-    name VARCHAR(255),
-    quantity INT,
-    price DECIMAL(10, 2),
-    customizations JSON,
-    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
-);
-
 CREATE TABLE IF NOT EXISTS users (
     id VARCHAR(100) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -52,69 +37,23 @@ CREATE TABLE IF NOT EXISTS users (
     createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS flavors (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    price DECIMAL(10, 2) DEFAULT 0.00,
-    description TEXT
-);
+CREATE TABLE IF NOT EXISTS flavors (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), price DECIMAL(10,2), description TEXT);
+CREATE TABLE IF NOT EXISTS sizes (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), price DECIMAL(10,2), serves VARCHAR(50));
+CREATE TABLE IF NOT EXISTS colors (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), price DECIMAL(10,2), hex_value VARCHAR(10));
+CREATE TABLE IF NOT EXISTS toppings (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), price DECIMAL(10,2));
 
-CREATE TABLE IF NOT EXISTS sizes (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    price DECIMAL(10, 2) DEFAULT 0.00,
-    serves VARCHAR(100)
-);
+-- Seed Artisanal Catalog
+INSERT IGNORE INTO cakes (id, name, description, base_price, category, ready_time, rating, image_data_uri) VALUES 
+('belgian-truffle', 'Belgian Truffle', 'Dark chocolate ganache with gold leaf.', 3800.00, 'Specialty', '48h', 4.9, 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&q=80&w=600'),
+('signature-red-velvet', 'Signature Red Velvet', 'Cream cheese frosting on velvet sponge.', 3200.00, 'Classic', '24h', 4.8, 'https://images.unsplash.com/photo-1645366188121-2a19e02fcbd5?auto=format&fit=crop&q=80&w=600'),
+('strawberry-shortcake', 'Strawberry Shortcake', 'Fresh farm strawberries on light vanilla cloud.', 2900.00, 'Fruit', '24h', 4.7, 'https://images.unsplash.com/photo-1650419424455-d0513aaf0dd6?auto=format&fit=crop&q=80&w=600'),
+('lemon-zest-crown', 'Lemon Zest Crown', 'Zesty lemon curd with meringue frosting.', 2700.00, 'Classic', '24h', 4.6, 'https://images.unsplash.com/photo-1691242720316-7bea97eb655f?auto=format&fit=crop&q=80&w=600'),
+('chocolate-hazelnut', 'Chocolate Hazelnut', 'Roasted hazelnut brittle with milk chocolate.', 3500.00, 'Chocolate', '48h', 4.9, 'https://images.unsplash.com/photo-1602351447937-745cb720612f?auto=format&fit=crop&q=80&w=600');
 
-CREATE TABLE IF NOT EXISTS colors (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    price DECIMAL(10, 2) DEFAULT 0.00,
-    hex_value VARCHAR(20)
-);
+INSERT IGNORE INTO flavors (name, price, description) VALUES ('Madagascar Vanilla', 0, 'Pure vanilla bean'), ('Belgian Cocoa', 250, 'Rich dark chocolate'), ('Salted Caramel', 300, 'Sweet and salty luxury');
+INSERT IGNORE INTO sizes (name, price, serves) VALUES ('Small (6")', 0, '6-8 guests'), ('Medium (8")', 600, '10-12 guests'), ('Large (10")', 1200, '15-20 guests');
+INSERT IGNORE INTO colors (name, price, hex_value) VALUES ('Snow White', 0, '#FFFFFF'), ('Blush Pink', 150, '#FFD1DC'), ('Ocean Blue', 150, '#87CEEB');
+INSERT IGNORE INTO toppings (name, price) VALUES ('Sprinkles', 50), ('Chocolate Drizzle', 100), ('Gold Leaf', 500);
 
-CREATE TABLE IF NOT EXISTS toppings (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    price DECIMAL(10, 2) DEFAULT 0.00
-);
-
-CREATE TABLE IF NOT EXISTS special_offers (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    cake_id VARCHAR(100),
-    discount_percentage INT,
-    FOREIGN KEY (cake_id) REFERENCES cakes(id) ON DELETE CASCADE
-);
-
--- INITIAL PRODUCTION DATA
-INSERT IGNORE INTO users (id, name, email, password, role) 
-VALUES ('ADMIN_1', 'Master Baker', 'admin@whiskedelights.com', '$2a$10$7zBvY7p0.7zBvY7p0.7zBuK1Gq0X9XzY0ZzY0ZzY0ZzY0ZzY0ZzY0', 'admin');
-
-INSERT IGNORE INTO flavors (name, price, description) VALUES 
-('Classic Vanilla', 0.00, 'Timeless aromatic vanilla.'),
-('Rich Chocolate', 200.00, 'Deep decadent cocoa.'),
-('Red Velvet', 250.00, 'Signature Southern classic.'),
-('Salted Caramel', 300.00, 'Sweet and salty luxury.');
-
-INSERT IGNORE INTO sizes (name, price, serves) VALUES 
-('6" Small', 0.00, '6-8 people'),
-('8" Medium', 500.00, '10-12 people'),
-('10" Large', 1000.00, '15-20 people');
-
-INSERT IGNORE INTO colors (name, price, hex_value) VALUES 
-('Classic White', 0.00, '#FFFFFF'),
-('Pastel Pink', 100.00, '#FFD1DC'),
-('Vibrant Red', 150.00, '#FF0000');
-
-INSERT IGNORE INTO toppings (name, price) VALUES 
-('Rainbow Sprinkles', 50.00),
-('Chocolate Drizzle', 100.00),
-('Fresh Berries', 250.00),
-('Edible Gold Leaf', 500.00);
-
-INSERT IGNORE INTO cakes (id, name, description, base_price, category, ready_time, customizable, image_data_uri) VALUES 
-('belgian-truffle', 'Belgian Truffle', 'Rich dark chocolate cake with smooth truffle ganache.', 3500.00, 'Specialty', '48h', 1, 'https://images.unsplash.com/photo-1602351447937-745cb720612f?auto=format&fit=crop&q=80&w=600'),
-('velvet-rose', 'Velvet Rose', 'Exquisite red velvet cake with subtle rose notes.', 2800.00, 'Classic', '24h', 1, 'https://images.unsplash.com/photo-1645366188121-2a19e02fcbd5?auto=format&fit=crop&q=80&w=600'),
-('lemon-cloud', 'Lemon Cloud', 'Zesty and light chiffon cake with tangy lemon zest.', 2400.00, 'Fruit', '24h', 1, 'https://images.unsplash.com/photo-1691242720316-7bea97eb655f?auto=format&fit=crop&q=80&w=600');
-
-INSERT IGNORE INTO special_offers (cake_id, discount_percentage) VALUES ('belgian-truffle', 20);
+-- Default Admin (admin@whiskedelights.com / admin123)
+INSERT IGNORE INTO users (id, name, email, password, role) VALUES ('admin-id', 'Master Baker', 'admin@whiskedelights.com', '$2a$10$7h/2A.Yy.Y.8A/Y.Y.Y.8u9vY9vY9vY9vY9vY9vY9vY9vY9vY9vY.', 'admin');

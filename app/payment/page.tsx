@@ -13,7 +13,7 @@ import Script from 'next/script';
 import { WhatsappIcon } from '@/components/icons/whatsapp-icon';
 
 const PAYSTACK_PUBLIC_KEY = 'pk_live_8d9017d3458e0213efd55c219527b9171482e87d';
-const OWNER_WHATSAPP = '254700000000'; // Replace with actual owner number
+const OWNER_WHATSAPP = '254791034492'; 
 
 export default function PaymentPage() {
   const router = useRouter();
@@ -41,7 +41,7 @@ export default function PaymentPage() {
     const handler = (window as any).PaystackPop.setup({
       key: PAYSTACK_PUBLIC_KEY,
       email: 'customer@whiskedelights.co.ke',
-      amount: depositAmount * 100,
+      amount: Math.round(depositAmount * 100),
       currency: 'KES',
       channels: ['mobile_money', 'card'],
       ref: orderRef,
@@ -62,19 +62,21 @@ export default function PaymentPage() {
     if (!checkoutData) return;
     
     const items = checkoutData.item_details;
+    const customizations = items.customizations || {};
+    
     const message = `*Hello WhiskeDelights!*%0A` +
       `I've placed an artisanal order.%0A%0A` +
       `*Order Ref:* ${orderRef}%0A` +
       `*Product:* ${items.name} (${items.quantity}x)%0A` +
-      `*Flavor:* ${items.customizations.flavor}%0A` +
-      `*Size:* ${items.customizations.size}%0A` +
-      `*Frosting:* ${items.customizations.color}%0A` +
-      `*Add-ons:* ${items.customizations.toppings.join(', ') || 'None'}%0A%0A` +
+      `*Flavor:* ${customizations.flavor || 'Standard'}%0A` +
+      `*Size:* ${customizations.size || 'Standard'}%0A` +
+      `*Frosting:* ${customizations.color || 'Standard'}%0A` +
+      `*Add-ons:* ${customizations.toppings?.join(', ') || 'None'}%0A%0A` +
       `*Total Valuation:* ${formatPrice(orderTotal)}%0A` +
       `*80% Deposit Paid:* ${formatPrice(depositAmount)}%0A` +
       `*Delivery Date:* ${checkoutData.date}%0A` +
       `*Location:* ${checkoutData.method === 'pickup' ? 'Nairobi Main Bakery' : checkoutData.address}%0A` +
-      (checkoutData.latitude ? `*GPS:* ${checkoutData.latitude}, ${checkoutData.longitude}` : '');
+      (checkoutData.latitude ? `*GPS Coordinates:* ${checkoutData.latitude}, ${checkoutData.longitude}` : '');
 
     window.open(`https://wa.me/${OWNER_WHATSAPP}?text=${message}`, '_blank');
   };
@@ -96,7 +98,7 @@ export default function PaymentPage() {
               </div>
               <div className="space-y-2">
                 <h1 className="text-3xl font-black font-headline tracking-tight uppercase">Confirmed</h1>
-                <p className="text-stone-500 font-black uppercase text-[10px] tracking-widest leading-relaxed">Artisanal booking secured. Confirm via WhatsApp to start production.</p>
+                <p className="text-stone-500 font-black uppercase text-[10px] tracking-widest leading-relaxed">Artisanal booking secured. Click below to notify our Master Baker via WhatsApp.</p>
               </div>
               
               <div className="space-y-4">
@@ -105,7 +107,7 @@ export default function PaymentPage() {
                   onClick={handleWhatsAppConfirm}
                 >
                   <WhatsappIcon className="h-5 w-5" />
-                  Confirm on WhatsApp
+                  Complete on WhatsApp
                 </Button>
                 
                 <Link href="/">
@@ -142,7 +144,7 @@ export default function PaymentPage() {
             <ArrowLeft className="h-4 w-4" />
             <span className="no-wrap">Return</span>
           </Button>
-          <div className="text-xl font-black font-headline text-primary tracking-tighter">Secure Payment</div>
+          <div className="text-xl font-black font-headline text-primary tracking-tighter">Secure Booking</div>
           <div className="w-12" />
         </div>
       </header>
@@ -179,7 +181,7 @@ export default function PaymentPage() {
                 className="w-full h-18 text-xl font-black gap-3 shadow-2xl bg-primary hover:bg-primary/95 rounded-2xl uppercase tracking-widest"
               >
                 {isProcessing ? <Loader2 className="h-6 w-6 animate-spin" /> : <CreditCard className="h-6 w-6" />}
-                {isProcessing ? 'Verifying...' : 'Secure Booking Now'}
+                {isProcessing ? 'Verifying...' : 'Pay Deposit Now'}
               </Button>
             </CardContent>
           </Card>

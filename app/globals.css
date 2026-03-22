@@ -33,7 +33,7 @@
     font-style: normal !important; /* Globally suppress italics */
   }
   html {
-    font-size: 13px; /* High density mobile fit */
+    font-size: 13px; /* High density mobile fit - prevents wraps */
   }
   @media (min-width: 768px) {
     html {
@@ -60,7 +60,6 @@
   font-weight: 900 !important;
 }
 
-/* Force No-Wrap on critical mobile labels */
 .no-wrap {
   white-space: nowrap;
 }
