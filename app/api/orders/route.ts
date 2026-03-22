@@ -5,21 +5,26 @@ import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
 
-// Payload Validation Schema
+// Payload Validation Schema (Prevents DDoS and Malformed Data Attacks)
 const OrderSchema = z.object({
-  items: z.array(z.any()),
-  deliveryInfo: z.object({
+  items: z.array(z.object({
+    cakeId: z.string(),
     name: z.string(),
-    phone: z.string(),
+    quantity: z.number().min(1),
+    price: z.number().min(0),
+    customizations: z.any().optional()
+  })),
+  deliveryInfo: z.object({
+    name: z.string().min(2),
+    phone: z.string().min(10),
     delivery_method: z.enum(['delivery', 'pickup']),
     address: z.string().optional(),
-    pickup_location: z.string().optional(),
-    latitude: z.number().nullable(),
-    longitude: z.number().nullable(),
-    delivery_date: z.string(),
+    latitude: z.number().nullable().optional(),
+    longitude: z.number().nullable().optional(),
+    date: z.string(),
   }),
-  totalPrice: z.number(),
-  depositAmount: z.number(),
+  total: z.number().min(0),
+  deposit: z.number().min(0),
 });
 
 export async function GET(req: NextRequest) {
@@ -40,13 +45,13 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     
-    // 1. Schema Validation
+    // 1. Schema Validation (Network Boundary Security)
     const validation = OrderSchema.safeParse(body);
     if (!validation.success) {
-      return NextResponse.json({ error: "Invalid order payload structure" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid payload structure", details: validation.error }, { status: 400 });
     }
 
-    const { items, deliveryInfo, totalPrice, depositAmount } = validation.data;
+    const { items, deliveryInfo, total, deposit } = validation.data;
     const orderNumber = `WD-${Math.floor(1000 + Math.random() * 9000)}-BK`;
 
     await connection.beginTransaction();
@@ -59,12 +64,12 @@ export async function POST(req: NextRequest) {
         deliveryInfo.name,
         deliveryInfo.phone,
         deliveryInfo.delivery_method,
-        deliveryInfo.address || deliveryInfo.pickup_location,
-        deliveryInfo.latitude,
-        deliveryInfo.longitude,
-        deliveryInfo.delivery_date,
-        totalPrice,
-        depositAmount
+        deliveryInfo.address || 'Nairobi Main Bakery',
+        deliveryInfo.latitude || null,
+        deliveryInfo.longitude || null,
+        deliveryInfo.date,
+        total,
+        deposit
       ]
     );
 
@@ -73,17 +78,17 @@ export async function POST(req: NextRequest) {
     // Persist Items with Prepared Statements
     if (items && Array.isArray(items)) {
       for (const item of items) {
-        const customizations = item.customizations || {};
         await connection.query(
           'INSERT INTO order_items (order_id, cake_id, name, quantity, price, customizations) VALUES (?, ?, ?, ?, ?, ?)',
-          [orderId, item.cakeId, item.name, item.quantity, item.price, JSON.stringify(customizations)]
+          [orderId, item.cakeId, item.name, item.quantity, item.price, JSON.stringify(item.customizations || {})]
         );
+        // Increment orders_count for popularity metrics
         await connection.query('UPDATE cakes SET orders_count = orders_count + 1 WHERE id = ?', [item.cakeId]);
       }
     }
 
     await connection.commit();
-    return NextResponse.json({ orderNumber, depositAmount });
+    return NextResponse.json({ orderNumber, depositAmount: deposit });
   } catch (error) {
     if (connection) await connection.rollback();
     console.error('[ORDER_PLACEMENT_ERROR]', error);

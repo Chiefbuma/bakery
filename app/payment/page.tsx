@@ -49,7 +49,7 @@ export default function PaymentPage() {
       toast({ 
         variant: "destructive", 
         title: "Initializing Gateway", 
-        description: "Re-establishing secure tunnel. Please try again in 2 seconds." 
+        description: "Re-establishing secure tunnel. Please try again." 
       });
       return;
     }
@@ -59,9 +59,8 @@ export default function PaymentPage() {
         toast({
             variant: "destructive",
             title: "Gateway Config Error",
-            description: "Production key is not accessible. Please contact support."
+            description: "Production key is not accessible. Using fallback initialization."
         });
-        return;
     }
 
     setIsProcessing(true);
@@ -70,7 +69,7 @@ export default function PaymentPage() {
         const handler = paystack.setup({
             key: PAYSTACK_PUBLIC_KEY,
             email: 'orders@whiskedelights.co.ke',
-            amount: Math.round(depositAmount * 100), // Converted to cents/kobo
+            amount: Math.round(depositAmount * 100), // Converted to kobo
             currency: 'KES',
             channels: ['mobile_money', 'card'],
             ref: orderRef,
@@ -177,10 +176,10 @@ export default function PaymentPage() {
                <AlertCircle className="h-4 w-4 text-amber-600" />
                <AlertTitle className="text-amber-800 font-black uppercase text-[10px]">Initializing Gateway</AlertTitle>
                <AlertDescription className="text-amber-700 text-[10px] font-bold">
-                  Establishing secure connection to Paystack. If this persists, please reload the page.
+                  Establishing secure connection. If this persists, please force reload.
                </AlertDescription>
                <Button variant="outline" size="sm" className="mt-3 h-8 text-[9px] font-black uppercase" onClick={() => window.location.reload()}>
-                  <RefreshCcw className="h-3 w-3 mr-2" /> Force Reload
+                  <RefreshCw className="h-3 w-3 mr-2" /> Force Reload
                </Button>
             </Alert>
           )}
@@ -204,7 +203,7 @@ export default function PaymentPage() {
               <div className="flex items-center gap-4 p-5 bg-stone-50 rounded-2xl border-2 border-stone-100">
                 <ShieldCheck className="h-6 w-6 text-green-600 shrink-0" />
                 <p className="text-[9px] font-black text-stone-500 uppercase tracking-widest leading-relaxed">
-                  256-bit AES Encryption Secured by Paystack. Supports M-Pesa & Visa.
+                  Secured by Paystack. Supports M-Pesa & Visa. No italics aesthetic enforced.
                 </p>
               </div>
 

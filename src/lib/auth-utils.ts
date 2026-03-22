@@ -6,7 +6,7 @@ import jwt from 'jsonwebtoken';
  * Implements JWT verification, CSRF origin checking, and persistent session boundaries.
  */
 
-const JWT_SECRET = process.env.JWT_SECRET || 'production_artisan_secret_v1_6xks_cnhxf';
+const JWT_SECRET = process.env.JWT_SECRET || 'pk_live_8d9017d3458e0213efd55c219527b9171482e87d';
 
 export function verifyAuth(req: NextRequest): { authenticated: boolean; user?: any; error?: string } {
     const authHeader = req.headers.get('Authorization');
