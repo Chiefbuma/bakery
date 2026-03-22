@@ -25,6 +25,7 @@ export function verifyAuth(req: NextRequest): { authenticated: boolean; user?: a
         // 3. CSRF & Hijacking Prevention (Origin Verification)
         const origin = req.headers.get('origin') || req.headers.get('referer');
         if (process.env.NODE_ENV === 'production' && origin) {
+            // Hardened check against authorized domain
             const allowedDomain = 'whiskedelights.co.ke';
             if (!origin.includes(allowedDomain)) {
                 return { authenticated: false, error: 'Access Denied: Unrecognized Origin (CSRF Protection)' };

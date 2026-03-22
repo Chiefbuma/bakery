@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { formatPrice } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle2, Copy, Loader2, CreditCard, ShieldCheck, ArrowLeft, RefreshCcw, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Loader2, CreditCard, ShieldCheck, ArrowLeft, RefreshCcw, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
@@ -12,9 +12,9 @@ import Script from 'next/script';
 import { WhatsappIcon } from '@/components/icons/whatsapp-icon';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-// Production Key Resolution with Fallback Diagnostics
+// Production Key Resolution with Hardened Fallback
 const PAYSTACK_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || 'pk_live_8d9017d3458e0213efd55c219527b9171482e87d';
-const OWNER_WHATSAPP = process.env.NEXT_PUBLIC_OWNER_WHATSAPP_NUMBER || '254791034492'; 
+const OWNER_WHATSAPP = '254791034492'; 
 
 export default function PaymentPage() {
   const router = useRouter();
@@ -23,7 +23,6 @@ export default function PaymentPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSdkReady, setIsSdkReady] = useState(false);
   const [orderRef] = useState(`WD-${Math.floor(1000 + Math.random() * 9000)}-BK`);
-  
   const [checkoutData, setCheckoutData] = useState<any>(null);
 
   useEffect(() => {
@@ -36,7 +35,7 @@ export default function PaymentPage() {
             setIsSdkReady(true);
             clearInterval(checkInterval);
         }
-    }, 1000);
+    }, 500);
     return () => clearInterval(checkInterval);
   }, []);
 
@@ -49,8 +48,8 @@ export default function PaymentPage() {
     if (!paystack) {
       toast({ 
         variant: "destructive", 
-        title: "Gateway Not Ready", 
-        description: "Re-initializing secure tunnel. Please wait 3 seconds." 
+        title: "Initializing Gateway", 
+        description: "Re-establishing secure tunnel. Please try again in 2 seconds." 
       });
       return;
     }
@@ -59,8 +58,8 @@ export default function PaymentPage() {
     if (!PAYSTACK_PUBLIC_KEY || !PAYSTACK_PUBLIC_KEY.startsWith('pk_')) {
         toast({
             variant: "destructive",
-            title: "Security Config Error",
-            description: "Production payment key is missing or malformed in your environment."
+            title: "Gateway Config Error",
+            description: "Production key is not accessible. Please contact support."
         });
         return;
     }
@@ -88,16 +87,17 @@ export default function PaymentPage() {
             },
             onClose: function() {
                 setIsProcessing(false);
-                toast({ title: "Payment Cancelled", description: "Slot remains unbooked." });
+                toast({ title: "Payment Cancelled", description: "Your slot remains unbooked." });
             }
         });
         handler.openIframe();
     } catch (err) {
         setIsProcessing(false);
+        console.error('[PAYSTACK_CRITICAL_INIT_ERROR]', err);
         toast({ 
             variant: "destructive", 
             title: "Gateway Error", 
-            description: "Could not initialize transaction. Check your connection or API key." 
+            description: "Could not initialize transaction. Re-check your connection." 
         });
     }
   }, [depositAmount, orderRef, checkoutData, toast]);
@@ -150,7 +150,7 @@ export default function PaymentPage() {
     <div className="min-h-screen bg-stone-50 pb-20 selection:bg-primary selection:text-white">
       <Script 
         src="https://js.paystack.co/v1/inline.js" 
-        strategy="lazyOnload" 
+        strategy="afterInteractive" 
         onLoad={() => setIsSdkReady(true)}
       />
       
@@ -175,9 +175,9 @@ export default function PaymentPage() {
           {!isSdkReady && (
             <Alert variant="destructive" className="bg-amber-50 border-amber-200">
                <AlertCircle className="h-4 w-4 text-amber-600" />
-               <AlertTitle className="text-amber-800 font-black uppercase text-[10px]">Initializing Tunnel</AlertTitle>
+               <AlertTitle className="text-amber-800 font-black uppercase text-[10px]">Initializing Gateway</AlertTitle>
                <AlertDescription className="text-amber-700 text-[10px] font-bold">
-                  Establishing secure connection to Paystack. If this takes longer than 5 seconds, click below.
+                  Establishing secure connection to Paystack. If this persists, please reload the page.
                </AlertDescription>
                <Button variant="outline" size="sm" className="mt-3 h-8 text-[9px] font-black uppercase" onClick={() => window.location.reload()}>
                   <RefreshCcw className="h-3 w-3 mr-2" /> Force Reload

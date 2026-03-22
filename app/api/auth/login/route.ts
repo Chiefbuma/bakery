@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'production_fallback_secret_6xks_cnhxf';
 
-// Schema for Input Validation
+// Schema for Input Validation (DDoS/Payload Protection)
 const LoginSchema = z.object({
     email: z.string().email(),
     password: z.string().min(6),
@@ -34,7 +34,6 @@ export async function POST(req: NextRequest) {
         const [rows]: any[] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
         
         if (rows.length === 0) {
-            // Constant time comparison to prevent timing attacks
             return NextResponse.json({ message: 'Authentication Failed' }, { status: 401 });
         }
 
