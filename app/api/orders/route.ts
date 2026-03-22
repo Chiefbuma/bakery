@@ -1,3 +1,4 @@
+
 import { NextResponse, NextRequest } from 'next/server';
 import pool from '@/lib/db';
 import { verifyAuth } from '@/lib/auth-utils';
@@ -47,9 +48,12 @@ export async function POST(req: NextRequest) {
 
     if (items && Array.isArray(items)) {
       for (const item of items) {
+        // Handle potential customization structure
+        const customizations = item.customizations || {};
+        
         await connection.query(
           'INSERT INTO order_items (order_id, cake_id, name, quantity, price, customizations) VALUES (?, ?, ?, ?, ?, ?)',
-          [orderId, item.cakeId, item.name, item.quantity, item.price, JSON.stringify(item.customizations || {})]
+          [orderId, item.cakeId, item.name, item.quantity, item.price, JSON.stringify(customizations)]
         );
         
         // Update Popularity Ranking

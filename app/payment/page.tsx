@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -12,8 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import Script from 'next/script';
 import { WhatsappIcon } from '@/components/icons/whatsapp-icon';
 
-const PAYSTACK_PUBLIC_KEY = 'pk_live_8d9017d3458e0213efd55c219527b9171482e87d';
-const OWNER_WHATSAPP = '254791034492'; 
+const PAYSTACK_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || 'pk_live_8d9017d3458e0213efd55c219527b9171482e87d';
+const OWNER_WHATSAPP = process.env.NEXT_PUBLIC_OWNER_WHATSAPP_NUMBER || '254791034492'; 
 
 export default function PaymentPage() {
   const router = useRouter();
@@ -30,7 +31,7 @@ export default function PaymentPage() {
   }, []);
 
   const orderTotal = checkoutData?.total || 0;
-  const depositAmount = orderTotal * 0.8;
+  const depositAmount = orderTotal * 0.8; // Strict 80% Deposit
 
   const handlePaystackPayment = () => {
     if (!(window as any).PaystackPop) {
@@ -64,6 +65,7 @@ export default function PaymentPage() {
     const items = checkoutData.item_details;
     const customizations = items.customizations || {};
     
+    // Detailed Professional Manifest for Owner
     const message = `*Hello WhiskeDelights!*%0A` +
       `I've placed an artisanal order.%0A%0A` +
       `*Order Ref:* ${orderRef}%0A` +
@@ -75,7 +77,8 @@ export default function PaymentPage() {
       `*Total Valuation:* ${formatPrice(orderTotal)}%0A` +
       `*80% Deposit Paid:* ${formatPrice(depositAmount)}%0A` +
       `*Delivery Date:* ${checkoutData.date}%0A` +
-      `*Location:* ${checkoutData.method === 'pickup' ? 'Nairobi Main Bakery' : checkoutData.address}%0A` +
+      `*Logistics:* ${checkoutData.method === 'pickup' ? 'Nairobi Main Bakery (Pickup)' : 'Home Delivery'}%0A` +
+      (checkoutData.method === 'delivery' ? `*Address:* ${checkoutData.address}%0A` : '') +
       (checkoutData.latitude ? `*GPS Coordinates:* ${checkoutData.latitude}, ${checkoutData.longitude}` : '');
 
     window.open(`https://wa.me/${OWNER_WHATSAPP}?text=${message}`, '_blank');

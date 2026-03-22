@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -35,10 +36,10 @@ export default function CheckoutPage() {
     if (data) setCartItem(JSON.parse(data));
   }, []);
 
-  // Strict 48-hour (2 days) Lead Time
+  // Strict 48-hour (2 days) Lead Time Enforcement
   const minDate = useMemo(() => {
     const d = new Date();
-    d.setDate(d.getDate() + 2); // Force +2 days
+    d.setDate(d.getDate() + 2); // Minimum 2 days from today
     return d.toISOString().split('T')[0];
   }, []);
 
@@ -54,11 +55,11 @@ export default function CheckoutPage() {
         const { latitude, longitude } = position.coords;
         setFormData(prev => ({ ...prev, latitude, longitude }));
         setIsGettingLocation(false);
-        toast({ title: "Coordinates Locked", description: "GPS location captured successfully." });
+        toast({ title: "Coordinates Locked", description: "GPS location captured successfully for delivery." });
       },
       (error) => {
         setIsGettingLocation(false);
-        toast({ variant: "destructive", title: "Access Denied", description: "Please enable location services for delivery." });
+        toast({ variant: "destructive", title: "Access Denied", description: "Please enable location services for precise delivery." });
       },
       { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
     );
@@ -66,17 +67,17 @@ export default function CheckoutPage() {
 
   const handleProceed = async () => {
     if (!formData.name || !formData.phone || !formData.date) {
-      toast({ variant: "destructive", title: "Required Info", description: "Please complete the guest details." });
+      toast({ variant: "destructive", title: "Required Info", description: "Please complete the guest credentials." });
       return;
     }
     if (method === 'delivery' && !formData.address) {
-      toast({ variant: "destructive", title: "Address Required", description: "Provide an address for delivery." });
+      toast({ variant: "destructive", title: "Address Required", description: "Provide a landmark or address for delivery." });
       return;
     }
 
     setIsProcessing(true);
     const total = cartItem?.totalPrice || 0;
-    const deposit = total * 0.8; // Strict 80% Deposit
+    const deposit = total * 0.8; // Strict 80% Mandatory Deposit
     
     const checkoutPayload = { 
       ...formData, 
@@ -94,7 +95,7 @@ export default function CheckoutPage() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 pb-20">
+    <div className="min-h-screen bg-stone-50 pb-20 selection:bg-primary selection:text-white">
       <header className="bg-white border-b py-4 sticky top-0 z-50">
         <div className="container mx-auto px-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:text-primary">
@@ -120,7 +121,7 @@ export default function CheckoutPage() {
                   <Input 
                     value={formData.name}
                     onChange={e => setFormData(prev => ({...prev, name: e.target.value}))}
-                    placeholder="Jane Doe" 
+                    placeholder="Guest Name" 
                     className="h-12 border-2 rounded-xl font-black text-[11px]" 
                   />
                 </div>

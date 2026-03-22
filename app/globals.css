@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -30,10 +31,10 @@
 @layer base {
   * {
     @apply border-border;
-    font-style: normal !important; /* Globally suppress italics */
+    font-style: normal !important; /* Globally suppress italics for Artisanal aesthetic */
   }
   html {
-    font-size: 13px; /* High density mobile fit - prevents wraps */
+    font-size: 13px; /* Reduced base for no-wrap on high-density mobile displays */
   }
   @media (min-width: 768px) {
     html {
