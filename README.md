@@ -1,14 +1,19 @@
+# WhiskeDelights Kenya | Production Deployment Guide
 
-# WhiskeDelights Artisanal Bakery | Production Deployment
+High-performance Artisanal Bakery Management platform optimized for **Next.js 15** and **Phusion Passenger**.
 
-This high-performance eCommerce and Bakery Management platform is optimized for **Phusion Passenger** environments.
+## 1. Security Architecture (Against Attacks)
 
-## 1. Protocol & Routing Resolution (The 404/403 Fix)
+The platform is hardened with several layers of protection:
 
-If your app works on `http` but returns a **404 Not Found** on `https`, or shows a **403 Forbidden** error, follow these steps:
+*   **SQL Injection (SQLi)**: All database interactions use **Prepared Statements**. Raw SQL concatenation is forbidden.
+*   **CSRF/Hijacking**: All administrative API routes require a valid **JWT Token** and undergo **Origin Verification**.
+*   **Brute Force**: Login and Order endpoints are rate-limited.
+*   **Payload Attacks**: Input data is sanitized via **Zod Schemas** before processing.
 
-### The Solution (.htaccess):
-Update your root `.htaccess` with these specific rules to force HTTPS and enable virtual routing for Next.js.
+## 2. Server Routing & Protocol (.htaccess)
+
+If you encounter **404 Not Found** on HTTPS or refreshing pages, update your `.htaccess`:
 
 ```apache
 # --- PASSENGER CONFIGURATION ---
@@ -20,7 +25,7 @@ PassengerStartupFile server.js
 PassengerAppEnv production
 PassengerFriendlyErrorPages off
 
-# --- FORCE HTTPS & ROUTING ---
+# --- FORCE HTTPS & VIRTUAL ROUTING ---
 RewriteEngine On
 RewriteBase /
 
@@ -28,10 +33,8 @@ RewriteBase /
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-# 2. Prevent directory listing (Fixes 403 Forbidden)
-Options -Indexes
-
-# 3. Route all virtual paths to Passenger (Fixes 404 on Refresh/HTTPS)
+# 2. Virtual Route Pass-through (Fixes 404 on Refresh)
+# If the request is NOT a real file and NOT a real directory, send to Passenger (server.js)
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule . /server.js [L]
@@ -39,28 +42,22 @@ RewriteRule . /server.js [L]
 # --- ENVIRONMENT VARIABLES ---
 <IfModule Litespeed>
   SetEnv DB_HOST localhost
-  SetEnv DB_USER gledcapi_whiskedelight
-  SetEnv DB_DATABASE gledcapi_whiskedelight
+  SetEnv DB_USER gledcapi_whiskedelights
+  SetEnv DB_DATABASE gledcapi_whiskedelights
   SetEnv DB_PASSWORD CnhXfEpdkH2nUQME6xks
-  SetEnv JWT_SECRET production_secret_6xks_cnhxf
-  SetEnv NEXT_PUBLIC_API_URL https://whiskedelights.co.ke/api
+  SetEnv JWT_SECRET pk_live_8d9017d3458e0213efd55c219527b9171482e87d
   SetEnv NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY pk_live_8d9017d3458e0213efd55c219527b9171482e87d
 </IfModule>
 ```
 
-## 2. Database Initialization
-1. Open **phpMyAdmin**.
-2. Select your database: `gledcapi_whiskedelight`.
-3. Go to the **Import** tab.
-4. Upload and execute the `schema.sql` file provided in the root directory.
-
 ## 3. Artisanal Business Rules
-- **Deposit**: Mandatory 80% (System Enforced).
-- **Lead Time**: Minimum 48 Hours (System Restricted).
-- **Primary Pickup**: Nairobi Main Bakery.
-- **Style**: Bold Artisanal, No Italics, Mobile Optimized (13px Base).
+*   **Deposit**: Mandatory 80% (System Enforced).
+*   **Lead Time**: Minimum 48 Hours (System Restricted).
+*   **Coordinates**: Latitude and Longitude captured for all delivery auditing.
+*   **Branding**: Kenya's Finest Bakery (Primary Pickup: Nairobi Main Bakery).
+*   **Typography**: Bold, Non-Italicized, 13px Base for Mobile.
 
-## 4. Default Credentials
-- **Access URL**: `https://whiskedelights.co.ke/admin/login`
-- **Email**: `admin@whiskedelights.com`
-- **Password**: `admin123`
+## 4. Default Admin Credentials
+*   **URL**: `https://whiskedelights.co.ke/admin/login`
+*   **Email**: `admin@whiskedelights.com`
+*   **Access Key**: `admin123`

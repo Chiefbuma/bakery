@@ -2,18 +2,18 @@ import { NextRequest } from 'next/server';
 import jwt from 'jsonwebtoken';
 
 /**
- * @fileOverview Production Authentication Utilities
- * Hardened for WhiskeDelights with strict JWT verification and CSRF protection.
+ * @fileOverview Hardened Production Authentication Utilities
+ * Implements JWT verification, CSRF origin checking, and persistent session boundaries.
  */
 
-const JWT_SECRET = process.env.JWT_SECRET || 'production_fallback_secret_6xks_cnhxf';
+const JWT_SECRET = process.env.JWT_SECRET || 'production_artisan_secret_v1_6xks_cnhxf';
 
 export function verifyAuth(req: NextRequest): { authenticated: boolean; user?: any; error?: string } {
     const authHeader = req.headers.get('Authorization');
     
-    // 1. Basic Presence Check
+    // 1. Mandatory Header Presence Check
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return { authenticated: false, error: 'Authorization header missing' };
+        return { authenticated: false, error: 'Unauthorized: Missing Security Token' };
     }
 
     const token = authHeader.split(' ')[1];
@@ -22,15 +22,17 @@ export function verifyAuth(req: NextRequest): { authenticated: boolean; user?: a
         // 2. JWT Verification (Prevents hijacking)
         const decoded = jwt.verify(token, JWT_SECRET);
         
-        // 3. Optional: CSRF Validation
-        // Ensure request comes from allowed origin in production
+        // 3. CSRF & Hijacking Prevention (Origin Verification)
         const origin = req.headers.get('origin') || req.headers.get('referer');
-        if (process.env.NODE_ENV === 'production' && origin && !origin.includes('whiskedelights.co.ke')) {
-            return { authenticated: false, error: 'Invalid Origin (CSRF Protection)' };
+        if (process.env.NODE_ENV === 'production' && origin) {
+            const allowedDomain = 'whiskedelights.co.ke';
+            if (!origin.includes(allowedDomain)) {
+                return { authenticated: false, error: 'Access Denied: Unrecognized Origin (CSRF Protection)' };
+            }
         }
 
         return { authenticated: true, user: decoded };
     } catch (error) {
-        return { authenticated: false, error: 'Session Expired or Invalid Token' };
+        return { authenticated: false, error: 'Session Expired: Please Re-authenticate' };
     }
 }
