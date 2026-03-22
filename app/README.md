@@ -2,33 +2,25 @@
 
 This platform is optimized for **Phusion Passenger** environments and requires specific database schema initialization for geolocation and artisanal auditing.
 
-## 1. Protocol & Routing (Fixes 404/403)
+## 1. Security & Protocol (Fixes 404/403)
 
-Update your root `.htaccess` to force HTTPS and enable virtual routing for Next.js. This ensures both mobile and desktop browsers can refresh pages without seeing a "Not Found" error.
+Update your root `.htaccess` to force HTTPS and enable virtual routing for Next.js. This also includes the environment variables required for the Paystack Gateway and WhatsApp API.
 
 ```apache
 # --- PASSENGER CONFIGURATION ---
-PassengerAppRoot "/home/gledcapi/domains/whiskedelights.co.ke"
+PassengerAppRoot "/home/whisked1/domains/whiskedelights.co.ke"
 PassengerBaseURI "/"
-PassengerNodejs "/home/gledcapi/nodevenv/domains/whiskedelights.co.ke/20/bin/node"
+PassengerNodejs "/home/whisked1/nodevenv/domains/whiskedelights.co.ke/20/bin/node"
 PassengerAppType node
 PassengerStartupFile server.js
 PassengerAppEnv production
-PassengerFriendlyErrorPages off
 
 # --- FORCE HTTPS & VIRTUAL ROUTING ---
 RewriteEngine On
 RewriteBase /
-
-# 1. Force HTTPS
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
-
-# 2. Prevent directory listing (Fixes 403 Forbidden)
 Options -Indexes
-
-# 3. Virtual Route Pass-through
-# If the request is NOT a real file and NOT a real directory, send to Passenger (server.js)
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule . /server.js [L]
@@ -36,26 +28,26 @@ RewriteRule . /server.js [L]
 # --- ENVIRONMENT VARIABLES ---
 <IfModule Litespeed>
   SetEnv DB_HOST localhost
-  SetEnv DB_USER gledcapi_whiskedelight
-  SetEnv DB_DATABASE gledcapi_whiskedelight
-  SetEnv DB_PASSWORD CnhXfEpdkH2nUQME6xks
-  SetEnv JWT_SECRET production_secret_6xks_cnhxf
+  SetEnv DB_USER whisked1_whiskedelight
+  SetEnv DB_DATABASE whisked1_whiskedelight
+  SetEnv DB_PASSWORD 65Sz2FRzhWeP47wJ8RbK
+  SetEnv JWT_SECRET 65Sz2FRzhWeP47wJ8RbK
   SetEnv NEXT_PUBLIC_API_URL https://whiskedelights.co.ke/api
   SetEnv NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY pk_live_8d9017d3458e0213efd55c219527b9171482e87d
-  SetEnv NEXT_PUBLIC_OWNER_WHATSAPP_NUMBER 254700000000
+  SetEnv NEXT_PUBLIC_OWNER_WHATSAPP_NUMBER 0791034492
 </IfModule>
 ```
 
 ## 2. Artisanal Business Rules
-- **Deposit**: Mandatory 80% to secure artisanal time-slots.
-- **Lead Time**: Minimum 48-hour (system restricted).
+- **Deposit**: Mandatory 80% to secure artisanal production slots.
+- **Lead Time**: Minimum 48-hour (2 days) enforced via system restriction.
 - **Pickups**: Nairobi Main Bakery.
-- **WhatsApp**: Orders require WhatsApp confirmation to start production.
-- **Style**: Bold Artisanal, No Italics, Mobile Optimized (13px Base).
+- **WhatsApp**: Orders require WhatsApp manifest confirmation to initiate production.
+- **Style**: Bold Artisanal, No Italics, Mobile Optimized (13px Base, No Wrap).
 
 ## 3. Production Database Schema (Geolocation Support)
 
-Import this schema via **phpMyAdmin** to initialize the system with coordinate support and signature catalog.
+Import this schema via **phpMyAdmin** to initialize the system with coordinate support and the signature catalog.
 
 ```sql
 CREATE TABLE IF NOT EXISTS cakes (
@@ -88,16 +80,30 @@ CREATE TABLE IF NOT EXISTS orders (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS users (
+    id VARCHAR(100) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role ENUM('admin', 'staff') DEFAULT 'staff',
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS flavors (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), price DECIMAL(10,2), description TEXT);
 CREATE TABLE IF NOT EXISTS sizes (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), price DECIMAL(10,2), serves VARCHAR(50));
 CREATE TABLE IF NOT EXISTS colors (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), price DECIMAL(10,2), hex_value VARCHAR(10));
 CREATE TABLE IF NOT EXISTS toppings (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), price DECIMAL(10,2));
 
+-- Seed Default Admin (admin@whiskedelights.com / admin123)
+INSERT IGNORE INTO users (id, name, email, password, role) VALUES ('admin', 'Primary Admin', 'admin@whiskedelights.com', '$2a$10$tM3o7zYhSgQvXqF8ZqEaRe/o/q0Z9h5n/qOqOqOqOqOqOqOqOqOq', 'admin');
+
 -- Seed Artisanal Catalog
 INSERT IGNORE INTO cakes (id, name, description, base_price, category, ready_time, rating) VALUES 
 ('chocolate-truffle', 'Belgian Truffle', 'Dark chocolate ganache with gold leaf.', 3800.00, 'Specialty', '48h', 4.9),
-('red-velvet', 'Signature Red Velvet', 'Cream cheese frosting on velvet sponge.', 3200.00, 'Classic', '24h', 4.8);
+('red-velvet', 'Signature Red Velvet', 'Cream cheese frosting on velvet sponge.', 3200.00, 'Classic', '24h', 4.8),
+('vanilla-bean', 'Vanilla Bean Dream', 'Pure Madagascar vanilla bean sponge.', 2800.00, 'Classic', '24h', 4.7);
 
 INSERT IGNORE INTO flavors (name, price, description) VALUES ('Madagascar Vanilla', 0, 'Pure vanilla bean'), ('Belgian Cocoa', 250, 'Rich dark chocolate');
-INSERT IGNORE INTO sizes (name, price, serves) VALUES ('Small (6")', 0, '6-8 guests'), ('Medium (8")', 600, '10-12 guests');
+INSERT IGNORE INTO sizes (name, price, serves) VALUES ('Small (6")', 0, '6-8 guests'), ('Medium (8")', 600, '10-12 guests'), ('Large (10")', 1200, '15-20 guests');
+INSERT IGNORE INTO colors (name, price, hex_value) VALUES ('Snow White', 0, '#FFFFFF'), ('Deep Rose', 150, '#E91E63');
 ```
