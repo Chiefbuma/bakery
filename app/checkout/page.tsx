@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -20,6 +19,7 @@ export default function CheckoutPage() {
   const [method, setMethod] = useState<'delivery' | 'pickup'>('pickup');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [cartItem, setCartItem] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -29,6 +29,11 @@ export default function CheckoutPage() {
     latitude: null as number | null,
     longitude: null as number | null
   });
+
+  useEffect(() => {
+    const data = localStorage.getItem('bakery_current_item');
+    if (data) setCartItem(JSON.parse(data));
+  }, []);
 
   // Strict 48-hour (2 days) Lead Time
   const minDate = useMemo(() => {
@@ -49,11 +54,11 @@ export default function CheckoutPage() {
         const { latitude, longitude } = position.coords;
         setFormData(prev => ({ ...prev, latitude, longitude }));
         setIsGettingLocation(false);
-        toast({ title: "Location Captured", description: "GPS coordinates locked for delivery." });
+        toast({ title: "Coordinates Locked", description: "GPS location captured successfully." });
       },
       (error) => {
         setIsGettingLocation(false);
-        toast({ variant: "destructive", title: "Access Denied", description: "Please enable location services for precise delivery." });
+        toast({ variant: "destructive", title: "Access Denied", description: "Please enable location services for delivery." });
       },
       { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
     );
@@ -61,24 +66,24 @@ export default function CheckoutPage() {
 
   const handleProceed = async () => {
     if (!formData.name || !formData.phone || !formData.date) {
-      toast({ variant: "destructive", title: "Required Info", description: "Please complete the guest credentials." });
+      toast({ variant: "destructive", title: "Required Info", description: "Please complete the guest details." });
       return;
     }
     if (method === 'delivery' && !formData.address) {
-      toast({ variant: "destructive", title: "Action Required", description: "Please provide a delivery address." });
+      toast({ variant: "destructive", title: "Address Required", description: "Provide an address for delivery." });
       return;
     }
 
     setIsProcessing(true);
-    // In a production app, calculate total from actual cart state
-    const total = 3500; 
-    const deposit = total * 0.8; // 80% Mandatory Deposit
+    const total = cartItem?.totalPrice || 0;
+    const deposit = total * 0.8; // Strict 80% Deposit
     
     const checkoutPayload = { 
       ...formData, 
       method, 
       total, 
       deposit,
+      item_details: cartItem,
       pickup_location: method === 'pickup' ? 'Nairobi Main Bakery' : ''
     };
     
@@ -90,13 +95,13 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-stone-50 pb-20">
-      <header className="bg-white border-b py-6 sticky top-0 z-50">
+      <header className="bg-white border-b py-4 sticky top-0 z-50">
         <div className="container mx-auto px-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest hover:text-primary">
+          <Link href="/" className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:text-primary">
             <ArrowLeft className="h-4 w-4" />
-            <span>Gallery</span>
+            <span className="no-wrap">Return</span>
           </Link>
-          <div className="text-xl font-black font-headline text-primary tracking-tighter">Order Configuration</div>
+          <div className="text-xl font-black font-headline text-primary tracking-tighter">Artisanal Checkout</div>
           <div className="w-12" />
         </div>
       </header>
@@ -104,18 +109,18 @@ export default function CheckoutPage() {
       <main className="container mx-auto px-4 py-8 grid lg:grid-cols-3 gap-8 items-start">
         <div className="lg:col-span-2 space-y-8">
           <section className="space-y-4">
-            <h2 className="text-lg font-black flex items-center gap-3 text-stone-900 uppercase tracking-tighter">
-              <span className="bg-primary text-white h-8 w-8 rounded-xl flex items-center justify-center text-xs font-black shadow-lg shadow-primary/20">1</span>
+            <h2 className="text-md font-black flex items-center gap-2 text-stone-900 uppercase tracking-tighter">
+              <span className="bg-primary text-white h-6 w-6 rounded-lg flex items-center justify-center text-[10px] font-black shadow-lg">1</span>
               Guest Credentials
             </h2>
             <Card className="border-none shadow-xl rounded-[2rem] overflow-hidden bg-white">
-              <CardContent className="p-8 grid sm:grid-cols-2 gap-6">
+              <CardContent className="p-6 grid sm:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-stone-500">Full Name</Label>
                   <Input 
                     value={formData.name}
                     onChange={e => setFormData(prev => ({...prev, name: e.target.value}))}
-                    placeholder="e.g. Jane Doe" 
+                    placeholder="Jane Doe" 
                     className="h-12 border-2 rounded-xl font-black text-[11px]" 
                   />
                 </div>
@@ -133,38 +138,38 @@ export default function CheckoutPage() {
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-lg font-black flex items-center gap-3 text-stone-900 uppercase tracking-tighter">
-              <span className="bg-primary text-white h-8 w-8 rounded-xl flex items-center justify-center text-xs font-black shadow-lg shadow-primary/20">2</span>
-              Fulfillment Logistics
+            <h2 className="text-md font-black flex items-center gap-2 text-stone-900 uppercase tracking-tighter">
+              <span className="bg-primary text-white h-6 w-6 rounded-lg flex items-center justify-center text-[10px] font-black shadow-lg">2</span>
+              Logistics & Location
             </h2>
             <Card className="border-none shadow-xl rounded-[2rem] overflow-hidden bg-white">
               <CardContent className="p-0">
-                <RadioGroup value={method} onValueChange={v => setMethod(v as any)} className="grid sm:grid-cols-2 gap-0 border-b">
-                   <div className={`p-8 border-b sm:border-b-0 sm:border-r flex items-start gap-4 cursor-pointer transition-all ${method === 'pickup' ? 'bg-primary/5' : ''}`} onClick={() => setMethod('pickup')}>
+                <RadioGroup value={method} onValueChange={v => setMethod(v as any)} className="grid grid-cols-2 gap-0 border-b">
+                   <div className={`p-6 border-r flex items-start gap-3 cursor-pointer transition-all ${method === 'pickup' ? 'bg-primary/5' : ''}`} onClick={() => setMethod('pickup')}>
                       <RadioGroupItem value="pickup" id="pickup" className="mt-1" />
                       <div>
-                        <Label htmlFor="pickup" className="text-md font-black cursor-pointer flex items-center gap-2 text-stone-900 uppercase tracking-widest">
-                          <Store className="h-4 w-4 text-primary" /> Pickup
+                        <Label htmlFor="pickup" className="text-[11px] font-black cursor-pointer flex items-center gap-2 text-stone-900 uppercase tracking-widest">
+                          <Store className="h-3 w-3 text-primary" /> Pickup
                         </Label>
-                        <p className="text-[9px] text-stone-400 font-black uppercase mt-1">Nairobi Main Bakery</p>
+                        <p className="text-[8px] text-stone-400 font-black uppercase mt-1">Nairobi Hub</p>
                       </div>
                    </div>
-                   <div className={`p-8 flex items-start gap-4 cursor-pointer transition-all ${method === 'delivery' ? 'bg-primary/5' : ''}`} onClick={() => setMethod('delivery')}>
+                   <div className={`p-6 flex items-start gap-3 cursor-pointer transition-all ${method === 'delivery' ? 'bg-primary/5' : ''}`} onClick={() => setMethod('delivery')}>
                       <RadioGroupItem value="delivery" id="delivery" className="mt-1" />
                       <div>
-                        <Label htmlFor="delivery" className="text-md font-black cursor-pointer flex items-center gap-2 text-stone-900 uppercase tracking-widest">
-                          <Truck className="h-4 w-4 text-primary" /> Home Delivery
+                        <Label htmlFor="delivery" className="text-[11px] font-black cursor-pointer flex items-center gap-2 text-stone-900 uppercase tracking-widest">
+                          <Truck className="h-3 w-3 text-primary" /> Delivery
                         </Label>
-                        <p className="text-[9px] text-stone-400 font-black uppercase mt-1">Nairobi & Environs</p>
+                        <p className="text-[8px] text-stone-400 font-black uppercase mt-1">Nairobi & Environs</p>
                       </div>
                    </div>
                 </RadioGroup>
                 
-                <div className="p-8 bg-stone-50/30 space-y-6">
+                <div className="p-6 bg-stone-50/30 space-y-6">
                    <div className="grid sm:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <Label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-stone-500">
-                          <Calendar className="h-3.5 w-3.5 text-primary" /> Preferred Date (48h Min)
+                          <Calendar className="h-3.5 w-3.5 text-primary" /> Date (48h Lead)
                         </Label>
                         <Input 
                           type="date" 
@@ -176,10 +181,10 @@ export default function CheckoutPage() {
                       </div>
                       <div className="space-y-2">
                         <Label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-stone-500">
-                          <MapPin className="h-3.5 w-3.5 text-primary" /> {method === 'pickup' ? 'Pickup Hub' : 'Exact Address'}
+                          <MapPin className="h-3.5 w-3.5 text-primary" /> {method === 'pickup' ? 'Pickup Location' : 'Full Address'}
                         </Label>
                         {method === 'pickup' ? (
-                          <div className="h-12 border-2 rounded-xl bg-stone-100 flex items-center px-4 text-[10px] font-black uppercase text-stone-600">
+                          <div className="h-12 border-2 rounded-xl bg-stone-100 flex items-center px-4 text-[10px] font-black uppercase text-stone-600 no-wrap">
                             Nairobi Main Bakery
                           </div>
                         ) : (
@@ -197,8 +202,8 @@ export default function CheckoutPage() {
                               onClick={handleGetCurrentLocation}
                               disabled={isGettingLocation}
                             >
-                              {isGettingLocation ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
-                              {formData.latitude ? `GPS Captured: ${formData.latitude.toFixed(4)}, ${formData.longitude?.toFixed(4)}` : 'Set GPS Location'}
+                              {isGettingLocation ? <Loader2 className="h-3 w-3 animate-spin" /> : <LocateFixed className="h-3 w-3" />}
+                              {formData.latitude ? `GPS Captured` : 'Set Exact Location'}
                             </Button>
                           </div>
                         )}
@@ -213,17 +218,17 @@ export default function CheckoutPage() {
         <div className="space-y-6">
           <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-stone-950 text-white">
             <CardHeader className="bg-primary text-white py-4">
-              <CardTitle className="text-[10px] uppercase tracking-[0.3em] font-black text-center">Value Summary</CardTitle>
+              <CardTitle className="text-[10px] uppercase tracking-[0.2em] font-black text-center">Order Summary</CardTitle>
             </CardHeader>
             <CardContent className="p-8 space-y-6">
               <div className="flex justify-between items-center py-2">
                  <span className="text-xl font-black uppercase tracking-tighter text-stone-300">Total</span>
-                 <span className="text-3xl font-black text-primary tracking-tighter">Ksh 3,500</span>
+                 <span className="text-3xl font-black text-primary tracking-tighter">{formatPrice(cartItem?.totalPrice || 0)}</span>
               </div>
               <div className="p-4 bg-white/5 rounded-2xl border border-white/10 flex items-start gap-3">
-                <ShieldCheck className="h-5 w-5 text-primary shrink-0" />
+                <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
                 <p className="text-[9px] text-stone-400 font-black uppercase leading-relaxed">
-                  80% Artisanal Deposit (Ksh 2,800) is mandatory to secure your slot.
+                  80% Artisanal Deposit ({formatPrice((cartItem?.totalPrice || 0) * 0.8)}) is mandatory to secure slot.
                 </p>
               </div>
               <Button 
@@ -232,7 +237,7 @@ export default function CheckoutPage() {
                 disabled={isProcessing}
               >
                 {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <CreditCard className="h-5 w-5" />}
-                {isProcessing ? 'Processing...' : 'Secure Order Now'}
+                {isProcessing ? 'Processing...' : 'Proceed to Payment'}
               </Button>
             </CardContent>
           </Card>

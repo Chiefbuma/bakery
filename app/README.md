@@ -42,12 +42,20 @@ RewriteRule . /server.js [L]
   SetEnv JWT_SECRET production_secret_6xks_cnhxf
   SetEnv NEXT_PUBLIC_API_URL https://whiskedelights.co.ke/api
   SetEnv NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY pk_live_8d9017d3458e0213efd55c219527b9171482e87d
+  SetEnv NEXT_PUBLIC_OWNER_WHATSAPP_NUMBER 254700000000
 </IfModule>
 ```
 
-## 2. Production Database Schema (Geolocation Support)
+## 2. Artisanal Business Rules
+- **Deposit**: Mandatory 80% to secure artisanal time-slots.
+- **Lead Time**: Minimum 48-hour (system restricted).
+- **Pickups**: Nairobi Main Bakery.
+- **WhatsApp**: Orders require WhatsApp confirmation to start production.
+- **Style**: Bold Artisanal, No Italics, Mobile Optimized (13px Base).
 
-Import this schema via **phpMyAdmin** to initialize the system with coordinate support and the primary admin account.
+## 3. Production Database Schema (Geolocation Support)
+
+Import this schema via **phpMyAdmin** to initialize the system with coordinate support and signature catalog.
 
 ```sql
 CREATE TABLE IF NOT EXISTS cakes (
@@ -80,22 +88,16 @@ CREATE TABLE IF NOT EXISTS orders (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS users (
-    id VARCHAR(100) PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    role ENUM('admin', 'staff') DEFAULT 'staff',
-    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+CREATE TABLE IF NOT EXISTS flavors (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), price DECIMAL(10,2), description TEXT);
+CREATE TABLE IF NOT EXISTS sizes (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), price DECIMAL(10,2), serves VARCHAR(50));
+CREATE TABLE IF NOT EXISTS colors (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), price DECIMAL(10,2), hex_value VARCHAR(10));
+CREATE TABLE IF NOT EXISTS toppings (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), price DECIMAL(10,2));
 
--- Default Admin Credential: admin@whiskedelights.com / admin123
-INSERT IGNORE INTO users (id, name, email, password, role) 
-VALUES ('ADMIN_1', 'Master Baker', 'admin@whiskedelights.com', '$2a$10$7zBvY7p0.7zBvY7p0.7zBuK1Gq0X9XzY0ZzY0ZzY0ZzY0ZzY0ZzY0', 'admin');
+-- Seed Artisanal Catalog
+INSERT IGNORE INTO cakes (id, name, description, base_price, category, ready_time, rating) VALUES 
+('chocolate-truffle', 'Belgian Truffle', 'Dark chocolate ganache with gold leaf.', 3800.00, 'Specialty', '48h', 4.9),
+('red-velvet', 'Signature Red Velvet', 'Cream cheese frosting on velvet sponge.', 3200.00, 'Classic', '24h', 4.8);
+
+INSERT IGNORE INTO flavors (name, price, description) VALUES ('Madagascar Vanilla', 0, 'Pure vanilla bean'), ('Belgian Cocoa', 250, 'Rich dark chocolate');
+INSERT IGNORE INTO sizes (name, price, serves) VALUES ('Small (6")', 0, '6-8 guests'), ('Medium (8")', 600, '10-12 guests');
 ```
-
-## 3. Artisanal Business Rules
-- **Deposit**: Mandatory 80% to secure artisanal time-slots.
-- **Lead Time**: Minimum 48-hour (system restricted).
-- **Pickups**: Nairobi Main Bakery.
-- **Style**: Bold Artisanal, No Italics, Mobile Optimized (No Wraps).
