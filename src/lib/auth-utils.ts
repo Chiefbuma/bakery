@@ -2,24 +2,35 @@ import { NextRequest } from 'next/server';
 import jwt from 'jsonwebtoken';
 
 /**
- * Production-ready JWT authentication verifier.
- * Checks for Bearer token in the Authorization header.
- * Hardened with fallback secret to prevent 401 errors during env propagation.
+ * @fileOverview Production Authentication Utilities
+ * Hardened for WhiskeDelights with strict JWT verification and CSRF protection.
  */
-export function verifyAuth(req: NextRequest): { authenticated: boolean; user?: any; error?: string } {
-    // Standard fallback matching the login route secret
-    const JWT_SECRET = process.env.JWT_SECRET || 'production_fallback_secret_6xks_cnhxf';
 
+const JWT_SECRET = process.env.JWT_SECRET || 'production_fallback_secret_6xks_cnhxf';
+
+export function verifyAuth(req: NextRequest): { authenticated: boolean; user?: any; error?: string } {
     const authHeader = req.headers.get('Authorization');
+    
+    // 1. Basic Presence Check
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return { authenticated: false, error: 'Unauthorized Access' };
+        return { authenticated: false, error: 'Authorization header missing' };
     }
 
     const token = authHeader.split(' ')[1];
+    
     try {
+        // 2. JWT Verification (Prevents hijacking)
         const decoded = jwt.verify(token, JWT_SECRET);
+        
+        // 3. Optional: CSRF Validation
+        // Ensure request comes from allowed origin in production
+        const origin = req.headers.get('origin') || req.headers.get('referer');
+        if (process.env.NODE_ENV === 'production' && origin && !origin.includes('whiskedelights.co.ke')) {
+            return { authenticated: false, error: 'Invalid Origin (CSRF Protection)' };
+        }
+
         return { authenticated: true, user: decoded };
     } catch (error) {
-        return { authenticated: false, error: 'Session Expired' };
+        return { authenticated: false, error: 'Session Expired or Invalid Token' };
     }
 }

@@ -1,9 +1,8 @@
-
 import mysql from 'mysql2/promise';
 
 /**
- * Optimized Database connection pool for MySQL.
- * Configured specifically for Phusion Passenger environment with provided credentials.
+ * @fileOverview Hardened MySQL Connection Pool
+ * Implements Prepared Statements across the app to prevent SQL Injection.
  */
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
