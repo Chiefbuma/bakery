@@ -31,7 +31,7 @@
 @layer base {
   * {
     @apply border-border;
-    font-style: normal !important; /* Globally suppress italics */
+    font-style: normal !important; /* Globally suppress italics for Artisanal look */
   }
   html {
     font-size: 13px; /* High density mobile fit */

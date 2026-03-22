@@ -30,7 +30,7 @@ export default function CheckoutPage() {
     longitude: null as number | null
   });
 
-  // Enforce 48-hour (2 days) artisanal lead time
+  // Strict 48-hour (2 days) Lead Time
   const minDate = useMemo(() => {
     const d = new Date();
     d.setHours(d.getHours() + 48);
@@ -49,7 +49,7 @@ export default function CheckoutPage() {
         const { latitude, longitude } = position.coords;
         setFormData(prev => ({ ...prev, latitude, longitude }));
         setIsGettingLocation(false);
-        toast({ title: "Location Captured", description: "Coordinates locked for delivery auditing." });
+        toast({ title: "Location Captured", description: "GPS coordinates locked for delivery." });
       },
       (error) => {
         setIsGettingLocation(false);
@@ -70,7 +70,7 @@ export default function CheckoutPage() {
     }
 
     setIsProcessing(true);
-    // In a real app, calculate total from cart state
+    // In a production app, calculate total from actual cart state
     const total = 3500; 
     const deposit = total * 0.8; // 80% Mandatory Deposit
     
@@ -153,7 +153,7 @@ export default function CheckoutPage() {
                       <RadioGroupItem value="delivery" id="delivery" className="mt-1" />
                       <div>
                         <Label htmlFor="delivery" className="text-md font-black cursor-pointer flex items-center gap-2 text-stone-900 uppercase tracking-widest">
-                          <Truck className="h-4 w-4 text-primary" /> Delivery
+                          <Truck className="h-4 w-4 text-primary" /> Home Delivery
                         </Label>
                         <p className="text-[9px] text-stone-400 font-black uppercase mt-1">Nairobi & Environs</p>
                       </div>
@@ -176,7 +176,7 @@ export default function CheckoutPage() {
                       </div>
                       <div className="space-y-2">
                         <Label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-stone-500">
-                          <MapPin className="h-3.5 w-3.5 text-primary" /> {method === 'pickup' ? 'Station' : 'Address'}
+                          <MapPin className="h-3.5 w-3.5 text-primary" /> {method === 'pickup' ? 'Pickup Hub' : 'Exact Address'}
                         </Label>
                         {method === 'pickup' ? (
                           <div className="h-12 border-2 rounded-xl bg-stone-100 flex items-center px-4 text-[10px] font-black uppercase text-stone-600">
@@ -198,7 +198,7 @@ export default function CheckoutPage() {
                               disabled={isGettingLocation}
                             >
                               {isGettingLocation ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
-                              {formData.latitude ? `Locked: ${formData.latitude.toFixed(4)}, ${formData.longitude?.toFixed(4)}` : 'Set GPS Coordinates'}
+                              {formData.latitude ? `GPS Captured: ${formData.latitude.toFixed(4)}, ${formData.longitude?.toFixed(4)}` : 'Set GPS Location'}
                             </Button>
                           </div>
                         )}
@@ -223,7 +223,7 @@ export default function CheckoutPage() {
               <div className="p-4 bg-white/5 rounded-2xl border border-white/10 flex items-start gap-3">
                 <ShieldCheck className="h-5 w-5 text-primary shrink-0" />
                 <p className="text-[9px] text-stone-400 font-black uppercase leading-relaxed">
-                  80% Artisanal Deposit (Ksh 2,800) is mandatory to confirm.
+                  80% Artisanal Deposit (Ksh 2,800) is mandatory to secure your slot.
                 </p>
               </div>
               <Button 

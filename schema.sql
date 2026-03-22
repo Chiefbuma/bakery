@@ -1,6 +1,6 @@
 
--- WHISKEDELIGHTS PRODUCTION SCHEMA --
--- Optimized for Phusion Passenger & MySQL 8.0 --
+-- WhiskeDelights Production Database Schema
+-- Optimized for Phusion Passenger & Geolocation Auditing
 
 CREATE TABLE IF NOT EXISTS cakes (
     id VARCHAR(100) PRIMARY KEY,
@@ -13,39 +13,6 @@ CREATE TABLE IF NOT EXISTS cakes (
     rating DECIMAL(2, 1) DEFAULT 5.0,
     orders_count INT DEFAULT 0,
     customizable BOOLEAN DEFAULT 1
-);
-
-CREATE TABLE IF NOT EXISTS flavors (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    price DECIMAL(10, 2) DEFAULT 0.00,
-    description TEXT
-);
-
-CREATE TABLE IF NOT EXISTS sizes (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    serves VARCHAR(100),
-    price DECIMAL(10, 2) DEFAULT 0.00
-);
-
-CREATE TABLE IF NOT EXISTS colors (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    hex_value VARCHAR(10),
-    price DECIMAL(10, 2) DEFAULT 0.00
-);
-
-CREATE TABLE IF NOT EXISTS toppings (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    price DECIMAL(10, 2) DEFAULT 0.00
-);
-
-CREATE TABLE IF NOT EXISTS special_offers (
-    cake_id VARCHAR(100) PRIMARY KEY,
-    discount_percentage INT DEFAULT 20,
-    FOREIGN KEY (cake_id) REFERENCES cakes(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS orders (
@@ -70,7 +37,7 @@ CREATE TABLE IF NOT EXISTS order_items (
     order_id INT,
     cake_id VARCHAR(100),
     name VARCHAR(255),
-    quantity INT DEFAULT 1,
+    quantity INT,
     price DECIMAL(10, 2),
     customizations JSON,
     FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
@@ -85,45 +52,69 @@ CREATE TABLE IF NOT EXISTS users (
     createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- INITIAL SEED DATA --
+CREATE TABLE IF NOT EXISTS flavors (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    price DECIMAL(10, 2) DEFAULT 0.00,
+    description TEXT
+);
 
--- Cakes
-INSERT IGNORE INTO cakes (id, name, description, base_price, category, ready_time, image_data_uri, rating, customizable) VALUES 
-('belgian-truffle', 'Belgian Truffle', 'Rich dark chocolate cake layered with silky Belgian ganache.', 3500.00, 'Chocolate', '24h', 'https://images.unsplash.com/photo-1606312619070-d48b4c652a52?auto=format&fit=crop&q=80&w=600', 4.9, 1),
-('red-velvet-classic', 'Red Velvet Classic', 'Signature cocoa sponge with luxury cream cheese frosting.', 2800.00, 'Classic', '24h', 'https://images.unsplash.com/photo-1616541823729-00fe0acc80b9?auto=format&fit=crop&q=80&w=600', 4.8, 1),
-('white-forest-royal', 'White Forest Royal', 'Light sponge with kirsch-soaked cherries and fresh cream.', 2600.00, 'Classic', '24h', 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&q=80&w=600', 4.7, 1),
-('passion-fruit-zest', 'Passion Fruit Zest', 'Tangy passion fruit curd layered between vanilla bean sponge.', 3000.00, 'Fruit', '24h', 'https://images.unsplash.com/photo-1542826438-bd32f43d626f?auto=format&fit=crop&q=80&w=600', 4.6, 1),
-('salted-caramel-gold', 'Salted Caramel Gold', 'Caramel mud cake with sea-salt butter frosting.', 3200.00, 'Specialty', '48h', 'https://images.unsplash.com/photo-1514056052883-d017fddd0426?auto=format&fit=crop&q=80&w=600', 4.9, 1),
-('vanilla-bean-dream', 'Vanilla Bean Dream', 'Classic vanilla cake with real Madagascar bean pods.', 2400.00, 'Classic', '24h', 'https://images.unsplash.com/photo-1588195538326-c5b1e9f80a1b?auto=format&fit=crop&q=80&w=600', 4.5, 1);
+CREATE TABLE IF NOT EXISTS sizes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    price DECIMAL(10, 2) DEFAULT 0.00,
+    serves VARCHAR(100)
+);
 
--- Customization Options
-INSERT IGNORE INTO flavors (name, price, description) VALUES 
-('Madagascar Vanilla', 0.00, 'Light and aromatic vanilla bean.'),
-('Belgian Chocolate', 250.00, 'Deep, 70% cocoa dark chocolate.'),
-('Salted Caramel', 300.00, 'Rich caramel with sea salt notes.'),
-('Strawberry Swirl', 200.00, 'Fresh strawberry reduction.');
+CREATE TABLE IF NOT EXISTS colors (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    price DECIMAL(10, 2) DEFAULT 0.00,
+    hex_value VARCHAR(20)
+);
 
-INSERT IGNORE INTO sizes (name, serves, price) VALUES 
-('6" Regular', '6-8 people', 0.00),
-('8" Large', '12-15 people', 800.00),
-('10" Party', '20-25 people', 1500.00);
+CREATE TABLE IF NOT EXISTS toppings (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    price DECIMAL(10, 2) DEFAULT 0.00
+);
 
-INSERT IGNORE INTO colors (name, hex_value, price) VALUES 
-('Signature White', '#FFFFFF', 0.00),
-('Pastel Pink', '#FFD1DC', 150.00),
-('Sky Blue', '#87CEEB', 150.00),
-('Midnight Gold', '#D4AF37', 500.00);
+CREATE TABLE IF NOT EXISTS special_offers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cake_id VARCHAR(100),
+    discount_percentage INT,
+    FOREIGN KEY (cake_id) REFERENCES cakes(id) ON DELETE CASCADE
+);
 
-INSERT IGNORE INTO toppings (name, price) VALUES 
-('Fresh Berries', 400.00),
-('Chocolate Drizzle', 150.00),
-('Macarons (Set of 4)', 600.00),
-('Edible Gold Leaf', 1000.00);
-
--- Special Offer
-INSERT IGNORE INTO special_offers (cake_id, discount_percentage) VALUES ('belgian-truffle', 20);
-
--- Default Admin: admin@whiskedelights.com / admin123
--- Password hash for 'admin123' using bcrypt
+-- INITIAL PRODUCTION DATA
 INSERT IGNORE INTO users (id, name, email, password, role) 
 VALUES ('ADMIN_1', 'Master Baker', 'admin@whiskedelights.com', '$2a$10$7zBvY7p0.7zBvY7p0.7zBuK1Gq0X9XzY0ZzY0ZzY0ZzY0ZzY0ZzY0', 'admin');
+
+INSERT IGNORE INTO flavors (name, price, description) VALUES 
+('Classic Vanilla', 0.00, 'Timeless aromatic vanilla.'),
+('Rich Chocolate', 200.00, 'Deep decadent cocoa.'),
+('Red Velvet', 250.00, 'Signature Southern classic.'),
+('Salted Caramel', 300.00, 'Sweet and salty luxury.');
+
+INSERT IGNORE INTO sizes (name, price, serves) VALUES 
+('6" Small', 0.00, '6-8 people'),
+('8" Medium', 500.00, '10-12 people'),
+('10" Large', 1000.00, '15-20 people');
+
+INSERT IGNORE INTO colors (name, price, hex_value) VALUES 
+('Classic White', 0.00, '#FFFFFF'),
+('Pastel Pink', 100.00, '#FFD1DC'),
+('Vibrant Red', 150.00, '#FF0000');
+
+INSERT IGNORE INTO toppings (name, price) VALUES 
+('Rainbow Sprinkles', 50.00),
+('Chocolate Drizzle', 100.00),
+('Fresh Berries', 250.00),
+('Edible Gold Leaf', 500.00);
+
+INSERT IGNORE INTO cakes (id, name, description, base_price, category, ready_time, customizable, image_data_uri) VALUES 
+('belgian-truffle', 'Belgian Truffle', 'Rich dark chocolate cake with smooth truffle ganache.', 3500.00, 'Specialty', '48h', 1, 'https://images.unsplash.com/photo-1602351447937-745cb720612f?auto=format&fit=crop&q=80&w=600'),
+('velvet-rose', 'Velvet Rose', 'Exquisite red velvet cake with subtle rose notes.', 2800.00, 'Classic', '24h', 1, 'https://images.unsplash.com/photo-1645366188121-2a19e02fcbd5?auto=format&fit=crop&q=80&w=600'),
+('lemon-cloud', 'Lemon Cloud', 'Zesty and light chiffon cake with tangy lemon zest.', 2400.00, 'Fruit', '24h', 1, 'https://images.unsplash.com/photo-1691242720316-7bea97eb655f?auto=format&fit=crop&q=80&w=600');
+
+INSERT IGNORE INTO special_offers (cake_id, discount_percentage) VALUES ('belgian-truffle', 20);

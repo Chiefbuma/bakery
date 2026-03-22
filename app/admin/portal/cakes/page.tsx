@@ -132,7 +132,7 @@ export default function AdminCakesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-black font-headline tracking-tight">Cake Catalog</h1>
-          <p className="text-muted-foreground font-medium">Artisanal Inventory • 5 Records Per Page</p>
+          <p className="text-muted-foreground font-medium text-xs uppercase tracking-widest">Artisanal Inventory • 5 Records Per Page</p>
         </div>
         <Button className="font-black gap-2 h-12 px-6 shadow-lg shadow-primary/20" onClick={() => handleOpenDialog()}>
           <Plus className="h-5 w-5" />
@@ -142,18 +142,18 @@ export default function AdminCakesPage() {
 
       <Card className="border-none shadow-sm overflow-hidden">
         <CardHeader className="bg-stone-900 text-white">
-          <CardTitle className="text-sm uppercase tracking-[0.2em] font-black flex items-center gap-2">
+          <CardTitle className="text-[10px] uppercase tracking-[0.2em] font-black flex items-center gap-2">
             <Package className="h-4 w-4" />
-            Menu Items
+            Active Menu
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow className="bg-stone-50 border-none">
-                <TableHead className="font-black text-[10px] uppercase w-20">Image</TableHead>
-                <TableHead className="font-black text-[10px] uppercase">Cake Name</TableHead>
-                <TableHead className="font-black text-[10px] uppercase">Category</TableHead>
+                <TableHead className="font-black text-[10px] uppercase w-20">Preview</TableHead>
+                <TableHead className="font-black text-[10px] uppercase">Masterpiece</TableHead>
+                <TableHead className="font-black text-[10px] uppercase">Collection</TableHead>
                 <TableHead className="font-black text-[10px] uppercase text-right">Price</TableHead>
                 <TableHead className="font-black text-[10px] uppercase text-right">Actions</TableHead>
               </TableRow>
@@ -162,7 +162,7 @@ export default function AdminCakesPage() {
               {loading ? (
                 <TableRow><TableCell colSpan={5} className="h-32 text-center"><Loader2 className="animate-spin inline-block mr-2" /> Syncing catalog...</TableCell></TableRow>
               ) : currentCakes.length === 0 ? (
-                <TableRow><TableCell colSpan={5} className="h-32 text-center text-muted-foreground italic">No items found.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} className="h-32 text-center text-muted-foreground italic text-xs">No items found.</TableCell></TableRow>
               ) : currentCakes.map((cake) => (
                 <TableRow key={cake.id} className="hover:bg-stone-50/50 transition-colors">
                   <TableCell>
@@ -172,10 +172,10 @@ export default function AdminCakesPage() {
                   </TableCell>
                   <TableCell>
                     <p className="font-bold text-sm">{cake.name}</p>
-                    <p className="text-[10px] text-muted-foreground truncate max-w-[200px]">{cake.ready_time} turnaround</p>
+                    <p className="text-[10px] text-muted-foreground font-black uppercase tracking-tighter">{cake.ready_time} turnaround</p>
                   </TableCell>
-                  <TableCell className="font-bold text-xs uppercase tracking-wider">{cake.category}</TableCell>
-                  <TableCell className="text-right font-black text-sm">{formatPrice(cake.base_price)}</TableCell>
+                  <TableCell className="font-bold text-xs uppercase tracking-wider text-stone-500">{cake.category}</TableCell>
+                  <TableCell className="text-right font-black text-sm text-primary">{formatPrice(cake.base_price)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
                        <Button variant="ghost" size="icon" className="text-primary h-8 w-8" onClick={() => handleOpenDialog(cake)}><Edit className="h-4 w-4" /></Button>
@@ -198,42 +198,42 @@ export default function AdminCakesPage() {
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl rounded-[2rem]">
           <DialogHeader>
-            <DialogTitle className="font-headline text-2xl font-black">
+            <DialogTitle className="font-headline text-3xl font-black tracking-tight">
               {editingCake ? 'Edit Creation' : 'Register New Creation'}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-xs font-black uppercase tracking-widest text-muted-foreground">
               Define the artisanal details for this masterpiece.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-6 pt-4">
-            <div className="flex gap-6 items-start">
-              <div className="relative h-40 w-40 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center bg-stone-50 overflow-hidden shrink-0 group">
+            <div className="grid md:grid-cols-2 gap-8 items-start">
+              <div className="relative aspect-square w-full rounded-[2rem] border-4 border-dashed border-stone-100 flex flex-col items-center justify-center bg-stone-50 overflow-hidden shrink-0 group shadow-inner">
                 {formData.image_data_uri ? (
                   <>
                     <Image src={formData.image_data_uri} alt="Preview" fill className="object-cover" />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Label htmlFor="image-upload" className="cursor-pointer text-white text-[10px] font-black uppercase">Change Photo</Label>
+                      <Label htmlFor="image-upload" className="cursor-pointer text-white text-[10px] font-black uppercase tracking-widest">Change Photo</Label>
                     </div>
                   </>
                 ) : (
                   <>
-                    {isUploading ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : <Upload className="h-6 w-6 text-stone-300" />}
-                    <Label htmlFor="image-upload" className="cursor-pointer mt-2 text-[10px] font-black uppercase text-stone-400">Add Photo</Label>
+                    {isUploading ? <Loader2 className="h-8 w-8 animate-spin text-primary" /> : <Upload className="h-8 w-8 text-stone-300" />}
+                    <Label htmlFor="image-upload" className="cursor-pointer mt-3 text-[10px] font-black uppercase text-stone-400 tracking-widest">Add Masterpiece Photo</Label>
                   </>
                 )}
                 <input id="image-upload" type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
               </div>
-              <div className="flex-1 space-y-4">
+              <div className="space-y-4">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Cake Name</Label>
-                  <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Belgian Truffle" className="h-12 border-2 rounded-xl" required />
+                  <Input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Belgian Truffle" className="h-12 border-2 rounded-xl text-sm font-black" required />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Category</Label>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Collection</Label>
                   <Select value={formData.category} onValueChange={v => setFormData({...formData, category: v})}>
-                    <SelectTrigger className="h-12 border-2 rounded-xl">
+                    <SelectTrigger className="h-12 border-2 rounded-xl text-sm font-black">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -241,33 +241,34 @@ export default function AdminCakesPage() {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Base Price (Ksh)</Label>
-                <Input type="number" value={formData.base_price} onChange={e => setFormData({...formData, base_price: parseInt(e.target.value)})} className="h-12 border-2 rounded-xl" required />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Lead Time</Label>
-                <Input value={formData.ready_time} onChange={e => setFormData({...formData, ready_time: e.target.value})} placeholder="24h" className="h-12 border-2 rounded-xl" required />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Base (Ksh)</Label>
+                    <Input type="number" value={formData.base_price} onChange={e => setFormData({...formData, base_price: parseInt(e.target.value)})} className="h-12 border-2 rounded-xl text-sm font-black" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Lead Time</Label>
+                    <Input value={formData.ready_time} onChange={e => setFormData({...formData, ready_time: e.target.value})} placeholder="48h" className="h-12 border-2 rounded-xl text-sm font-black" required />
+                  </div>
+                </div>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Description</Label>
-              <Input value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Brief artisanal description..." className="h-12 border-2 rounded-xl" required />
+              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Artisanal Description</Label>
+              <Input value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Describe the masterpiece flavor notes..." className="h-12 border-2 rounded-xl text-sm font-black" required />
             </div>
 
-            <div className="flex items-center space-x-2 bg-stone-50 p-4 rounded-xl border border-dashed">
-              <Checkbox id="customizable" checked={formData.customizable} onCheckedChange={(v) => setFormData({...formData, customizable: !!v})} />
-              <Label htmlFor="customizable" className="font-bold cursor-pointer">Allow Guest Customizations (Flavor, Size, Frosting)</Label>
+            <div className="flex items-center space-x-3 bg-stone-50 p-5 rounded-2xl border-2 border-dashed border-stone-200">
+              <Checkbox id="customizable" checked={formData.customizable} onCheckedChange={(v) => setFormData({...formData, customizable: !!v})} className="h-5 w-5 rounded-md" />
+              <Label htmlFor="customizable" className="text-[10px] font-black uppercase tracking-widest cursor-pointer text-stone-600">Allow Guest Customizations (Flavor, Size, Frosting)</Label>
             </div>
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="h-12 rounded-xl">Cancel</Button>
-              <Button type="submit" className="h-12 rounded-xl px-8 font-black" disabled={isUploading}>Save Masterpiece</Button>
+            <DialogFooter className="pt-2">
+              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="h-14 rounded-xl font-black uppercase text-[10px] tracking-widest">Cancel</Button>
+              <Button type="submit" className="h-14 rounded-xl px-12 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20" disabled={isUploading}>
+                {isUploading ? <Loader2 className="animate-spin" /> : 'Save Masterpiece'}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
