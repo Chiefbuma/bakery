@@ -1,105 +1,56 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { formatPrice } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle2, Loader2, CreditCard, ShieldCheck, ArrowLeft, RefreshCcw, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Loader2, CreditCard, ShieldCheck, ArrowLeft, RefreshCw, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
-import Script from 'next/script';
+import { usePaystack } from '@/hooks/use-paystack';
 import { WhatsappIcon } from '@/components/icons/whatsapp-icon';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-// Production Key Resolution with Hardened Fallback
-const PAYSTACK_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || 'pk_live_8d9017d3458e0213efd55c219527b9171482e87d';
 const OWNER_WHATSAPP = '254791034492'; 
 
 export default function PaymentPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { initializePayment, isReady, error: paystackError } = usePaystack();
+  
   const [isPaid, setIsPaid] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isSdkReady, setIsSdkReady] = useState(false);
   const [orderRef] = useState(`WD-${Math.floor(1000 + Math.random() * 9000)}-BK`);
   const [checkoutData, setCheckoutData] = useState<any>(null);
 
   useEffect(() => {
     const data = localStorage.getItem('temp_checkout_data');
     if (data) setCheckoutData(JSON.parse(data));
-    
-    // Heartbeat check for Paystack SDK availability
-    const checkInterval = setInterval(() => {
-        if ((window as any).PaystackPop) {
-            setIsSdkReady(true);
-            clearInterval(checkInterval);
-        }
-    }, 500);
-    return () => clearInterval(checkInterval);
   }, []);
 
   const orderTotal = checkoutData?.total || 0;
   const depositAmount = orderTotal * 0.8; // Artisanal 80% Rule
 
-  const handlePaystackPayment = useCallback(() => {
-    const paystack = (window as any).PaystackPop;
-    
-    if (!paystack) {
-      toast({ 
-        variant: "destructive", 
-        title: "Initializing Gateway", 
-        description: "Re-establishing secure tunnel. Please try again." 
-      });
-      return;
-    }
-
-    // Security check for key validity
-    if (!PAYSTACK_PUBLIC_KEY || !PAYSTACK_PUBLIC_KEY.startsWith('pk_')) {
-        toast({
-            variant: "destructive",
-            title: "Gateway Config Error",
-            description: "Production key is not accessible. Using fallback initialization."
-        });
-    }
+  const handlePayment = () => {
+    if (!isReady) return;
 
     setIsProcessing(true);
-    
-    try {
-        const handler = paystack.setup({
-            key: PAYSTACK_PUBLIC_KEY,
-            email: 'orders@whiskedelights.co.ke',
-            amount: Math.round(depositAmount * 100), // Converted to kobo
-            currency: 'KES',
-            channels: ['mobile_money', 'card'],
-            ref: orderRef,
-            metadata: {
-                custom_fields: [
-                    { display_name: "Customer", variable_name: "customer", value: checkoutData?.name },
-                    { display_name: "Phone", variable_name: "phone", value: checkoutData?.phone }
-                ]
-            },
-            callback: function() {
-                setIsProcessing(false);
-                setIsPaid(true);
-                toast({ title: "Deposit Confirmed", description: "Artisanal production slot secured." });
-            },
-            onClose: function() {
-                setIsProcessing(false);
-                toast({ title: "Payment Cancelled", description: "Your slot remains unbooked." });
-            }
-        });
-        handler.openIframe();
-    } catch (err) {
+    initializePayment({
+      email: 'orders@whiskedelights.co.ke',
+      amount: depositAmount * 100, // KES to Kobo
+      reference: orderRef,
+      callback: (response: any) => {
         setIsProcessing(false);
-        console.error('[PAYSTACK_CRITICAL_INIT_ERROR]', err);
-        toast({ 
-            variant: "destructive", 
-            title: "Gateway Error", 
-            description: "Could not initialize transaction. Re-check your connection." 
-        });
-    }
-  }, [depositAmount, orderRef, checkoutData, toast]);
+        setIsPaid(true);
+        toast({ title: "Deposit Confirmed", description: "Production slot secured." });
+      },
+      onClose: () => {
+        setIsProcessing(false);
+        toast({ title: "Transaction Interrupted", description: "Payment window closed." });
+      },
+    });
+  };
 
   const handleWhatsAppConfirm = () => {
     if (!checkoutData) return;
@@ -147,12 +98,6 @@ export default function PaymentPage() {
 
   return (
     <div className="min-h-screen bg-stone-50 pb-20 selection:bg-primary selection:text-white">
-      <Script 
-        src="https://js.paystack.co/v1/inline.js" 
-        strategy="afterInteractive" 
-        onLoad={() => setIsSdkReady(true)}
-      />
-      
       <header className="bg-white border-b py-4 sticky top-0 z-50">
         <div className="container mx-auto px-4 flex items-center justify-between">
           <Button variant="ghost" onClick={() => router.back()} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest">
@@ -171,15 +116,17 @@ export default function PaymentPage() {
             <p className="text-stone-400 font-black uppercase text-[9px] tracking-[0.2em]">80% Artisanal Commitment Required</p>
           </div>
 
-          {!isSdkReady && (
-            <Alert variant="destructive" className="bg-amber-50 border-amber-200">
-               <AlertCircle className="h-4 w-4 text-amber-600" />
-               <AlertTitle className="text-amber-800 font-black uppercase text-[10px]">Initializing Gateway</AlertTitle>
-               <AlertDescription className="text-amber-700 text-[10px] font-bold">
-                  Establishing secure connection. If this persists, please force reload.
+          {(paystackError || !isReady) && !isPaid && (
+            <Alert variant={paystackError ? "destructive" : "default"} className="bg-white border-2">
+               <AlertCircle className="h-4 w-4" />
+               <AlertTitle className="font-black uppercase text-[10px] tracking-widest">
+                  {paystackError ? 'Bridge Error' : 'Initializing Secure Tunnel'}
+               </AlertTitle>
+               <AlertDescription className="text-[10px] font-bold uppercase text-stone-500">
+                  {paystackError || 'Establishing encrypted connection with Paystack. Please wait...'}
                </AlertDescription>
-               <Button variant="outline" size="sm" className="mt-3 h-8 text-[9px] font-black uppercase" onClick={() => window.location.reload()}>
-                  <RefreshCw className="h-3 w-3 mr-2" /> Force Reload
+               <Button variant="outline" size="sm" className="mt-4 h-9 text-[9px] font-black uppercase tracking-widest" onClick={() => window.location.reload()}>
+                  <RefreshCw className="h-3.5 w-3.5 mr-2" /> Force Re-init
                </Button>
             </Alert>
           )}
@@ -208,8 +155,8 @@ export default function PaymentPage() {
               </div>
 
               <Button 
-                onClick={handlePaystackPayment} 
-                disabled={isProcessing || !isSdkReady} 
+                onClick={handlePayment} 
+                disabled={isProcessing || !isReady} 
                 className="w-full h-20 text-xl font-black gap-3 shadow-2xl bg-primary hover:bg-primary/95 rounded-2xl uppercase tracking-widest"
               >
                 {isProcessing ? <Loader2 className="h-6 w-6 animate-spin" /> : <CreditCard className="h-6 w-6" />}
