@@ -26,10 +26,11 @@ async function safeParseJson(response: Response) {
 }
 
 const getAuthHeaders = () => {
-  if (typeof window === 'undefined') return { 'Content-Type': 'application/json' };
-  const token = localStorage.getItem('authToken');
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('authToken');
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+  }
   return headers;
 };
 
