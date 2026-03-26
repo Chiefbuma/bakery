@@ -6,7 +6,8 @@ import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'production_fallback_secret_6xks_cnhxf';
+// Unified fallback secret across the entire application to prevent 401 mismatches
+const JWT_SECRET = process.env.JWT_SECRET || 'pk_live_8d9017d3458e0213efd55c219527b9171482e87d';
 
 // Schema for Input Validation (DDoS/Payload Protection)
 const LoginSchema = z.object({
