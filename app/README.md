@@ -2,42 +2,52 @@
 
 This platform is optimized for **Phusion Passenger** environments and requires specific database schema initialization for geolocation and artisanal auditing.
 
-## 1. Security & Protocol (Fixes 404/403)
+## 1. Shared Hosting Setup
 
-Update your root `.htaccess` to force HTTPS and enable virtual routing for Next.js. This also includes the environment variables required for the Paystack Gateway and WhatsApp API.
+Run `npm run build` and upload the contents of [standalone-deploy](/home/buma/projects/bakery/standalone-deploy) to:
+
+`domains/whiskedelights.co.ke`
+
+Use these Node.js app settings:
+
+- Application root: `domains/whiskedelights.co.ke`
+- Startup file: `server.js`
+- Application mode / `NODE_ENV`: `production`
 
 ```apache
-# --- PASSENGER CONFIGURATION ---
 PassengerAppRoot "/home/whisked1/domains/whiskedelights.co.ke"
 PassengerBaseURI "/"
 PassengerNodejs "/home/whisked1/nodevenv/domains/whiskedelights.co.ke/20/bin/node"
 PassengerAppType node
 PassengerStartupFile server.js
 PassengerAppEnv production
-
-# --- FORCE HTTPS & VIRTUAL ROUTING ---
 RewriteEngine On
 RewriteBase /
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 Options -Indexes
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule . /server.js [L]
-
-# --- ENVIRONMENT VARIABLES ---
-<IfModule Litespeed>
-  SetEnv DB_HOST your-db-host
-  SetEnv DB_USER your-db-user
-  SetEnv DB_DATABASE your-db-name
-  SetEnv DB_PASSWORD your-db-password
-  SetEnv JWT_SECRET your-long-random-jwt-secret
-  SetEnv ALLOWED_ORIGINS https://your-domain.example
-  SetEnv NEXT_PUBLIC_API_URL https://your-domain.example/api
-  SetEnv NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY pk_live_replace_me
-  SetEnv NEXT_PUBLIC_OWNER_WHATSAPP_NUMBER 254700000000
-</IfModule>
 ```
+
+Required environment variables:
+
+- `DB_HOST=localhost`
+- `DB_PORT=3306`
+- `DB_DATABASE=whisked1_whiskedelights`
+- `DB_USER=whisked1_whiskedelights`
+- `DB_PASSWORD=your_real_password`
+- `JWT_SECRET=use_a_long_random_secret`
+- `ALLOWED_ORIGINS=https://whiskedelights.co.ke`
+- `NEXT_PUBLIC_API_URL=https://whiskedelights.co.ke/api`
+- `NEXT_PUBLIC_OWNER_WHATSAPP_NUMBER=254796280138`
+- `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_live_your_real_key`
+- `NEXT_PUBLIC_MPESA_BUSINESS_NAME=WhiskeDelights`
+- `NEXT_PUBLIC_MPESA_PAYBILL_NUMBER=880100`
+- `NEXT_PUBLIC_MPESA_ACCOUNT_NUMBER=908128`
+
+Notes:
+
+- Use WhatsApp in international format: `254796280138`
+- If your host uses a different Node path, update `PassengerNodejs`
 
 ## 2. Artisanal Business Rules
 - **Deposit**: Mandatory 80% to secure artisanal production slots.

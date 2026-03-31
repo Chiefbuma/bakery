@@ -1,0 +1,13 @@
+PassengerAppRoot "/home/whisked1/domains/whiskedelights.co.ke"
+PassengerBaseURI "/"
+PassengerNodejs "/home/whisked1/nodevenv/domains/whiskedelights.co.ke/20/bin/node"
+PassengerAppType node
+PassengerStartupFile server.js
+PassengerAppEnv production
+PassengerFriendlyErrorPages off
+
+RewriteEngine On
+RewriteBase /
+
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]

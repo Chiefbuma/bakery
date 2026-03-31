@@ -17,7 +17,6 @@ import {
   MapPin,
   ReceiptText,
   RefreshCw,
-  ShieldCheck,
   Smartphone,
   Sparkles,
 } from 'lucide-react';
@@ -37,8 +36,9 @@ import type {
   ResolvedCustomizationOption,
 } from '@/lib/types';
 
-const OWNER_WHATSAPP = process.env.NEXT_PUBLIC_OWNER_WHATSAPP_NUMBER?.trim() || '';
-const MPESA_PAYBILL = process.env.NEXT_PUBLIC_MPESA_PAYBILL_NUMBER?.trim() || '';
+const OWNER_WHATSAPP = process.env.NEXT_PUBLIC_OWNER_WHATSAPP_NUMBER?.trim() || '254796280138';
+const MPESA_PAYBILL = process.env.NEXT_PUBLIC_MPESA_PAYBILL_NUMBER?.trim() || '880100';
+const MPESA_ACCOUNT_NUMBER = process.env.NEXT_PUBLIC_MPESA_ACCOUNT_NUMBER?.trim() || '908128';
 const MPESA_BUSINESS_NAME = process.env.NEXT_PUBLIC_MPESA_BUSINESS_NAME?.trim() || 'WhiskeDelights';
 
 function createPaymentReference() {
@@ -120,7 +120,7 @@ export default function PaymentPage() {
       ? checkoutData.deliveryInfo.pickup_location || 'Nairobi Main Bakery'
       : checkoutData.deliveryInfo.address || 'Delivery address provided';
   }, [checkoutData]);
-  const mpesaAccountRef = clientPaymentRef || checkoutData?.deliveryInfo.phone || 'Preparing reference';
+  const mpesaAccountRef = MPESA_ACCOUNT_NUMBER;
   const successIsPaid = savedOrder?.paymentStatus === 'paid';
 
   useEffect(() => {
@@ -288,15 +288,6 @@ export default function PaymentPage() {
       return;
     }
 
-    if (!MPESA_PAYBILL) {
-      toast({
-        variant: 'destructive',
-        title: 'Paybill missing',
-        description: 'Set NEXT_PUBLIC_MPESA_PAYBILL_NUMBER first.',
-      });
-      return;
-    }
-
     const code = mpesaCode.trim().toUpperCase();
     if (code.length < 6) {
       toast({
@@ -319,7 +310,7 @@ export default function PaymentPage() {
       toast({
         variant: 'destructive',
         title: 'WhatsApp number missing',
-        description: 'Set NEXT_PUBLIC_OWNER_WHATSAPP_NUMBER.',
+        description: 'Add the WhatsApp number first.',
       });
       return;
     }
@@ -327,6 +318,12 @@ export default function PaymentPage() {
     const item = serverQuote.items[0];
     const toppingNames = item.customizations?.toppings.map((topping) => topping.name).join(', ') || 'None';
     const statusLabel = savedOrder.paymentStatus === 'paid' ? 'Deposit Paid' : 'Awaiting Verification';
+    const mapPin =
+      checkoutData.deliveryInfo.delivery_method === 'delivery' &&
+      typeof checkoutData.deliveryInfo.latitude === 'number' &&
+      typeof checkoutData.deliveryInfo.longitude === 'number'
+        ? `https://maps.google.com/?q=${checkoutData.deliveryInfo.latitude},${checkoutData.deliveryInfo.longitude}`
+        : null;
     const message =
       `*WhiskeDelights Order*%0A` +
       `*Order:* ${savedOrder.orderNumber}%0A` +
@@ -342,6 +339,7 @@ export default function PaymentPage() {
       `*Deposit:* ${formatPrice(savedOrder.depositAmount)}%0A` +
       `*Date:* ${checkoutData.deliveryInfo.date}%0A` +
       `*Fulfilment:* ${deliveryLabel}%0A` +
+      (mapPin ? `*Map Pin:* ${mapPin}%0A` : '') +
       `*Customer:* ${checkoutData.deliveryInfo.name}%0A` +
       `*Phone:* ${checkoutData.deliveryInfo.phone}`;
 
@@ -433,18 +431,7 @@ export default function PaymentPage() {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
-            <div className="space-y-2">
-              <p className="text-[0.7rem] font-semibold uppercase tracking-[0.34em] text-primary">Step 3 of 3</p>
-              <h1 className="text-4xl text-stone-950 md:text-5xl">Choose how to pay.</h1>
-            </div>
-          </div>
-
-          <div className="section-shell flex items-center gap-3 px-4 py-3">
-            <ProgressPill index={1} label="Cake" complete />
-            <ProgressDivider />
-            <ProgressPill index={2} label="Details" complete />
-            <ProgressDivider />
-            <ProgressPill index={3} label="Payment" active />
+            <h1 className="text-4xl text-stone-950 md:text-5xl">Payment</h1>
           </div>
         </header>
 
@@ -461,7 +448,6 @@ export default function PaymentPage() {
                     sizes="(max-width: 768px) 100vw, 40vw"
                   />
                   <div className="absolute inset-x-4 bottom-4 rounded-[1.5rem] bg-[rgba(17,14,12,0.72)] p-4 text-white backdrop-blur">
-                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-white/70">Ref</p>
                     <h2 className="mt-2 break-all text-lg leading-tight">
                       {paymentReference || clientPaymentRef || 'Preparing'}
                     </h2>
@@ -469,18 +455,8 @@ export default function PaymentPage() {
                 </div>
 
                 <div className="flex flex-col justify-between gap-6">
-                  <div className="space-y-4">
-                    <StatusChip
-                      label={
-                        quoteError ? 'Quote issue' : isQuoting ? 'Verifying total' : serverQuote ? 'Verified total ready' : 'Preparing'
-                      }
-                      tone={quoteError ? 'danger' : serverQuote ? 'success' : 'neutral'}
-                    />
-                    <h2 className="text-3xl text-stone-950">Order summary</h2>
-                  </div>
-
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <MetricCard label={serverQuote ? 'Verified total' : 'Estimate'} value={isQuoting ? 'Calculating...' : formatPrice(displayedTotal)} />
+                    <MetricCard label={serverQuote ? 'Total' : 'Estimate'} value={isQuoting ? 'Calculating...' : formatPrice(displayedTotal)} />
                     <MetricCard label="Deposit" value={isQuoting ? 'Calculating...' : formatPrice(displayedDeposit)} highlight />
                     <MetricCard label="Date" value={checkoutData ? formatReadableDate(checkoutData.deliveryInfo.date) : 'Pending'} />
                     <MetricCard label="Method" value={checkoutData?.deliveryInfo.delivery_method === 'pickup' ? 'Pickup' : 'Delivery'} />
@@ -549,7 +525,7 @@ export default function PaymentPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-primary">Payment</p>
-                    <h3 className="mt-2 text-3xl text-stone-950">Deposit</h3>
+                    <h3 className="mt-2 text-3xl text-stone-950">Choose</h3>
                   </div>
                   <div className="rounded-full bg-primary/10 p-3 text-primary">
                     {paymentMode === 'mpesa_paybill' ? <Smartphone className="h-5 w-5" /> : <CreditCard className="h-5 w-5" />}
@@ -609,13 +585,6 @@ export default function PaymentPage() {
 
                 {paymentMode === 'paystack' ? (
                   <>
-                    <div className="rounded-[1.5rem] border border-amber-200 bg-amber-50/80 p-4">
-                      <div className="flex items-start gap-3">
-                        <ShieldCheck className="mt-0.5 h-5 w-5 text-primary" />
-                        <p className="text-sm leading-6 text-stone-700">Pay the verified deposit online.</p>
-                      </div>
-                    </div>
-
                     <Button
                       onClick={handlePaystackPayment}
                       disabled={isProcessingPayment || isFinalizingOrder || isQuoting || !isReady || !serverQuote || !clientPaymentRef || Boolean(quoteError)}
@@ -639,7 +608,7 @@ export default function PaymentPage() {
                   <>
                     <div className="space-y-4 rounded-[1.5rem] border border-stone-200 bg-white/80 p-4">
                       <MpesaRow label="Business" value={MPESA_BUSINESS_NAME} />
-                      <MpesaRow label="Paybill" value={MPESA_PAYBILL || 'Set NEXT_PUBLIC_MPESA_PAYBILL_NUMBER'} />
+                      <MpesaRow label="Paybill" value={MPESA_PAYBILL} />
                       <MpesaRow label="Account" value={mpesaAccountRef} />
                       <MpesaRow label="Amount" value={isQuoting ? 'Calculating...' : formatPrice(displayedDeposit)} />
                     </div>
@@ -653,7 +622,7 @@ export default function PaymentPage() {
 
                     <Button
                       onClick={handleMpesaOrder}
-                      disabled={isFinalizingOrder || isQuoting || !serverQuote || !clientPaymentRef || Boolean(quoteError) || !MPESA_PAYBILL}
+                      disabled={isFinalizingOrder || isQuoting || !serverQuote || !clientPaymentRef || Boolean(quoteError)}
                       className="h-14 w-full rounded-[1.2rem] text-[0.78rem] font-semibold uppercase tracking-[0.24em]"
                     >
                       {isFinalizingOrder ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ChevronRight className="mr-2 h-4 w-4" />}
@@ -728,28 +697,6 @@ function InlineNotice({
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-function StatusChip({
-  label,
-  tone,
-}: {
-  label: string;
-  tone: 'neutral' | 'success' | 'danger';
-}) {
-  const toneClasses =
-    tone === 'success'
-      ? 'bg-emerald-50 text-emerald-700'
-      : tone === 'danger'
-        ? 'bg-red-50 text-red-700'
-        : 'bg-stone-100 text-stone-700';
-
-  return (
-    <div className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.28em] ${toneClasses}`}>
-      <Sparkles className="h-3.5 w-3.5" />
-      {label}
     </div>
   );
 }
@@ -830,37 +777,6 @@ function MpesaRow({
       <span className="text-right text-sm font-semibold text-stone-900">{value}</span>
     </div>
   );
-}
-
-function ProgressPill({
-  index,
-  label,
-  active,
-  complete,
-}: {
-  index: number;
-  label: string;
-  active?: boolean;
-  complete?: boolean;
-}) {
-  return (
-    <div className="flex items-center gap-2">
-      <div
-        className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold ${
-          active || complete ? 'bg-primary text-white' : 'bg-stone-100 text-stone-500'
-        }`}
-      >
-        {index}
-      </div>
-      <span className={`text-[0.72rem] font-semibold uppercase tracking-[0.18em] ${active ? 'text-stone-900' : 'text-stone-500'}`}>
-        {label}
-      </span>
-    </div>
-  );
-}
-
-function ProgressDivider() {
-  return <div className="hidden h-px w-7 bg-stone-200 md:block" />;
 }
 
 function PriceRow({

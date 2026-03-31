@@ -1,0 +1,37 @@
+WhiskeDelights shared-hosting bundle
+
+Upload the contents of this folder to:
+domains/whiskedelights.co.ke
+
+Important files in this bundle:
+- server.js
+- .next/
+- public/
+- node_modules/
+- .htaccess
+
+Shared-hosting setup:
+1. Set the application root to domains/whiskedelights.co.ke
+2. Set the startup file to server.js
+3. Set NODE_ENV to production
+4. Add the production environment variables in the Node.js app panel
+5. Restart the Node.js app
+
+Recommended production variables:
+- DB_HOST=localhost
+- DB_PORT=3306
+- DB_DATABASE=whisked1_whiskedelights
+- DB_USER=whisked1_whiskedelights
+- DB_PASSWORD=your_real_password
+- JWT_SECRET=use_a_long_random_secret
+- ALLOWED_ORIGINS=https://whiskedelights.co.ke
+- NEXT_PUBLIC_API_URL=https://whiskedelights.co.ke/api
+- NEXT_PUBLIC_OWNER_WHATSAPP_NUMBER=254796280138
+- NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_live_your_real_key
+- NEXT_PUBLIC_MPESA_BUSINESS_NAME=WhiskeDelights
+- NEXT_PUBLIC_MPESA_PAYBILL_NUMBER=880100
+- NEXT_PUBLIC_MPESA_ACCOUNT_NUMBER=908128
+
+Notes:
+- Use the WhatsApp number in international format with no leading zero.
+- If your hosting provider uses a different Node path, update PassengerNodejs in .htaccess.

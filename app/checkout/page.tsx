@@ -15,7 +15,6 @@ import {
   LocateFixed,
   MapPin,
   PackageCheck,
-  ShieldCheck,
   Store,
   Truck,
   UserRound,
@@ -71,12 +70,17 @@ function getSummaryLines(cartItem: CartItem | null) {
   return lines.filter(Boolean) as string[];
 }
 
+function getPinnedLocationFallback() {
+  return 'Pinned GPS location';
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [method, setMethod] = useState<'delivery' | 'pickup'>('pickup');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [isResolvingAddress, setIsResolvingAddress] = useState(false);
   const [cartItem] = useState<CartItem | null>(() => {
     if (typeof window === 'undefined') {
       return null;
@@ -105,7 +109,7 @@ export default function CheckoutPage() {
   const estimatedDeposit = estimatedTotal * 0.8;
   const customizationSummary = getSummaryLines(cartItem);
 
-  const handleGetCurrentLocation = () => {
+  const handleGetCurrentLocation = async () => {
     if (!navigator.geolocation) {
       toast({
         variant: 'destructive',
@@ -117,17 +121,61 @@ export default function CheckoutPage() {
 
     setIsGettingLocation(true);
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const { latitude, longitude } = position.coords;
-        setFormData((prev) => ({ ...prev, latitude, longitude }));
+        setFormData((prev) => ({
+          ...prev,
+          latitude,
+          longitude,
+          address: getPinnedLocationFallback(),
+        }));
         setIsGettingLocation(false);
-        toast({
-          title: 'Location added',
-          description: 'Precise delivery coordinates have been attached to your order.',
-        });
+        setIsResolvingAddress(true);
+
+        try {
+          const response = await fetch(
+            `/api/location/reverse?lat=${encodeURIComponent(String(latitude))}&lon=${encodeURIComponent(String(longitude))}`
+          );
+
+          if (!response.ok) {
+            throw new Error('Reverse geocoding failed');
+          }
+
+          const data = await response.json();
+          const locationLabel =
+            typeof data?.location === 'string' && data.location.trim().length > 0
+              ? data.location.trim()
+              : getPinnedLocationFallback();
+
+          setFormData((prev) => ({
+            ...prev,
+            latitude,
+            longitude,
+            address: locationLabel,
+          }));
+
+          toast({
+            title: 'Location added',
+            description: 'The delivery location has been filled from your GPS pin.',
+          });
+        } catch {
+          setFormData((prev) => ({
+            ...prev,
+            latitude,
+            longitude,
+            address: getPinnedLocationFallback(),
+          }));
+          toast({
+            title: 'GPS pin saved',
+            description: 'We saved the pin. You can still adjust the location name if needed.',
+          });
+        } finally {
+          setIsResolvingAddress(false);
+        }
       },
       () => {
         setIsGettingLocation(false);
+        setIsResolvingAddress(false);
         toast({
           variant: 'destructive',
           title: 'Location blocked',
@@ -230,32 +278,15 @@ export default function CheckoutPage() {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(168,95,46,0.18),transparent_24rem),#f7f1e8] px-5 pb-16 pt-6 md:px-6 md:pb-24">
       <div className="container mx-auto space-y-8">
-        <header className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-4">
-            <Link
-              href={cartItem.cakeId ? `/cakes/${cartItem.cakeId}` : '/'}
-              className="inline-flex items-center gap-2 text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-stone-500 transition-colors hover:text-primary"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to cake details
-            </Link>
-            <div className="space-y-3">
-              <p className="text-[0.7rem] font-semibold uppercase tracking-[0.34em] text-primary">
-                Step 2 of 3
-              </p>
-              <div>
-                <h1 className="text-4xl text-stone-950 md:text-5xl">Checkout details, made simple.</h1>
-              </div>
-            </div>
-          </div>
-
-          <div className="section-shell flex items-center gap-3 px-4 py-3">
-            <ProgressPill index={1} label="Cake" complete />
-            <ProgressDivider />
-            <ProgressPill index={2} label="Details" active />
-            <ProgressDivider />
-            <ProgressPill index={3} label="Payment" />
-          </div>
+        <header className="space-y-4">
+          <Link
+            href={cartItem.cakeId ? `/cakes/${cartItem.cakeId}` : '/'}
+            className="inline-flex items-center gap-2 text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-stone-500 transition-colors hover:text-primary"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </Link>
+          <h1 className="text-4xl text-stone-950 md:text-5xl">Checkout</h1>
         </header>
 
         <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
@@ -271,38 +302,22 @@ export default function CheckoutPage() {
                     sizes="(max-width: 768px) 100vw, 40vw"
                   />
                   <div className="absolute inset-x-4 bottom-4 rounded-[1.5rem] bg-[rgba(17,14,12,0.72)] p-4 text-white backdrop-blur">
-                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-white/70">
-                      Selected cake
-                    </p>
-                    <h2 className="mt-2 text-3xl leading-tight">{cartItem.name}</h2>
-                    <p className="mt-1 text-sm text-white/75">
-                      Quantity {cartItem.quantity}
-                    </p>
+                    <h2 className="text-3xl leading-tight">{cartItem.name}</h2>
+                    <p className="mt-1 text-sm text-white/75">Qty {cartItem.quantity}</p>
                   </div>
                 </div>
 
                 <div className="flex flex-col justify-between gap-6">
-                  <div className="space-y-4">
-                    <div className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-primary">
-                      <ShieldCheck className="h-3.5 w-3.5" />
-                      Backend quote before payment
-                    </div>
-                    <h2 className="text-3xl text-stone-950">Review order.</h2>
-                  </div>
-
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <InfoTile label="Estimated total" value={formatPrice(estimatedTotal)} />
-                    <InfoTile label="Deposit due now" value={formatPrice(estimatedDeposit)} highlight />
-                    <InfoTile label="Delivery date" value={formatReadableDate(formData.date)} />
+                    <InfoTile label="Total" value={formatPrice(estimatedTotal)} />
+                    <InfoTile label="Deposit" value={formatPrice(estimatedDeposit)} highlight />
+                    <InfoTile label="Date" value={formatReadableDate(formData.date)} />
                     <InfoTile label="Method" value={method === 'pickup' ? 'Bakery pickup' : 'Delivery'} />
                   </div>
 
                   {customizationSummary.length > 0 && (
                     <div className="rounded-[1.6rem] border border-stone-200/80 bg-white/70 p-4">
-                      <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-stone-500">
-                        Your selections
-                      </p>
-                      <div className="mt-3 flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-2">
                         {customizationSummary.map((item) => (
                           <span
                             key={item}
@@ -322,9 +337,9 @@ export default function CheckoutPage() {
               <CardContent className="space-y-7 p-6 md:p-8">
                 <div className="space-y-2">
                   <p className="text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-primary">
-                    Contact details
+                    Details
                   </p>
-                  <h3 className="text-3xl text-stone-950">Who should the bakery reach?</h3>
+                  <h3 className="text-3xl text-stone-950">Contact</h3>
                 </div>
 
                 <div className="grid gap-5 md:grid-cols-2">
@@ -353,9 +368,9 @@ export default function CheckoutPage() {
               <CardContent className="space-y-7 p-6 md:p-8">
                 <div className="space-y-2">
                   <p className="text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-primary">
-                    Fulfilment
+                    Delivery
                   </p>
-                  <h3 className="text-3xl text-stone-950">Pickup or delivery?</h3>
+                  <h3 className="text-3xl text-stone-950">Pickup or delivery</h3>
                 </div>
 
                 <RadioGroup
@@ -396,7 +411,7 @@ export default function CheckoutPage() {
                   </FieldShell>
 
                   <FieldShell
-                    label={method === 'pickup' ? 'Pickup point' : 'Delivery address'}
+                    label={method === 'pickup' ? 'Pickup point' : 'Delivery location'}
                     icon={<MapPin className="h-4 w-4" />}
                   >
                     {method === 'pickup' ? (
@@ -408,22 +423,26 @@ export default function CheckoutPage() {
                         <Input
                           value={formData.address}
                           onChange={(event) => setFormData((prev) => ({ ...prev, address: event.target.value }))}
-                          placeholder="Estate, street, landmark"
+                          placeholder="Location from GPS"
                           className="h-12 rounded-xl border-stone-200 bg-white"
                         />
                         <Button
                           type="button"
                           variant="outline"
                           onClick={handleGetCurrentLocation}
-                          disabled={isGettingLocation}
+                          disabled={isGettingLocation || isResolvingAddress}
                           className="h-11 w-full rounded-xl border-dashed border-stone-300 bg-white text-[0.72rem] font-semibold uppercase tracking-[0.18em]"
                         >
-                          {isGettingLocation ? (
+                          {isGettingLocation || isResolvingAddress ? (
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           ) : (
                             <LocateFixed className="mr-2 h-4 w-4" />
                           )}
-                          {formData.latitude ? 'Location added' : 'Add GPS pin'}
+                          {isResolvingAddress
+                            ? 'Finding location'
+                            : formData.latitude
+                              ? 'Refresh GPS pin'
+                              : 'Add GPS pin'}
                         </Button>
                       </div>
                     )}
@@ -444,9 +463,9 @@ export default function CheckoutPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-primary">
-                      Order summary
+                      Payment
                     </p>
-                    <h3 className="mt-2 text-3xl text-stone-950">Ready for payment</h3>
+                    <h3 className="mt-2 text-3xl text-stone-950">Totals</h3>
                   </div>
                   <div className="rounded-full bg-primary/10 p-3 text-primary">
                     <CreditCard className="h-5 w-5" />
@@ -464,17 +483,8 @@ export default function CheckoutPage() {
                     <span className="text-lg font-semibold">{formatPrice(estimatedTotal)}</span>
                   </div>
                   <div className="h-px bg-white/10" />
-                  <PriceRow label="Estimated total" value={formatPrice(estimatedTotal)} />
-                  <PriceRow label="Deposit due now" value={formatPrice(estimatedDeposit)} emphasis />
-                </div>
-
-                <div className="rounded-[1.5rem] border border-amber-200 bg-amber-50/80 p-4">
-                  <div className="flex items-start gap-3">
-                    <ShieldCheck className="mt-0.5 h-5 w-5 text-primary" />
-                    <p className="text-sm leading-6 text-stone-700">
-                      The bakery re-checks the cake, options, and totals on the next screen before opening Paystack.
-                    </p>
-                  </div>
+                  <PriceRow label="Total" value={formatPrice(estimatedTotal)} />
+                  <PriceRow label="Deposit" value={formatPrice(estimatedDeposit)} emphasis />
                 </div>
 
                 <Button
@@ -483,7 +493,7 @@ export default function CheckoutPage() {
                   className="h-14 w-full rounded-[1.2rem] text-[0.78rem] font-semibold uppercase tracking-[0.24em]"
                 >
                   {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ChevronRight className="mr-2 h-4 w-4" />}
-                  {isProcessing ? 'Preparing payment' : 'Continue to payment'}
+                  {isProcessing ? 'Preparing' : 'Continue'}
                 </Button>
               </CardContent>
             </Card>
@@ -569,37 +579,6 @@ function InfoTile({
       <p className={`mt-2 text-lg font-semibold ${highlight ? 'text-primary' : 'text-stone-900'}`}>{value}</p>
     </div>
   );
-}
-
-function ProgressPill({
-  index,
-  label,
-  active,
-  complete,
-}: {
-  index: number;
-  label: string;
-  active?: boolean;
-  complete?: boolean;
-}) {
-  return (
-    <div className="flex items-center gap-2">
-      <div
-        className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold ${
-          active || complete ? 'bg-primary text-white' : 'bg-stone-100 text-stone-500'
-        }`}
-      >
-        {index}
-      </div>
-      <span className={`text-[0.72rem] font-semibold uppercase tracking-[0.18em] ${active ? 'text-stone-900' : 'text-stone-500'}`}>
-        {label}
-      </span>
-    </div>
-  );
-}
-
-function ProgressDivider() {
-  return <div className="hidden h-px w-7 bg-stone-200 md:block" />;
 }
 
 function PriceRow({

@@ -16,12 +16,24 @@ The platform is hardened with several layers of protection to ensure data integr
     *   **Security Headers**: We inject strict headers (CSP, HSTS, X-Frame-Options) via `next.config.ts` to prevent Clickjacking, MIME-sniffing, and Cross-Site Scripting (XSS).
 *   **Encrypted Storage**: Administrative passwords are never stored in plain text. We utilize **Bcrypt** with high salt rounds for secure hashing.
 
-## 2. Server Routing & Protocol (.htaccess)
+## 2. Shared Hosting Upload
 
-If you encounter **404 Not Found** on HTTPS or when refreshing pages, update your `.htaccess` to enable virtual routing:
+This app now builds a ready-to-upload folder at [standalone-deploy](/home/buma/projects/bakery/standalone-deploy) when you run `npm run build`.
+
+Upload the contents of that folder into:
+
+`domains/whiskedelights.co.ke`
+
+Use these shared-hosting settings:
+
+- Application root: `domains/whiskedelights.co.ke`
+- Startup file: `server.js`
+- Application mode / `NODE_ENV`: `production`
+- Passenger log: `/home/whisked1/logs/passenger.log`
+
+Recommended `.htaccess`:
 
 ```apache
-# --- PASSENGER CONFIGURATION ---
 PassengerAppRoot "/home/whisked1/domains/whiskedelights.co.ke"
 PassengerBaseURI "/"
 PassengerNodejs "/home/whisked1/nodevenv/domains/whiskedelights.co.ke/20/bin/node"
@@ -30,31 +42,33 @@ PassengerStartupFile server.js
 PassengerAppEnv production
 PassengerFriendlyErrorPages off
 
-# --- FORCE HTTPS & VIRTUAL ROUTING ---
 RewriteEngine On
 RewriteBase /
-
-# 1. Force HTTPS
 RewriteCond %{HTTPS} off
 RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
-
-# 2. Virtual Route Pass-through
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule . /server.js [L]
-
-# --- ENVIRONMENT VARIABLES ---
-<IfModule Litespeed>
-  SetEnv DB_HOST your-db-host
-  SetEnv DB_USER your-db-user
-  SetEnv DB_DATABASE your-db-name
-  SetEnv DB_PASSWORD your-db-password
-  SetEnv JWT_SECRET your-long-random-jwt-secret
-  SetEnv ALLOWED_ORIGINS https://your-domain.example
-  SetEnv NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY pk_live_replace_me
-  SetEnv NEXT_PUBLIC_OWNER_WHATSAPP_NUMBER 254700000000
-</IfModule>
 ```
+
+Required production variables:
+
+- `DB_HOST=localhost`
+- `DB_PORT=3306`
+- `DB_DATABASE=whisked1_whiskedelights`
+- `DB_USER=whisked1_whiskedelights`
+- `DB_PASSWORD=your_real_password`
+- `JWT_SECRET=use_a_long_random_secret`
+- `ALLOWED_ORIGINS=https://whiskedelights.co.ke`
+- `NEXT_PUBLIC_API_URL=https://whiskedelights.co.ke/api`
+- `NEXT_PUBLIC_OWNER_WHATSAPP_NUMBER=254796280138`
+- `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=pk_live_your_real_key`
+- `NEXT_PUBLIC_MPESA_BUSINESS_NAME=WhiskeDelights`
+- `NEXT_PUBLIC_MPESA_PAYBILL_NUMBER=880100`
+- `NEXT_PUBLIC_MPESA_ACCOUNT_NUMBER=908128`
+
+Notes:
+
+- Use the WhatsApp number in international format with no leading zero.
+- If your panel shows `0796280138`, convert it to `254796280138` for the app env value.
+- If your host uses a different Node binary path, update `PassengerNodejs`.
 
 ## 3. Artisanal Business Rules
 *   **Deposit**: Mandatory 80% (System Enforced).

@@ -189,49 +189,43 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
           </div>
         </header>
 
-        <main className="grid gap-8 xl:grid-cols-[1.08fr_0.92fr]">
+        <main className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_23rem]">
           <motion.section
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            className="section-shell overflow-hidden p-4 md:p-5"
+            className="space-y-6"
           >
-            <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-              <div className="space-y-4">
-                <div className="relative aspect-[4/5] overflow-hidden rounded-[1.8rem] bg-stone-100">
-                  <Image
-                    src={cake.image_data_uri || 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&q=80&w=1200'}
-                    alt={cake.name}
-                    fill
-                    className="object-cover"
-                    priority
-                  />
-                  <div className="absolute inset-x-5 bottom-5 rounded-[1.2rem] border border-white/50 bg-white/82 p-4 backdrop-blur">
-                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-stone-500">
-                      Starting from
-                    </p>
-                    <div className="mt-1 flex items-end justify-between gap-4">
-                      <p className="text-3xl font-semibold text-primary">{formatPrice(cake.base_price)}</p>
-                      <p className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-stone-500">
-                        {cake.ready_time} lead time
-                      </p>
+            <div className="section-shell overflow-hidden p-4 md:p-6">
+              <div className="grid gap-6 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] xl:items-center">
+                <div className="space-y-4">
+                  <div className="relative aspect-[4/4.6] overflow-hidden rounded-[1.8rem] bg-stone-100 xl:aspect-[4/4.9]">
+                    <Image
+                      src={cake.image_data_uri || 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&q=80&w=1200'}
+                      alt={cake.name}
+                      fill
+                      className="object-cover"
+                      priority
+                    />
+                    <div className="absolute inset-x-5 bottom-5 rounded-[1.2rem] border border-white/50 bg-white/84 p-4 backdrop-blur">
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div>
+                          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-stone-500">
+                            Starting from
+                          </p>
+                          <p className="mt-1 text-3xl font-semibold text-primary">{formatPrice(cake.base_price)}</p>
+                        </div>
+                        <div className="sm:text-right">
+                          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-stone-500">
+                            Lead time
+                          </p>
+                          <p className="mt-1 text-lg font-semibold text-stone-900">{cake.ready_time}</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="soft-panel rounded-[1.5rem] p-5">
-                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-primary">
-                    Bakery notes
-                  </p>
-                  <p className="mt-3 text-sm leading-6 text-stone-600">
-                    {cake.customizable
-                      ? 'Choose your flavor, size, color, and finishing touches. The total updates live as you build.'
-                      : 'This design is offered as a ready style. You still choose quantity and delivery details, but the bakery keeps the signature finish intact.'}
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-6 p-2 md:p-4">
-                <div className="space-y-4">
+                <div className="space-y-6 px-2 py-2 md:px-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge className="rounded-full border-none bg-primary/10 px-3 py-1 text-[0.66rem] font-semibold uppercase tracking-[0.2em] text-primary">
                       {cake.category}
@@ -241,126 +235,152 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
                       {cake.rating || 'New'}
                     </div>
                   </div>
-                  <div className="space-y-3">
-                    <h1 className="text-5xl leading-[0.94] text-stone-950">{cake.name}</h1>
-                    <p className="max-w-2xl text-base leading-7 text-stone-600">{cake.description}</p>
+
+                  <div className="space-y-4">
+                    <h1 className="max-w-3xl text-5xl leading-[0.94] text-stone-950 md:text-6xl xl:text-[4.5rem]">
+                      {cake.name}
+                    </h1>
+                    <p className="max-w-2xl text-base leading-7 text-stone-600 xl:text-lg">
+                      {cake.description}
+                    </p>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <HeroStat label="Starting from" value={formatPrice(cake.base_price)} />
+                    <HeroStat label="Lead time" value={cake.ready_time} />
+                    <HeroStat label="Style" value={cake.customizable ? 'Customizable' : 'Signature'} />
+                  </div>
+
+                  <div className="soft-panel rounded-[1.5rem] p-5">
+                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-primary">
+                      Bakery notes
+                    </p>
+                    <p className="mt-3 text-sm leading-6 text-stone-600">
+                      {cake.customizable
+                        ? 'Build the final look with flavor, size, color, and finishing touches.'
+                        : 'This design keeps its signature finish, so the flow stays short and simple.'}
+                    </p>
                   </div>
                 </div>
-
-                {cake.customizable ? (
-                  <div className="space-y-5">
-                    <OptionSection title="Flavor" subtitle="Choose the core taste profile.">
-                      <div className="grid gap-3 md:grid-cols-2">
-                        {options.flavors.map((flavor) => {
-                          const isSelected = flavorId === String(flavor.id);
-                          return (
-                            <SelectableCard
-                              key={flavor.id}
-                              selected={isSelected}
-                              title={flavor.name}
-                              price={flavor.price}
-                              description={flavor.description || 'Signature bakery flavor'}
-                              onClick={() => setFlavorId(String(flavor.id))}
-                            />
-                          );
-                        })}
-                      </div>
-                    </OptionSection>
-
-                    <OptionSection title="Size" subtitle="Pick the cake size that fits the moment.">
-                      <div className="grid gap-3 md:grid-cols-3">
-                        {options.sizes.map((size) => {
-                          const isSelected = sizeId === String(size.id);
-                          return (
-                            <SelectableCard
-                              key={size.id}
-                              selected={isSelected}
-                              title={size.name}
-                              price={size.price}
-                              description={size.serves}
-                              compact
-                              onClick={() => setSizeId(String(size.id))}
-                            />
-                          );
-                        })}
-                      </div>
-                    </OptionSection>
-
-                    <OptionSection title="Color" subtitle="Set the final look for the cake finish.">
-                      <div className="grid gap-3 md:grid-cols-2">
-                        {options.colors.map((color) => {
-                          const isSelected = colorId === String(color.id);
-                          return (
-                            <button
-                              key={color.id}
-                              type="button"
-                              onClick={() => setColorId(String(color.id))}
-                              className={`flex items-center justify-between rounded-[1.2rem] border px-4 py-4 text-left transition-all ${
-                                isSelected
-                                  ? 'border-primary bg-primary/8 shadow-[0_12px_30px_rgba(168,95,46,0.12)]'
-                                  : 'border-stone-200 bg-white hover:border-stone-300'
-                              }`}
-                            >
-                              <div className="flex items-center gap-3">
-                                <span
-                                  className="h-5 w-5 rounded-full border border-stone-200"
-                                  style={{ backgroundColor: color.hex_value }}
-                                />
-                                <div>
-                                  <p className="text-sm font-semibold text-stone-900">{color.name}</p>
-                                  <p className="text-[0.72rem] uppercase tracking-[0.18em] text-stone-400">Finish color</p>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-sm font-semibold text-primary">{formatPrice(color.price)}</p>
-                                {isSelected ? <Check className="ml-auto mt-1 h-4 w-4 text-primary" /> : null}
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </OptionSection>
-
-                    <OptionSection title="Toppings" subtitle="Optional finishing touches.">
-                      <div className="grid gap-3">
-                        {options.toppings.map((topping) => {
-                          const isSelected = selectedToppings.includes(String(topping.id));
-                          return (
-                            <label
-                              key={topping.id}
-                              className={`flex cursor-pointer items-center justify-between rounded-[1.2rem] border px-4 py-4 transition-all ${
-                                isSelected ? 'border-primary bg-primary/8' : 'border-stone-200 bg-white'
-                              }`}
-                            >
-                              <div className="flex items-center gap-3">
-                                <Checkbox
-                                  checked={isSelected}
-                                  onCheckedChange={() => toggleTopping(String(topping.id))}
-                                />
-                                <span className="text-sm font-medium text-stone-800">{topping.name}</span>
-                              </div>
-                              <span className="text-sm font-semibold text-primary">{formatPrice(topping.price)}</span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    </OptionSection>
-                  </div>
-                ) : (
-                  <div className="soft-panel flex gap-4 rounded-[1.5rem] p-5">
-                    <Info className="mt-1 h-5 w-5 shrink-0 text-primary" />
-                    <div className="space-y-2">
-                      <p className="text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-primary">
-                        Signature format
-                      </p>
-                      <p className="text-sm leading-6 text-stone-600">
-                        This cake is intentionally fixed in flavor and styling, which keeps the ordering flow shorter and the pricing simple.
-                      </p>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
+
+            {cake.customizable ? (
+              <div className="section-shell p-5 md:p-6 xl:p-7">
+                <div className="space-y-8">
+                  <OptionSection title="Flavor" subtitle="Choose the core taste profile.">
+                    <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+                      {options.flavors.map((flavor) => {
+                        const isSelected = flavorId === String(flavor.id);
+                        return (
+                          <SelectableCard
+                            key={flavor.id}
+                            selected={isSelected}
+                            title={flavor.name}
+                            price={flavor.price}
+                            description={flavor.description || 'Signature bakery flavor'}
+                            onClick={() => setFlavorId(String(flavor.id))}
+                          />
+                        );
+                      })}
+                    </div>
+                  </OptionSection>
+
+                  <OptionSection title="Size" subtitle="Pick the cake size that fits the moment.">
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                      {options.sizes.map((size) => {
+                        const isSelected = sizeId === String(size.id);
+                        return (
+                          <SelectableCard
+                            key={size.id}
+                            selected={isSelected}
+                            title={size.name}
+                            price={size.price}
+                            description={size.serves}
+                            compact
+                            onClick={() => setSizeId(String(size.id))}
+                          />
+                        );
+                      })}
+                    </div>
+                  </OptionSection>
+
+                  <OptionSection title="Color" subtitle="Set the final look for the cake finish.">
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                      {options.colors.map((color) => {
+                        const isSelected = colorId === String(color.id);
+                        return (
+                          <button
+                            key={color.id}
+                            type="button"
+                            onClick={() => setColorId(String(color.id))}
+                            className={`flex items-center justify-between rounded-[1.2rem] border px-4 py-4 text-left transition-all ${
+                              isSelected
+                                ? 'border-primary bg-primary/8 shadow-[0_12px_30px_rgba(168,95,46,0.12)]'
+                                : 'border-stone-200 bg-white hover:border-stone-300'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <span
+                                className="h-5 w-5 rounded-full border border-stone-200"
+                                style={{ backgroundColor: color.hex_value }}
+                              />
+                              <div>
+                                <p className="text-sm font-semibold text-stone-900">{color.name}</p>
+                                <p className="text-[0.72rem] uppercase tracking-[0.18em] text-stone-400">Finish color</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-semibold text-primary">{formatPrice(color.price)}</p>
+                              {isSelected ? <Check className="ml-auto mt-1 h-4 w-4 text-primary" /> : null}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </OptionSection>
+
+                  <OptionSection title="Toppings" subtitle="Optional finishing touches.">
+                    <div className="grid gap-4 lg:grid-cols-2">
+                      {options.toppings.map((topping) => {
+                        const isSelected = selectedToppings.includes(String(topping.id));
+                        return (
+                          <label
+                            key={topping.id}
+                            className={`flex cursor-pointer items-center justify-between rounded-[1.2rem] border px-4 py-4 transition-all ${
+                              isSelected ? 'border-primary bg-primary/8' : 'border-stone-200 bg-white'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={() => toggleTopping(String(topping.id))}
+                              />
+                              <span className="text-sm font-medium text-stone-800">{topping.name}</span>
+                            </div>
+                            <span className="text-sm font-semibold text-primary">{formatPrice(topping.price)}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </OptionSection>
+                </div>
+              </div>
+            ) : (
+              <div className="section-shell p-5 md:p-6 xl:p-7">
+                <div className="soft-panel flex gap-4 rounded-[1.5rem] p-5">
+                  <Info className="mt-1 h-5 w-5 shrink-0 text-primary" />
+                  <div className="space-y-2">
+                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-primary">
+                      Signature format
+                    </p>
+                    <p className="text-sm leading-6 text-stone-600">
+                      This cake is intentionally fixed in flavor and styling, which keeps the ordering flow shorter and the pricing simple.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </motion.section>
 
           <motion.aside
@@ -469,6 +489,15 @@ function OptionSection({
       </div>
       {children}
     </section>
+  );
+}
+
+function HeroStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[1.3rem] border border-stone-200 bg-white/78 px-4 py-4">
+      <p className="text-[0.66rem] font-semibold uppercase tracking-[0.24em] text-stone-500">{label}</p>
+      <p className="mt-2 text-lg font-semibold text-stone-900">{value}</p>
+    </div>
   );
 }
 
