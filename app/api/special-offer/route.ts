@@ -1,8 +1,15 @@
-
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
+import { z } from 'zod';
+import { checkRateLimit } from '@/lib/rate-limit';
+import { getClientIp, verifyAuth } from '@/lib/auth-utils';
 
 export const dynamic = 'force-dynamic';
+
+const SpecialOfferSchema = z.object({
+  cake_id: z.string().trim().min(1).max(100),
+  discount_percentage: z.number().int().min(1).max(90),
+});
 
 export async function GET() {
   try {
@@ -41,10 +48,29 @@ export async function GET() {
   }
 }
 
-export async function PUT(req: Request) {
+export async function PUT(req: NextRequest) {
+  const auth = verifyAuth(req, { requireAdmin: true });
+  if (!auth.authenticated) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status || 401 });
+  }
+
   const connection = await pool.getConnection();
   try {
-    const { cake_id, discount_percentage } = await req.json();
+    const rateLimit = checkRateLimit({
+      key: `admin:update-offer:${getClientIp(req)}`,
+      limit: 20,
+      windowMs: 60 * 1000,
+    });
+    if (!rateLimit.allowed) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
+    const validation = SpecialOfferSchema.safeParse(await req.json());
+    if (!validation.success) {
+      return NextResponse.json({ error: 'Invalid special offer payload' }, { status: 400 });
+    }
+
+    const { cake_id, discount_percentage } = validation.data;
     await connection.beginTransaction();
     await connection.query('DELETE FROM special_offers'); // Only one special offer allowed
     await connection.query('INSERT INTO special_offers (cake_id, discount_percentage) VALUES (?, ?)', [cake_id, discount_percentage]);

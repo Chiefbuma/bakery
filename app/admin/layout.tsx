@@ -8,21 +8,37 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getAdminSession, logoutAdmin } from '@/services/cake-service';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Collapsed by default on mobile
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(() => pathname !== '/admin/login');
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem('isAdminLoggedIn');
-    if (!isLoggedIn && pathname !== '/admin/login') {
-      router.replace('/admin/login');
-    } else {
+    if (pathname === '/admin/login') {
+      return;
+    }
+
+    let mounted = true;
+    async function checkSession() {
+      const session = await getAdminSession();
+      if (!mounted) return;
+
+      if (!session) {
+        router.replace('/admin/login');
+        return;
+      }
+
       setIsCheckingAuth(false);
     }
+
+    checkSession();
+    return () => {
+      mounted = false;
+    };
   }, [pathname, router]);
 
   // Handle desktop auto-open
@@ -53,8 +69,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
-    localStorage.removeItem('isAdminLoggedIn');
+    await logoutAdmin();
     router.push('/admin/login');
   };
 

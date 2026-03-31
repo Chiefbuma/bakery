@@ -1,11 +1,25 @@
-
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import bcrypt from 'bcryptjs';
+import { z } from 'zod';
+import { verifyAuth, getClientIp } from '@/lib/auth-utils';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+const CreateUserSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  email: z.string().trim().toLowerCase().email().max(255),
+  role: z.enum(['admin', 'staff']),
+  password: z.string().min(12).max(128),
+});
+
+export async function GET(req: NextRequest) {
+  const auth = verifyAuth(req, { requireAdmin: true });
+  if (!auth.authenticated) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status || 401 });
+  }
+
   try {
     const [rows] = await pool.query('SELECT id, name, email, role, createdAt FROM users ORDER BY createdAt DESC');
     return NextResponse.json(rows);
@@ -14,14 +28,30 @@ export async function GET() {
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const auth = verifyAuth(req, { requireAdmin: true });
+  if (!auth.authenticated) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status || 401 });
+  }
+
   try {
-    const body = await req.json();
+    const rateLimit = checkRateLimit({
+      key: `admin:create-user:${getClientIp(req)}`,
+      limit: 20,
+      windowMs: 60 * 1000,
+    });
+    if (!rateLimit.allowed) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
+    const validation = CreateUserSchema.safeParse(await req.json());
+    if (!validation.success) {
+      return NextResponse.json({ error: 'Invalid user payload' }, { status: 400 });
+    }
+
+    const body = validation.data;
     const id = `U-${Date.now()}`;
-    
-    // Hash password before storage
-    const passwordToHash = body.password || 'staff123';
-    const hashedPassword = await bcrypt.hash(passwordToHash, 10);
+    const hashedPassword = await bcrypt.hash(body.password, 12);
 
     await pool.query(
       'INSERT INTO users (id, name, email, role, password) VALUES (?, ?, ?, ?, ?)',

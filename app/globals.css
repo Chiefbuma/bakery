@@ -4,72 +4,121 @@
 
 @layer base {
   :root {
-    --background: 38 54% 98%;
-    --foreground: 24 10% 10%;
+    --background: 30 33% 98%;
+    --foreground: 18 18% 14%;
     --card: 0 0% 100%;
-    --card-foreground: 24 10% 10%;
+    --card-foreground: 18 18% 14%;
     --popover: 0 0% 100%;
-    --popover-foreground: 24 10% 10%;
-    --primary: 32 69% 46%;
-    --primary-foreground: 38 54% 98%;
-    --secondary: 38 20% 92%;
-    --secondary-foreground: 32 69% 46%;
-    --muted: 38 15% 94%;
-    --muted-foreground: 24 10% 40%;
-    --accent: 43 60% 55%;
-    --accent-foreground: 24 10% 10%;
-    --destructive: 0 84.2% 60.2%;
+    --popover-foreground: 18 18% 14%;
+    --primary: 22 69% 44%;
+    --primary-foreground: 34 80% 97%;
+    --secondary: 36 36% 93%;
+    --secondary-foreground: 18 18% 18%;
+    --muted: 32 27% 94%;
+    --muted-foreground: 18 10% 42%;
+    --accent: 43 78% 62%;
+    --accent-foreground: 18 18% 12%;
+    --destructive: 0 78% 58%;
     --destructive-foreground: 0 0% 98%;
-    --border: 38 20% 90%;
-    --input: 38 20% 90%;
-    --ring: 32 69% 46%;
+    --border: 28 24% 86%;
+    --input: 28 24% 86%;
+    --ring: 22 69% 44%;
     --radius: 1.5rem;
+    --surface-cream: #f8f1e7;
+    --surface-sand: #efe2d1;
+    --surface-ink: #221c18;
+    --surface-copper: #a85f2e;
+    --surface-gold: #d9b471;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
-    font-style: normal !important; /* Globally suppress italics for Artisanal aesthetic */
   }
+
   html {
-    font-size: 13px; /* Reduced base for no-wrap on high-density mobile displays */
+    font-size: 14px;
   }
+
   @media (min-width: 768px) {
     html {
       font-size: 16px;
     }
   }
+
   body {
-    @apply bg-background text-foreground font-sans antialiased;
-    letter-spacing: -0.011em;
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-body), sans-serif;
+    letter-spacing: -0.015em;
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at top left, rgba(217, 180, 113, 0.18), transparent 26rem),
+      radial-gradient(circle at top right, rgba(168, 95, 46, 0.1), transparent 22rem),
+      linear-gradient(180deg, #fffaf5 0%, #f7efe4 100%);
   }
+
   h1, h2, h3, h4, h5, h6 {
-    @apply font-headline font-black;
-    letter-spacing: -0.04em;
-    font-style: normal !important;
+    font-family: var(--font-headline), serif;
+    letter-spacing: -0.045em;
+    font-weight: 600;
   }
 }
 
-.font-headline {
-  font-family: 'Playfair Display', serif;
-  font-weight: 900;
-}
+@layer utilities {
+  .font-headline {
+    font-family: var(--font-headline), serif;
+  }
 
-.font-black {
-  font-weight: 900 !important;
-}
+  .font-body {
+    font-family: var(--font-body), sans-serif;
+  }
 
-.no-wrap {
-  white-space: nowrap;
+  .font-black {
+    font-weight: 800 !important;
+  }
+
+  .no-wrap {
+    white-space: nowrap;
+  }
+
+  .section-shell {
+    @apply rounded-[2rem] border border-white/70 bg-white/70 shadow-[0_24px_80px_rgba(61,43,31,0.08)] backdrop-blur-xl;
+  }
+
+  .soft-panel {
+    @apply rounded-[1.5rem] border border-stone-200/80 bg-stone-50/70 backdrop-blur;
+  }
+
+  .grain-overlay {
+    position: relative;
+  }
+
+  .grain-overlay::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.08;
+    background-image:
+      linear-gradient(rgba(34, 28, 24, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(34, 28, 24, 0.08) 1px, transparent 1px);
+    background-size: 18px 18px;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.7), transparent 90%);
+  }
 }
 
 ::-webkit-scrollbar {
   width: 10px;
 }
+
 ::-webkit-scrollbar-track {
-  @apply bg-stone-100;
+  background: #efe5d8;
 }
+
 ::-webkit-scrollbar-thumb {
-  @apply bg-stone-300 rounded-full hover:bg-primary/50 transition-colors;
+  background: #cfac84;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a85f2e;
 }

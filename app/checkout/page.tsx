@@ -1,18 +1,75 @@
-
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { formatPrice } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, CreditCard, Truck, Store, Calendar, MapPin, Loader2, ShieldCheck, LocateFixed } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { useMemo, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import {
+  ArrowLeft,
+  CalendarDays,
+  ChevronRight,
+  CreditCard,
+  Loader2,
+  LocateFixed,
+  MapPin,
+  PackageCheck,
+  ShieldCheck,
+  Store,
+  Truck,
+  UserRound,
+} from 'lucide-react';
+import { formatPrice } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
+import type { CartItem, CheckoutSessionData } from '@/lib/types';
+
+function formatDateInputValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function formatReadableDate(value: string) {
+  if (!value) {
+    return 'Choose a production date';
+  }
+
+  const parsed = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat('en-KE', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(parsed);
+}
+
+function getSummaryLines(cartItem: CartItem | null) {
+  if (!cartItem?.customizations) {
+    return [];
+  }
+
+  const lines = [
+    cartItem.customizations.flavor && `Flavor: ${cartItem.customizations.flavor}`,
+    cartItem.customizations.size && `Size: ${cartItem.customizations.size}`,
+    cartItem.customizations.color && `Color: ${cartItem.customizations.color}`,
+    cartItem.customizations.toppings.length
+      ? `Toppings: ${cartItem.customizations.toppings.join(', ')}`
+      : null,
+  ];
+
+  return lines.filter(Boolean) as string[];
+}
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -20,7 +77,14 @@ export default function CheckoutPage() {
   const [method, setMethod] = useState<'delivery' | 'pickup'>('pickup');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
-  const [cartItem, setCartItem] = useState<any>(null);
+  const [cartItem] = useState<CartItem | null>(() => {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    const data = window.localStorage.getItem('bakery_current_item');
+    return data ? (JSON.parse(data) as CartItem) : null;
+  });
 
   const [formData, setFormData] = useState({
     name: '',
@@ -28,24 +92,26 @@ export default function CheckoutPage() {
     date: '',
     address: '',
     latitude: null as number | null,
-    longitude: null as number | null
+    longitude: null as number | null,
   });
 
-  useEffect(() => {
-    const data = localStorage.getItem('bakery_current_item');
-    if (data) setCartItem(JSON.parse(data));
-  }, []);
-
-  // Strict 48-hour (2 days) Lead Time Enforcement
   const minDate = useMemo(() => {
     const d = new Date();
-    d.setDate(d.getDate() + 2); // Minimum 2 days from today
-    return d.toISOString().split('T')[0];
+    d.setDate(d.getDate() + 2);
+    return formatDateInputValue(d);
   }, []);
+
+  const estimatedTotal = cartItem?.totalPrice || 0;
+  const estimatedDeposit = estimatedTotal * 0.8;
+  const customizationSummary = getSummaryLines(cartItem);
 
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) {
-      toast({ variant: "destructive", title: "GPS Error", description: "Browser does not support geolocation." });
+      toast({
+        variant: 'destructive',
+        title: 'GPS unavailable',
+        description: 'Your browser does not support location access.',
+      });
       return;
     }
 
@@ -53,197 +119,512 @@ export default function CheckoutPage() {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        setFormData(prev => ({ ...prev, latitude, longitude }));
+        setFormData((prev) => ({ ...prev, latitude, longitude }));
         setIsGettingLocation(false);
-        toast({ title: "Coordinates Locked", description: "GPS location captured successfully for delivery." });
+        toast({
+          title: 'Location added',
+          description: 'Precise delivery coordinates have been attached to your order.',
+        });
       },
-      (error) => {
+      () => {
         setIsGettingLocation(false);
-        toast({ variant: "destructive", title: "Access Denied", description: "Please enable location services for precise delivery." });
+        toast({
+          variant: 'destructive',
+          title: 'Location blocked',
+          description: 'Enable location access or continue with a written delivery address.',
+        });
       },
       { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
     );
   };
 
   const handleProceed = async () => {
-    if (!formData.name || !formData.phone || !formData.date) {
-      toast({ variant: "destructive", title: "Required Info", description: "Please complete the guest credentials." });
+    if (!cartItem) {
+      toast({
+        variant: 'destructive',
+        title: 'No cake selected',
+        description: 'Choose a cake first, then return to checkout.',
+      });
+      router.push('/');
       return;
     }
+
+    if (!formData.name || !formData.phone || !formData.date) {
+      toast({
+        variant: 'destructive',
+        title: 'Missing details',
+        description: 'Add your name, phone, and preferred date to continue.',
+      });
+      return;
+    }
+
     if (method === 'delivery' && !formData.address) {
-      toast({ variant: "destructive", title: "Address Required", description: "Provide a landmark or address for delivery." });
+      toast({
+        variant: 'destructive',
+        title: 'Delivery address needed',
+        description: 'Please enter the address or landmark for delivery.',
+      });
+      return;
+    }
+
+    if (formData.date < minDate) {
+      toast({
+        variant: 'destructive',
+        title: 'Date too soon',
+        description: `Choose ${minDate} or later to keep the 48-hour lead time.`,
+      });
       return;
     }
 
     setIsProcessing(true);
-    const total = cartItem?.totalPrice || 0;
-    const deposit = total * 0.8; // Strict 80% Mandatory Deposit
-    
-    const checkoutPayload = { 
-      ...formData, 
-      method, 
-      total, 
-      deposit,
-      item_details: cartItem,
-      pickup_location: method === 'pickup' ? 'Nairobi Main Bakery' : ''
+
+    const checkoutPayload: CheckoutSessionData = {
+      items: [cartItem],
+      deliveryInfo: {
+        name: formData.name.trim(),
+        phone: formData.phone.trim(),
+        delivery_method: method,
+        address: method === 'delivery' ? formData.address.trim() : '',
+        latitude: method === 'delivery' ? formData.latitude : null,
+        longitude: method === 'delivery' ? formData.longitude : null,
+        date: formData.date,
+        pickup_location: method === 'pickup' ? 'Nairobi Main Bakery' : '',
+      },
+      estimatedTotal,
     };
-    
+
     localStorage.setItem('temp_checkout_data', JSON.stringify(checkoutPayload));
-    
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise((resolve) => setTimeout(resolve, 500));
     router.push('/payment');
   };
 
+  if (!cartItem) {
+    return (
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(168,95,46,0.18),transparent_24rem),#f7f1e8] px-5 py-10 md:px-6">
+        <div className="container mx-auto max-w-3xl">
+          <div className="section-shell p-8 text-center md:p-12">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <PackageCheck className="h-7 w-7" />
+            </div>
+            <div className="mt-6 space-y-3">
+              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.32em] text-primary">
+                Checkout
+              </p>
+              <h1 className="text-4xl text-stone-950">Your order starts with a cake.</h1>
+              <p className="mx-auto max-w-lg text-sm leading-7 text-stone-600">
+                There is no active cake in this session yet. Return to the menu, pick a design you love,
+                and we&apos;ll bring you right back here for details and payment.
+              </p>
+            </div>
+            <Button asChild className="mt-8 h-12 rounded-full px-6 text-[0.75rem] font-semibold uppercase tracking-[0.24em]">
+              <Link href="/">
+                Browse cakes
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-stone-50 pb-20 selection:bg-primary selection:text-white">
-      <header className="bg-white border-b py-4 sticky top-0 z-50">
-        <div className="container mx-auto px-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:text-primary">
-            <ArrowLeft className="h-4 w-4" />
-            <span className="no-wrap">Return</span>
-          </Link>
-          <div className="text-xl font-black font-headline text-primary tracking-tighter">Artisanal Checkout</div>
-          <div className="w-12" />
-        </div>
-      </header>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(168,95,46,0.18),transparent_24rem),#f7f1e8] px-5 pb-16 pt-6 md:px-6 md:pb-24">
+      <div className="container mx-auto space-y-8">
+        <header className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-4">
+            <Link
+              href={cartItem.cakeId ? `/cakes/${cartItem.cakeId}` : '/'}
+              className="inline-flex items-center gap-2 text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-stone-500 transition-colors hover:text-primary"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to cake details
+            </Link>
+            <div className="space-y-3">
+              <p className="text-[0.7rem] font-semibold uppercase tracking-[0.34em] text-primary">
+                Step 2 of 3
+              </p>
+              <div>
+                <h1 className="text-4xl text-stone-950 md:text-5xl">Checkout details, made simple.</h1>
+              </div>
+            </div>
+          </div>
 
-      <main className="container mx-auto px-4 py-8 grid lg:grid-cols-3 gap-8 items-start">
-        <div className="lg:col-span-2 space-y-8">
-          <section className="space-y-4">
-            <h2 className="text-md font-black flex items-center gap-2 text-stone-900 uppercase tracking-tighter">
-              <span className="bg-primary text-white h-6 w-6 rounded-lg flex items-center justify-center text-[10px] font-black shadow-lg">1</span>
-              Guest Credentials
-            </h2>
-            <Card className="border-none shadow-xl rounded-[2rem] overflow-hidden bg-white">
-              <CardContent className="p-6 grid sm:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-stone-500">Full Name</Label>
-                  <Input 
-                    value={formData.name}
-                    onChange={e => setFormData(prev => ({...prev, name: e.target.value}))}
-                    placeholder="Guest Name" 
-                    className="h-12 border-2 rounded-xl font-black text-[11px]" 
+          <div className="section-shell flex items-center gap-3 px-4 py-3">
+            <ProgressPill index={1} label="Cake" complete />
+            <ProgressDivider />
+            <ProgressPill index={2} label="Details" active />
+            <ProgressDivider />
+            <ProgressPill index={3} label="Payment" />
+          </div>
+        </header>
+
+        <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+          <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+            <Card className="section-shell overflow-hidden border-none shadow-none">
+              <CardContent className="grid gap-6 p-6 md:grid-cols-[0.95fr_1.05fr] md:p-8">
+                <div className="relative min-h-[17rem] overflow-hidden rounded-[2rem] bg-stone-100">
+                  <Image
+                    src={cartItem.image_data_uri || 'https://images.unsplash.com/photo-1519869325930-281384150729?auto=format&fit=crop&q=80&w=1200'}
+                    alt={cartItem.name}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 40vw"
                   />
+                  <div className="absolute inset-x-4 bottom-4 rounded-[1.5rem] bg-[rgba(17,14,12,0.72)] p-4 text-white backdrop-blur">
+                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-white/70">
+                      Selected cake
+                    </p>
+                    <h2 className="mt-2 text-3xl leading-tight">{cartItem.name}</h2>
+                    <p className="mt-1 text-sm text-white/75">
+                      Quantity {cartItem.quantity}
+                    </p>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-stone-500">Phone</Label>
-                  <Input 
-                    value={formData.phone}
-                    onChange={e => setFormData(prev => ({...prev, phone: e.target.value}))}
-                    placeholder="07..." 
-                    className="h-12 border-2 rounded-xl font-black text-[11px]" 
-                  />
+
+                <div className="flex flex-col justify-between gap-6">
+                  <div className="space-y-4">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-primary">
+                      <ShieldCheck className="h-3.5 w-3.5" />
+                      Backend quote before payment
+                    </div>
+                    <h2 className="text-3xl text-stone-950">Review order.</h2>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <InfoTile label="Estimated total" value={formatPrice(estimatedTotal)} />
+                    <InfoTile label="Deposit due now" value={formatPrice(estimatedDeposit)} highlight />
+                    <InfoTile label="Delivery date" value={formatReadableDate(formData.date)} />
+                    <InfoTile label="Method" value={method === 'pickup' ? 'Bakery pickup' : 'Delivery'} />
+                  </div>
+
+                  {customizationSummary.length > 0 && (
+                    <div className="rounded-[1.6rem] border border-stone-200/80 bg-white/70 p-4">
+                      <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-stone-500">
+                        Your selections
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {customizationSummary.map((item) => (
+                          <span
+                            key={item}
+                            className="rounded-full bg-stone-100 px-3 py-1.5 text-[0.72rem] font-medium text-stone-700"
+                          >
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
-          </section>
 
-          <section className="space-y-4">
-            <h2 className="text-md font-black flex items-center gap-2 text-stone-900 uppercase tracking-tighter">
-              <span className="bg-primary text-white h-6 w-6 rounded-lg flex items-center justify-center text-[10px] font-black shadow-lg">2</span>
-              Logistics & Location
-            </h2>
-            <Card className="border-none shadow-xl rounded-[2rem] overflow-hidden bg-white">
-              <CardContent className="p-0">
-                <RadioGroup value={method} onValueChange={v => setMethod(v as any)} className="grid grid-cols-2 gap-0 border-b">
-                   <div className={`p-6 border-r flex items-start gap-3 cursor-pointer transition-all ${method === 'pickup' ? 'bg-primary/5' : ''}`} onClick={() => setMethod('pickup')}>
-                      <RadioGroupItem value="pickup" id="pickup" className="mt-1" />
-                      <div>
-                        <Label htmlFor="pickup" className="text-[11px] font-black cursor-pointer flex items-center gap-2 text-stone-900 uppercase tracking-widest">
-                          <Store className="h-3 w-3 text-primary" /> Pickup
-                        </Label>
-                        <p className="text-[8px] text-stone-400 font-black uppercase mt-1">Nairobi Hub</p>
-                      </div>
-                   </div>
-                   <div className={`p-6 flex items-start gap-3 cursor-pointer transition-all ${method === 'delivery' ? 'bg-primary/5' : ''}`} onClick={() => setMethod('delivery')}>
-                      <RadioGroupItem value="delivery" id="delivery" className="mt-1" />
-                      <div>
-                        <Label htmlFor="delivery" className="text-[11px] font-black cursor-pointer flex items-center gap-2 text-stone-900 uppercase tracking-widest">
-                          <Truck className="h-3 w-3 text-primary" /> Delivery
-                        </Label>
-                        <p className="text-[8px] text-stone-400 font-black uppercase mt-1">Exact Address</p>
-                      </div>
-                   </div>
+            <Card className="section-shell border-none shadow-none">
+              <CardContent className="space-y-7 p-6 md:p-8">
+                <div className="space-y-2">
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-primary">
+                    Contact details
+                  </p>
+                  <h3 className="text-3xl text-stone-950">Who should the bakery reach?</h3>
+                </div>
+
+                <div className="grid gap-5 md:grid-cols-2">
+                  <FieldShell label="Full name" icon={<UserRound className="h-4 w-4" />}>
+                    <Input
+                      value={formData.name}
+                      onChange={(event) => setFormData((prev) => ({ ...prev, name: event.target.value }))}
+                      placeholder="Customer name"
+                      className="h-12 rounded-xl border-stone-200 bg-white"
+                    />
+                  </FieldShell>
+
+                  <FieldShell label="Phone number" icon={<PhoneGlyph />}>
+                    <Input
+                      value={formData.phone}
+                      onChange={(event) => setFormData((prev) => ({ ...prev, phone: event.target.value }))}
+                      placeholder="07..."
+                      className="h-12 rounded-xl border-stone-200 bg-white"
+                    />
+                  </FieldShell>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="section-shell border-none shadow-none">
+              <CardContent className="space-y-7 p-6 md:p-8">
+                <div className="space-y-2">
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-primary">
+                    Fulfilment
+                  </p>
+                  <h3 className="text-3xl text-stone-950">Pickup or delivery?</h3>
+                </div>
+
+                <RadioGroup
+                  value={method}
+                  onValueChange={(value) => setMethod(value === 'delivery' ? 'delivery' : 'pickup')}
+                  className="grid gap-4 md:grid-cols-2"
+                >
+                  <MethodCard
+                    id="pickup"
+                    value="pickup"
+                    active={method === 'pickup'}
+                    icon={<Store className="h-5 w-5" />}
+                    title="Pickup"
+                    description="Collect from Nairobi Main Bakery."
+                  />
+                  <MethodCard
+                    id="delivery"
+                    value="delivery"
+                    active={method === 'delivery'}
+                    icon={<Truck className="h-5 w-5" />}
+                    title="Delivery"
+                    description="Add your address and GPS pin."
+                  />
                 </RadioGroup>
-                
-                <div className="p-6 bg-stone-50/30 space-y-6">
-                   <div className="grid sm:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-stone-500">
-                          <Calendar className="h-3.5 w-3.5 text-primary" /> Date (48h Lead)
-                        </Label>
-                        <Input 
-                          type="date" 
-                          min={minDate}
-                          value={formData.date}
-                          onChange={e => setFormData(prev => ({...prev, date: e.target.value}))}
-                          className="h-12 border-2 rounded-xl bg-white font-black text-[11px]" 
+
+                <div className="grid gap-5 md:grid-cols-2">
+                  <FieldShell label="Preferred date" icon={<CalendarDays className="h-4 w-4" />}>
+                    <Input
+                      type="date"
+                      min={minDate}
+                      value={formData.date}
+                      onChange={(event) => setFormData((prev) => ({ ...prev, date: event.target.value }))}
+                      className="h-12 rounded-xl border-stone-200 bg-white"
+                    />
+                    <p className="text-xs text-stone-500">
+                      Earliest available date is {formatReadableDate(minDate)}.
+                    </p>
+                  </FieldShell>
+
+                  <FieldShell
+                    label={method === 'pickup' ? 'Pickup point' : 'Delivery address'}
+                    icon={<MapPin className="h-4 w-4" />}
+                  >
+                    {method === 'pickup' ? (
+                      <div className="rounded-[1.2rem] border border-stone-200 bg-white px-4 py-3 text-sm font-medium text-stone-700">
+                        Nairobi Main Bakery
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <Input
+                          value={formData.address}
+                          onChange={(event) => setFormData((prev) => ({ ...prev, address: event.target.value }))}
+                          placeholder="Estate, street, landmark"
+                          className="h-12 rounded-xl border-stone-200 bg-white"
                         />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleGetCurrentLocation}
+                          disabled={isGettingLocation}
+                          className="h-11 w-full rounded-xl border-dashed border-stone-300 bg-white text-[0.72rem] font-semibold uppercase tracking-[0.18em]"
+                        >
+                          {isGettingLocation ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <LocateFixed className="mr-2 h-4 w-4" />
+                          )}
+                          {formData.latitude ? 'Location added' : 'Add GPS pin'}
+                        </Button>
                       </div>
-                      <div className="space-y-2">
-                        <Label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-stone-500">
-                          <MapPin className="h-3.5 w-3.5 text-primary" /> {method === 'pickup' ? 'Hub Location' : 'Full Address'}
-                        </Label>
-                        {method === 'pickup' ? (
-                          <div className="h-12 border-2 rounded-xl bg-stone-100 flex items-center px-4 text-[10px] font-black uppercase text-stone-600 no-wrap">
-                            Nairobi Main Bakery
-                          </div>
-                        ) : (
-                          <div className="space-y-3">
-                            <Input 
-                              value={formData.address}
-                              onChange={e => setFormData(prev => ({...prev, address: e.target.value}))}
-                              placeholder="House, Street, Area" 
-                              className="h-12 border-2 rounded-xl bg-white font-black text-[11px]" 
-                            />
-                            <Button 
-                              type="button" 
-                              variant="outline" 
-                              className="w-full h-11 rounded-xl border-dashed border-2 gap-2 text-[9px] font-black uppercase"
-                              onClick={handleGetCurrentLocation}
-                              disabled={isGettingLocation}
-                            >
-                              {isGettingLocation ? <Loader2 className="h-3 w-3 animate-spin" /> : <LocateFixed className="h-3 w-3" />}
-                              {formData.latitude ? `GPS Coordinates Locked` : 'Set Precise Location'}
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                   </div>
+                    )}
+                  </FieldShell>
                 </div>
               </CardContent>
             </Card>
-          </section>
-        </div>
+          </motion.div>
 
-        <div className="space-y-6">
-          <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-stone-950 text-white">
-            <CardHeader className="bg-primary text-white py-4">
-              <CardTitle className="text-[10px] uppercase tracking-[0.2em] font-black text-center">Valuation Summary</CardTitle>
-            </CardHeader>
-            <CardContent className="p-8 space-y-6">
-              <div className="flex justify-between items-center py-2">
-                 <span className="text-xl font-black uppercase tracking-tighter text-stone-300">Total</span>
-                 <span className="text-3xl font-black text-primary tracking-tighter">{formatPrice(cartItem?.totalPrice || 0)}</span>
-              </div>
-              <div className="p-4 bg-white/5 rounded-2xl border border-white/10 flex items-start gap-3">
-                <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
-                <p className="text-[9px] text-stone-400 font-black uppercase leading-relaxed">
-                  80% Artisanal Deposit ({formatPrice((cartItem?.totalPrice || 0) * 0.8)}) is mandatory to secure production.
-                </p>
-              </div>
-              <Button 
-                className="w-full h-16 text-lg font-black gap-2 shadow-2xl rounded-2xl uppercase tracking-widest" 
-                onClick={handleProceed}
-                disabled={isProcessing}
-              >
-                {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <CreditCard className="h-5 w-5" />}
-                {isProcessing ? 'Processing...' : 'Secure Booking'}
-              </Button>
-            </CardContent>
-          </Card>
+          <motion.aside
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.08 }}
+            className="space-y-6"
+          >
+            <Card className="section-shell sticky top-24 border-none shadow-none">
+              <CardContent className="space-y-6 p-6 md:p-8">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-primary">
+                      Order summary
+                    </p>
+                    <h3 className="mt-2 text-3xl text-stone-950">Ready for payment</h3>
+                  </div>
+                  <div className="rounded-full bg-primary/10 p-3 text-primary">
+                    <CreditCard className="h-5 w-5" />
+                  </div>
+                </div>
+
+                <div className="space-y-4 rounded-[1.7rem] bg-stone-950 px-5 py-5 text-white">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-white/70">{cartItem.name}</p>
+                      <p className="mt-1 text-[0.72rem] uppercase tracking-[0.22em] text-white/55">
+                        Quantity {cartItem.quantity}
+                      </p>
+                    </div>
+                    <span className="text-lg font-semibold">{formatPrice(estimatedTotal)}</span>
+                  </div>
+                  <div className="h-px bg-white/10" />
+                  <PriceRow label="Estimated total" value={formatPrice(estimatedTotal)} />
+                  <PriceRow label="Deposit due now" value={formatPrice(estimatedDeposit)} emphasis />
+                </div>
+
+                <div className="rounded-[1.5rem] border border-amber-200 bg-amber-50/80 p-4">
+                  <div className="flex items-start gap-3">
+                    <ShieldCheck className="mt-0.5 h-5 w-5 text-primary" />
+                    <p className="text-sm leading-6 text-stone-700">
+                      The bakery re-checks the cake, options, and totals on the next screen before opening Paystack.
+                    </p>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={handleProceed}
+                  disabled={isProcessing}
+                  className="h-14 w-full rounded-[1.2rem] text-[0.78rem] font-semibold uppercase tracking-[0.24em]"
+                >
+                  {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ChevronRight className="mr-2 h-4 w-4" />}
+                  {isProcessing ? 'Preparing payment' : 'Continue to payment'}
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.aside>
         </div>
-      </main>
+      </div>
     </div>
+  );
+}
+
+function FieldShell({
+  label,
+  icon,
+  children,
+}: {
+  label: string;
+  icon: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div className="space-y-3">
+      <Label className="flex items-center gap-2 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-stone-500">
+        <span className="text-primary">{icon}</span>
+        {label}
+      </Label>
+      {children}
+    </div>
+  );
+}
+
+function MethodCard({
+  id,
+  value,
+  active,
+  icon,
+  title,
+  description,
+}: {
+  id: string;
+  value: string;
+  active: boolean;
+  icon: ReactNode;
+  title: string;
+  description: string;
+}) {
+  return (
+    <label
+      htmlFor={id}
+      className={`cursor-pointer rounded-[1.7rem] border p-5 transition-all ${
+        active
+          ? 'border-primary bg-primary/[0.08] shadow-[0_20px_40px_rgba(168,95,46,0.08)]'
+          : 'border-stone-200 bg-white hover:border-stone-300'
+      }`}
+    >
+      <div className="flex items-start gap-4">
+        <RadioGroupItem id={id} value={value} className="mt-1 border-stone-400" />
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <div className={`rounded-full p-2 ${active ? 'bg-primary text-white' : 'bg-stone-100 text-stone-600'}`}>
+              {icon}
+            </div>
+            <span className="text-lg font-semibold text-stone-900">{title}</span>
+          </div>
+          <p className="text-sm leading-6 text-stone-600">{description}</p>
+        </div>
+      </div>
+    </label>
+  );
+}
+
+function InfoTile({
+  label,
+  value,
+  highlight,
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) {
+  return (
+    <div className={`rounded-[1.4rem] border px-4 py-4 ${highlight ? 'border-amber-200 bg-amber-50' : 'border-stone-200 bg-white/70'}`}>
+      <p className="text-[0.66rem] font-semibold uppercase tracking-[0.24em] text-stone-500">{label}</p>
+      <p className={`mt-2 text-lg font-semibold ${highlight ? 'text-primary' : 'text-stone-900'}`}>{value}</p>
+    </div>
+  );
+}
+
+function ProgressPill({
+  index,
+  label,
+  active,
+  complete,
+}: {
+  index: number;
+  label: string;
+  active?: boolean;
+  complete?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <div
+        className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold ${
+          active || complete ? 'bg-primary text-white' : 'bg-stone-100 text-stone-500'
+        }`}
+      >
+        {index}
+      </div>
+      <span className={`text-[0.72rem] font-semibold uppercase tracking-[0.18em] ${active ? 'text-stone-900' : 'text-stone-500'}`}>
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function ProgressDivider() {
+  return <div className="hidden h-px w-7 bg-stone-200 md:block" />;
+}
+
+function PriceRow({
+  label,
+  value,
+  emphasis,
+}: {
+  label: string;
+  value: string;
+  emphasis?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-sm text-white/70">{label}</span>
+      <span className={emphasis ? 'text-xl font-semibold text-[#f3cf8b]' : 'text-base font-medium text-white'}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function PhoneGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4 fill-none stroke-current stroke-[1.9]">
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07A19.5 19.5 0 0 1 5.15 12.8 19.8 19.8 0 0 1 2.08 4.09 2 2 0 0 1 4.07 2h3a2 2 0 0 1 2 1.72c.12.89.33 1.76.63 2.61a2 2 0 0 1-.45 2.11L8 9.91a16 16 0 0 0 6.09 6.09l1.47-1.25a2 2 0 0 1 2.11-.45c.85.3 1.72.51 2.61.63A2 2 0 0 1 22 16.92z" />
+    </svg>
   );
 }

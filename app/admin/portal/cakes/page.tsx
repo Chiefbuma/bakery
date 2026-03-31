@@ -40,6 +40,16 @@ export default function AdminCakesPage() {
     image_data_uri: ''
   });
 
+  const buildCakePayload = () => ({
+    name: formData.name.trim(),
+    category: formData.category.trim(),
+    base_price: Number(formData.base_price) || 0,
+    description: formData.description.trim(),
+    ready_time: formData.ready_time.trim(),
+    customizable: Boolean(formData.customizable),
+    image_data_uri: formData.image_data_uri?.trim() || '',
+  });
+
   useEffect(() => {
     fetchCakes();
   }, []);
@@ -87,10 +97,10 @@ export default function AdminCakesPage() {
       setFormData({
         name: cake.name,
         category: cake.category,
-        base_price: cake.base_price,
+        base_price: Number(cake.base_price) || 0,
         description: cake.description,
         ready_time: cake.ready_time,
-        customizable: cake.customizable,
+        customizable: Boolean(cake.customizable),
         image_data_uri: cake.image_data_uri || ''
       });
     } else {
@@ -111,16 +121,24 @@ export default function AdminCakesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const payload = buildCakePayload();
       if (editingCake) {
-        await updateCake(editingCake.id, formData);
+        await updateCake(editingCake.id, payload);
       } else {
-        await createCake({ ...formData, id: formData.name.toLowerCase().replace(/ /g, '-') });
+        await createCake({
+          ...payload,
+          id: payload.name.toLowerCase().replace(/\s+/g, '-'),
+        });
       }
       toast({ title: editingCake ? "Cake Updated" : "Cake Created", description: `${formData.name} saved to catalog.` });
       setIsDialogOpen(false);
       fetchCakes();
     } catch (error) {
-      toast({ variant: "destructive", title: "Submit Failed", description: "Could not save masterpiece." });
+      toast({
+        variant: "destructive",
+        title: "Submit Failed",
+        description: error instanceof Error ? error.message : "Could not save masterpiece."
+      });
     }
   };
 

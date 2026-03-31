@@ -27,14 +27,15 @@ RewriteRule . /server.js [L]
 
 # --- ENVIRONMENT VARIABLES ---
 <IfModule Litespeed>
-  SetEnv DB_HOST localhost
-  SetEnv DB_USER whisked1_whiskedelight
-  SetEnv DB_DATABASE whisked1_whiskedelight
-  SetEnv DB_PASSWORD 65Sz2FRzhWeP47wJ8RbK
-  SetEnv JWT_SECRET 65Sz2FRzhWeP47wJ8RbK
-  SetEnv NEXT_PUBLIC_API_URL https://whiskedelights.co.ke/api
-  SetEnv NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY pk_live_8d9017d3458e0213efd55c219527b9171482e87d
-  SetEnv NEXT_PUBLIC_OWNER_WHATSAPP_NUMBER 0791034492
+  SetEnv DB_HOST your-db-host
+  SetEnv DB_USER your-db-user
+  SetEnv DB_DATABASE your-db-name
+  SetEnv DB_PASSWORD your-db-password
+  SetEnv JWT_SECRET your-long-random-jwt-secret
+  SetEnv ALLOWED_ORIGINS https://your-domain.example
+  SetEnv NEXT_PUBLIC_API_URL https://your-domain.example/api
+  SetEnv NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY pk_live_replace_me
+  SetEnv NEXT_PUBLIC_OWNER_WHATSAPP_NUMBER 254700000000
 </IfModule>
 ```
 
@@ -93,9 +94,6 @@ CREATE TABLE IF NOT EXISTS flavors (id INT AUTO_INCREMENT PRIMARY KEY, name VARC
 CREATE TABLE IF NOT EXISTS sizes (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), price DECIMAL(10,2), serves VARCHAR(50));
 CREATE TABLE IF NOT EXISTS colors (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), price DECIMAL(10,2), hex_value VARCHAR(10));
 CREATE TABLE IF NOT EXISTS toppings (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), price DECIMAL(10,2));
-
--- Seed Default Admin (admin@whiskedelights.com / admin123)
-INSERT IGNORE INTO users (id, name, email, password, role) VALUES ('admin', 'Primary Admin', 'admin@whiskedelights.com', '$2a$10$tM3o7zYhSgQvXqF8ZqEaRe/o/q0Z9h5n/qOqOqOqOqOqOqOqOqOq', 'admin');
 
 -- Seed Artisanal Catalog
 INSERT IGNORE INTO cakes (id, name, description, base_price, category, ready_time, rating) VALUES 

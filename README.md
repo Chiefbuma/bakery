@@ -45,12 +45,14 @@ RewriteRule . /server.js [L]
 
 # --- ENVIRONMENT VARIABLES ---
 <IfModule Litespeed>
-  SetEnv DB_HOST localhost
-  SetEnv DB_USER whisked1_whiskedelight
-  SetEnv DB_DATABASE whisked1_whiskedelight
-  SetEnv DB_PASSWORD 65Sz2FRzhWeP47wJ8RbK
-  SetEnv NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY pk_live_8d9017d3458e0213efd55c219527b9171482e87d
-  SetEnv NEXT_PUBLIC_OWNER_WHATSAPP_NUMBER 0791034492
+  SetEnv DB_HOST your-db-host
+  SetEnv DB_USER your-db-user
+  SetEnv DB_DATABASE your-db-name
+  SetEnv DB_PASSWORD your-db-password
+  SetEnv JWT_SECRET your-long-random-jwt-secret
+  SetEnv ALLOWED_ORIGINS https://your-domain.example
+  SetEnv NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY pk_live_replace_me
+  SetEnv NEXT_PUBLIC_OWNER_WHATSAPP_NUMBER 254700000000
 </IfModule>
 ```
 
@@ -61,7 +63,5 @@ RewriteRule . /server.js [L]
 *   **Branding**: Kenya's Finest Bakery (Primary Hub: Nairobi Main Bakery).
 *   **Typography**: Bold, Non-Italicized, 13px Base for Mobile (No Wrap Optimization).
 
-## 4. Default Admin Credentials
-*   **URL**: `https://whiskedelights.co.ke/admin/login`
-*   **Email**: `admin@whiskedelights.com`
-*   **Access Key**: `admin123`
+## 4. Environment Setup
+Copy [.env.example](/home/buma/projects/bakery/.env.example) to your local env file and provide real values outside version control. Development admin users should be created from env-driven local bootstrap values instead of hardcoded credentials in the repo.

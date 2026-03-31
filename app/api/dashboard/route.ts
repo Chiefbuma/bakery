@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { verifyAuth } from '@/lib/auth-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -6,7 +7,12 @@ export const dynamic = 'force-dynamic';
  * @fileOverview Bakery Dashboard Analytics API (Next.js 15)
  * Simplified for WhiskeDelights eCommerce focus.
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const auth = verifyAuth(req, { requireAdmin: true });
+  if (!auth.authenticated) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status || 401 });
+  }
+
   try {
     // In a real implementation with DB, we would query the orders and cakes tables here.
     // For mock focus, we return a standardized dashboard shape.

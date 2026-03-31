@@ -1,13 +1,26 @@
 import type { Metadata } from 'next';
+import { Cormorant_Garamond, Manrope } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 
-// Force dynamic rendering to ensure DB-dependent components work at runtime
 export const dynamic = 'force-dynamic';
 
+const bodyFont = Manrope({
+  subsets: ['latin'],
+  variable: '--font-body',
+  display: 'swap',
+});
+
+const headlineFont = Cormorant_Garamond({
+  subsets: ['latin'],
+  variable: '--font-headline',
+  weight: ['500', '600', '700'],
+  display: 'swap',
+});
+
 export const metadata: Metadata = {
-  title: 'WhiskeDelights | Artisanal Bakery Management',
-  description: 'High-performance Production Management and eCommerce System',
+  title: 'WhiskeDelights | Modern Artisanal Cakes',
+  description: 'Simple, elegant cake ordering for handcrafted bakery creations in Nairobi.',
 };
 
 export default function RootLayout({
@@ -17,13 +30,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="scroll-smooth">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400..900&display=swap" rel="stylesheet" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-      </head>
-      <body className="font-body antialiased">
+      <body className={`${bodyFont.variable} ${headlineFont.variable} font-body antialiased`}>
         {children}
         <Toaster />
       </body>

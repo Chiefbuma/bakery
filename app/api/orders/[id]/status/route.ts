@@ -1,24 +1,44 @@
 
 import { NextResponse, NextRequest } from 'next/server';
 import pool from '@/lib/db';
+import { z } from 'zod';
+import { checkRateLimit } from '@/lib/rate-limit';
+import { getClientIp, verifyAuth } from '@/lib/auth-utils';
 
 export const dynamic = 'force-dynamic';
 
 const allowedStatuses = ['processing', 'complete', 'cancelled'];
+const StatusSchema = z.object({
+  status: z.enum(['processing', 'complete', 'cancelled']),
+});
 
 /**
  * @fileOverview Production Order Status API
  * Updates the order state in the 'orders' table.
  */
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const auth = verifyAuth(req, { requireAdmin: true });
+    if (!auth.authenticated) {
+        return NextResponse.json({ error: auth.error }, { status: auth.status || 401 });
+    }
+
     const connection = await pool.getConnection();
     try {
-        const { id } = await params;
-        const { status } = await req.json();
+        const rateLimit = checkRateLimit({
+            key: `admin:update-order:${getClientIp(req)}`,
+            limit: 40,
+            windowMs: 60 * 1000,
+        });
+        if (!rateLimit.allowed) {
+            return NextResponse.json({ message: 'Too many requests' }, { status: 429 });
+        }
 
-        if (!allowedStatuses.includes(status)) {
+        const { id } = await params;
+        const validation = StatusSchema.safeParse(await req.json());
+        if (!validation.success) {
             return NextResponse.json({ message: 'Invalid status' }, { status: 400 });
         }
+        const { status } = validation.data;
 
         // Standardized production update
         const [result]: any = await connection.query(

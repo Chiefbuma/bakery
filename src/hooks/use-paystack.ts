@@ -2,39 +2,56 @@
 
 import { useEffect, useState } from 'react';
 
-const FALLBACK_KEY = 'pk_live_8d9017d3458e0213efd55c219527b9171482e87d';
+function isValidPaystackPublicKey(value: string | null | undefined) {
+  if (!value) {
+    return false;
+  }
+
+  if (value.includes('placeholder') || value.includes('replace_me')) {
+    return false;
+  }
+
+  return /^pk_(test|live)_[a-zA-Z0-9]+$/.test(value);
+}
+
+function getPaystackKey() {
+  if (typeof window !== 'undefined' && (window as any).__ENV?.PAYSTACK_KEY) {
+    const runtimeKey = (window as any).__ENV.PAYSTACK_KEY as string;
+    return isValidPaystackPublicKey(runtimeKey) ? runtimeKey : null;
+  }
+
+  if (process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY) {
+    return isValidPaystackPublicKey(process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY)
+      ? process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY
+      : null;
+  }
+
+  return null;
+}
 
 /**
  * @fileOverview Custom Hook for Resilient Paystack Integration
  * Implements triple-fallback key retrieval and automated script lifecycle management.
  */
 export function usePaystack() {
-  const [paystackKey, setPaystackKey] = useState<string | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [paystackKey] = useState<string | null>(() => getPaystackKey());
+  const [isLoaded, setIsLoaded] = useState(() => {
+    if (typeof document === 'undefined') {
+      return false;
+    }
+
+    return Boolean(document.querySelector('script[src*="paystack"]'));
+  });
+  const [error, setError] = useState<string | null>(() =>
+    getPaystackKey()
+      ? null
+      : 'Set NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY to a real Paystack public key (pk_test_... or pk_live_...).'
+  );
 
   useEffect(() => {
-    const getKey = () => {
-      // Priority 1: Runtime environment from window (Phusion Passenger / Browser)
-      if (typeof window !== 'undefined' && (window as any).__ENV?.PAYSTACK_KEY) {
-        return (window as any).__ENV.PAYSTACK_KEY;
-      }
-      
-      // Priority 2: Next.js public env (Build-time injection)
-      if (process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY) {
-        return process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
-      }
-      
-      // Priority 3: Hardened Production Fallback
-      return FALLBACK_KEY;
-    };
-
-    const key = getKey();
-    if (!key) {
-      setError('Payment gateway configuration is missing.');
+    if (!paystackKey) {
       return;
     }
-    setPaystackKey(key);
 
     // Automated Script Lifecycle
     if (!document.querySelector('script[src*="paystack"]')) {
@@ -44,10 +61,8 @@ export function usePaystack() {
       script.onload = () => setIsLoaded(true);
       script.onerror = () => setError('Secure payment bridge failed to initialize.');
       document.body.appendChild(script);
-    } else {
-      setIsLoaded(true);
     }
-  }, []);
+  }, [paystackKey]);
 
   const initializePayment = (options: {
     email: string;
@@ -62,24 +77,47 @@ export function usePaystack() {
       return null;
     }
 
-    // @ts-ignore - PaystackPop is globally injected by the script
-    const handler = PaystackPop.setup({
-      key: paystackKey,
-      email: options.email,
-      amount: Math.round(options.amount), // Must be clean integer (Kobo/Cents)
-      currency: options.currency || 'KES',
-      ref: options.reference || `WD-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      metadata: {
-        custom_fields: [
-          { display_name: "Application", variable_name: "app", value: "WhiskeDelights" }
-        ]
-      },
-      callback: options.callback,
-      onClose: options.onClose,
-    });
+    const callback = (response: any) => {
+      if (typeof options.callback === 'function') {
+        void options.callback(response);
+      }
+    };
 
-    handler.openIframe();
-    return handler;
+    const onClose = () => {
+      if (typeof options.onClose === 'function') {
+        options.onClose();
+      }
+    };
+
+    try {
+      const paystack = (window as any).PaystackPop;
+      if (!paystack?.setup) {
+        setError('Secure payment bridge is not available yet.');
+        return null;
+      }
+
+      const handler = paystack.setup({
+        key: paystackKey,
+        email: options.email,
+        amount: Math.round(options.amount), // Must be clean integer (Kobo/Cents)
+        currency: options.currency || 'KES',
+        ref: options.reference || `WD-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        metadata: {
+          custom_fields: [
+            { display_name: "Application", variable_name: "app", value: "WhiskeDelights" }
+          ]
+        },
+        callback,
+        onClose,
+      });
+
+      handler.openIframe();
+      return handler;
+    } catch (setupError) {
+      console.error('[PAYSTACK_SETUP_ERROR]', setupError);
+      setError('Secure payment bridge failed to open.');
+      return null;
+    }
   };
 
   return {

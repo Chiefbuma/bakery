@@ -15,15 +15,14 @@ export default function AdminLoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [email, setEmail] = useState('admin@whiskedelights.com');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     try {
       await loginAdmin({ email, password });
-      localStorage.setItem('isAdminLoggedIn', 'true');
       toast({ title: "Welcome back!", description: "Access granted." });
       router.push('/admin/portal/dashboard');
     } catch (err) {

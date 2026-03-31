@@ -62,13 +62,17 @@ export default function AdminUsersPage() {
         fetchUsers();
     };
 
-    const [form, setForm] = useState({ name: '', email: '', role: 'staff' });
+    const [form, setForm] = useState({ name: '', email: '', role: 'staff', password: '' });
 
     const handleCreate = async () => {
+        if (form.password.length < 12) {
+            toast({ variant: "destructive", title: "Weak Password", description: "Use at least 12 characters." });
+            return;
+        }
         await createUser(form);
         toast({ title: "Staff Registered", description: `${form.name} added to portal.` });
         setIsDialogOpen(false);
-        setForm({ name: '', email: '', role: 'staff' });
+        setForm({ name: '', email: '', role: 'staff', password: '' });
         fetchUsers();
     };
 
@@ -166,6 +170,10 @@ export default function AdminUsersPage() {
                         <div className="space-y-2">
                             <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Email Address</Label>
                             <Input value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="staff@whiskedelights.com" className="h-12 border-2 rounded-xl" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Temporary Password</Label>
+                            <Input type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} placeholder="Minimum 12 characters" className="h-12 border-2 rounded-xl" />
                         </div>
                         <div className="space-y-2">
                             <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Authority Level</Label>

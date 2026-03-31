@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { startTransition, useEffect, useState } from 'react';
 import { getCakes, getSpecialOffer, updateSpecialOffer } from '@/services/cake-service';
 import type { Cake, SpecialOffer } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,19 +20,21 @@ export default function AdminOffersPage() {
   const [selectedCakeId, setSelectedCakeId] = useState('');
   const [discountPercent, setDiscountPercent] = useState(20);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
   const fetchData = async () => {
     const [cakeList, offer] = await Promise.all([getCakes(), getSpecialOffer()]);
-    setCakes(cakeList);
-    setCurrentOffer(offer);
-    if (offer) {
-      setSelectedCakeId(offer.cake.id);
-      setDiscountPercent(offer.discount_percentage);
-    }
+    startTransition(() => {
+      setCakes(cakeList);
+      setCurrentOffer(offer);
+      if (offer) {
+        setSelectedCakeId(offer.cake.id);
+        setDiscountPercent(offer.discount_percentage);
+      }
+    });
   };
+
+  useEffect(() => {
+    void fetchData();
+  }, []);
 
   const handleUpdate = async () => {
     await updateSpecialOffer({ cake_id: selectedCakeId, discount_percentage: discountPercent });

@@ -1,18 +1,17 @@
 import { NextResponse, NextRequest } from 'next/server';
 import pool from '@/lib/db';
-import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
+import { checkRateLimit } from '@/lib/rate-limit';
+import { createAuthToken, getClientIp, setAuthCookie } from '@/lib/auth-utils';
+import { ensureDevelopmentAdmin } from '@/lib/dev-admin';
 
 export const dynamic = 'force-dynamic';
 
-// Unified fallback secret across the entire application to prevent 401 mismatches
-const JWT_SECRET = process.env.JWT_SECRET || 'pk_live_8d9017d3458e0213efd55c219527b9171482e87d';
-
 // Schema for Input Validation (DDoS/Payload Protection)
 const LoginSchema = z.object({
-    email: z.string().email(),
-    password: z.string().min(6),
+    email: z.string().trim().toLowerCase().email().max(255),
+    password: z.string().min(8).max(128),
 });
 
 /**
@@ -21,6 +20,22 @@ const LoginSchema = z.object({
  */
 export async function POST(req: NextRequest) {
     try {
+        const rateLimit = checkRateLimit({
+            key: `auth:login:${getClientIp(req)}`,
+            limit: 5,
+            windowMs: 15 * 60 * 1000,
+        });
+        if (!rateLimit.allowed) {
+            return NextResponse.json(
+                { message: 'Too many login attempts. Please try again later.' },
+                {
+                    status: 429,
+                    headers: { 'Retry-After': String(rateLimit.retryAfterSeconds) },
+                }
+            );
+        }
+
+        await ensureDevelopmentAdmin();
         const body = await req.json();
         
         // 1. Input Validation (Prevents Malformed Payloads)
@@ -32,7 +47,10 @@ export async function POST(req: NextRequest) {
         const { email, password } = validation.data;
 
         // 2. SQL Injection Prevention (Prepared Statements)
-        const [rows]: any[] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+        const [rows]: any[] = await pool.query(
+            'SELECT id, name, email, role, password FROM users WHERE email = ? LIMIT 1',
+            [email]
+        );
         
         if (rows.length === 0) {
             return NextResponse.json({ message: 'Authentication Failed' }, { status: 401 });
@@ -47,16 +65,18 @@ export async function POST(req: NextRequest) {
         }
 
         // 4. Stateless JWT Generation
-        const token = jwt.sign(
-            { id: user.id, email: user.email, role: user.role, name: user.name }, 
-            JWT_SECRET, 
-            { expiresIn: '12h' }
-        );
+        const token = createAuthToken({
+            id: user.id,
+            email: user.email,
+            role: user.role,
+            name: user.name,
+        });
 
-        return NextResponse.json({ 
-            token,
+        const response = NextResponse.json({
             user: { name: user.name, email: user.email, role: user.role }
         });
+        setAuthCookie(response, token);
+        return response;
 
     } catch (error) {
         console.error('[AUTH_API_CRITICAL_ERROR]', error);

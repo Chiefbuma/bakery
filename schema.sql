@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS cakes (
 CREATE TABLE IF NOT EXISTS orders (
     id INT AUTO_INCREMENT PRIMARY KEY,
     order_number VARCHAR(50) UNIQUE NOT NULL,
+    payment_reference VARCHAR(120) UNIQUE DEFAULT NULL,
     customer_name VARCHAR(255) NOT NULL,
     customer_phone VARCHAR(50) NOT NULL,
     delivery_method ENUM('delivery', 'pickup') NOT NULL,
@@ -26,6 +27,19 @@ CREATE TABLE IF NOT EXISTS orders (
     payment_status ENUM('pending', 'paid') DEFAULT 'pending',
     order_status ENUM('processing', 'complete', 'cancelled') DEFAULT 'processing',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS order_items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id INT NOT NULL,
+    cake_id VARCHAR(100) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    quantity INT NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
+    customizations JSON DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_order_items_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+    CONSTRAINT fk_order_items_cake FOREIGN KEY (cake_id) REFERENCES cakes(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS users (
@@ -41,6 +55,13 @@ CREATE TABLE IF NOT EXISTS flavors (id INT AUTO_INCREMENT PRIMARY KEY, name VARC
 CREATE TABLE IF NOT EXISTS sizes (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), price DECIMAL(10,2), serves VARCHAR(50));
 CREATE TABLE IF NOT EXISTS colors (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), price DECIMAL(10,2), hex_value VARCHAR(10));
 CREATE TABLE IF NOT EXISTS toppings (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), price DECIMAL(10,2));
+CREATE TABLE IF NOT EXISTS special_offers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cake_id VARCHAR(100) NOT NULL UNIQUE,
+    discount_percentage INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_special_offers_cake FOREIGN KEY (cake_id) REFERENCES cakes(id) ON DELETE CASCADE
+);
 
 -- Seed Artisanal Catalog
 INSERT IGNORE INTO cakes (id, name, description, base_price, category, ready_time, rating, image_data_uri) VALUES 
@@ -55,5 +76,4 @@ INSERT IGNORE INTO sizes (name, price, serves) VALUES ('Small (6")', 0, '6-8 gue
 INSERT IGNORE INTO colors (name, price, hex_value) VALUES ('Snow White', 0, '#FFFFFF'), ('Blush Pink', 150, '#FFD1DC'), ('Ocean Blue', 150, '#87CEEB');
 INSERT IGNORE INTO toppings (name, price) VALUES ('Sprinkles', 50), ('Chocolate Drizzle', 100), ('Gold Leaf', 500);
 
--- Default Admin (admin@whiskedelights.com / admin123)
-INSERT IGNORE INTO users (id, name, email, password, role) VALUES ('admin-id', 'Master Baker', 'admin@whiskedelights.com', '$2a$10$7h/2A.Yy.Y.8A/Y.Y.Y.8u9vY9vY9vY9vY9vY9vY9vY9vY9vY9vY.', 'admin');
+INSERT IGNORE INTO special_offers (cake_id, discount_percentage) VALUES ('belgian-truffle', 20);

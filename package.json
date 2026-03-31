@@ -7,7 +7,7 @@
     "build": "NODE_ENV=production next build",
     "postbuild": "cp package.json .next/standalone/",
     "start": "next start -p 3000",
-    "lint": "next lint",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -40,7 +40,6 @@
     "embla-carousel-react": "^8.6.0",
     "firebase": "^11.9.1",
     "framer-motion": "^11.2.12",
-    "genkit": "^1.0.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.475.0",
     "mysql2": "^3.10.2",
@@ -61,8 +60,10 @@
     "@types/node": "^20",
     "@types/react": "^19.2.1",
     "@types/react-dom": "^19.2.1",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^16.2.1",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "5.9.3"
   }
 }

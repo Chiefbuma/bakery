@@ -1,15 +1,18 @@
 import mysql from 'mysql2/promise';
+import { getDbConfig } from '@/lib/env';
 
 /**
  * @fileOverview Hardened MySQL Connection Pool
  * Implements Prepared Statements across the app to prevent SQL Injection.
  */
+const config = getDbConfig();
+
 const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'gledcapi_whiskedelights',
-  password: process.env.DB_PASSWORD || 'CnhXfEpdkH2nUQME6xks',
-  database: process.env.DB_DATABASE || 'gledcapi_whiskedelights',
-  port: parseInt(process.env.DB_PORT || '3306'),
+  host: config.host,
+  user: config.user,
+  password: config.password,
+  database: config.database,
+  port: config.port,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,

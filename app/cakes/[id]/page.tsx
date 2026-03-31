@@ -1,26 +1,35 @@
 'use client';
 
-import { useState, useEffect, useMemo, use } from 'react';
-import { getCakeById, getCustomizationOptions } from '@/services/cake-service';
-import type { Cake, CustomizationOptions } from '@/lib/types';
-import { formatPrice } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
-import { RadioGroup } from '@/components/ui/radio-group';
-import { Checkbox } from '@/components/ui/checkbox';
-import { ShoppingCart, ArrowLeft, Star, Info, Minus, Plus, Loader2, Sparkles } from 'lucide-react';
-import Link from 'next/link';
+import { use, useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
+import {
+  ArrowLeft,
+  Check,
+  Info,
+  Loader2,
+  Minus,
+  Plus,
+  ShoppingCart,
+  Sparkles,
+  Star,
+} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { getCakeById, getCustomizationOptions } from '@/services/cake-service';
+import type { Cake, CartItem, CustomizationOptions } from '@/lib/types';
+import { formatPrice } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 export default function CakeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
   const { toast } = useToast();
-  
+
   const [cake, setCake] = useState<Cake | null>(null);
   const [options, setOptions] = useState<CustomizationOptions | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -37,210 +46,476 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
       try {
         const [foundCake, customizationOptions] = await Promise.all([
           getCakeById(id),
-          getCustomizationOptions()
+          getCustomizationOptions(),
         ]);
+
         setCake(foundCake);
         setOptions(customizationOptions);
-        
-        if (customizationOptions.flavors?.length > 0) setFlavorId(customizationOptions.flavors[0].id.toString());
-        if (customizationOptions.sizes?.length > 0) setSizeId(customizationOptions.sizes[0].id.toString());
-        if (customizationOptions.colors?.length > 0) setColorId(customizationOptions.colors[0].id.toString());
-        
+
+        if (foundCake?.customizable) {
+          if (customizationOptions.flavors?.length > 0) setFlavorId(String(customizationOptions.flavors[0].id));
+          if (customizationOptions.sizes?.length > 0) setSizeId(String(customizationOptions.sizes[0].id));
+          if (customizationOptions.colors?.length > 0) setColorId(String(customizationOptions.colors[0].id));
+        } else {
+          setFlavorId('');
+          setSizeId('');
+          setColorId('');
+          setSelectedToppings([]);
+        }
       } catch (error) {
         console.error('Failed to load cake details', error);
       } finally {
         setIsLoading(false);
       }
     }
+
     loadData();
   }, [id]);
 
   const totalPrice = useMemo(() => {
-    if (!cake) return 0;
+    if (!cake) {
+      return 0;
+    }
+
     const base = Number(cake.base_price) || 0;
     let addons = 0;
+
     if (cake.customizable && options) {
-      const flavor = options.flavors?.find(f => f.id.toString() === flavorId);
-      const size = options.sizes?.find(s => s.id.toString() === sizeId);
-      const color = options.colors?.find(c => c.id.toString() === colorId);
+      const flavor = options.flavors?.find((item) => String(item.id) === flavorId);
+      const size = options.sizes?.find((item) => String(item.id) === sizeId);
+      const color = options.colors?.find((item) => String(item.id) === colorId);
+
       addons += Number(flavor?.price) || 0;
       addons += Number(size?.price) || 0;
       addons += Number(color?.price) || 0;
-      addons += selectedToppings.reduce((acc, tid) => {
-        const topping = options.toppings?.find(t => t.id.toString() === tid);
-        return acc + (Number(topping?.price) || 0);
+      addons += selectedToppings.reduce((sum, toppingId) => {
+        const topping = options.toppings?.find((item) => String(item.id) === toppingId);
+        return sum + (Number(topping?.price) || 0);
       }, 0);
     }
+
     return (base + addons) * quantity;
   }, [cake, options, quantity, flavorId, sizeId, colorId, selectedToppings]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center space-y-4">
-        <Loader2 className="h-12 w-12 text-primary animate-spin" />
-        <p className="text-stone-500 font-black uppercase tracking-[0.2em] text-[10px]">Assembling Masterpiece...</p>
-      </div>
-    );
-  }
+  const selectedFlavor = options?.flavors.find((item) => String(item.id) === flavorId);
+  const selectedSize = options?.sizes.find((item) => String(item.id) === sizeId);
+  const selectedColor = options?.colors.find((item) => String(item.id) === colorId);
 
-  if (!cake || !options) return (
-    <div className="min-h-screen flex flex-col items-center justify-center text-center p-6">
-      <h1 className="text-3xl font-black font-headline mb-4">Recipe Unavailable</h1>
-      <Link href="/"><Button className="rounded-xl px-10 h-14 font-black text-lg">Back to Catalog</Button></Link>
-    </div>
-  );
+  const toggleTopping = (toppingId: string) => {
+    setSelectedToppings((current) =>
+      current.includes(toppingId) ? current.filter((item) => item !== toppingId) : [...current, toppingId]
+    );
+  };
 
   const handleAddToCart = async () => {
+    if (!cake || !options) {
+      return;
+    }
+
     setIsAdding(true);
-    
-    // Create Cart Payload for WhatsApp & Checkout
-    const cartItem = {
+
+    const cartItem: CartItem = {
+      id: cake.id,
       cakeId: cake.id,
       name: cake.name,
       quantity,
       price: totalPrice / quantity,
       totalPrice,
-      customizations: {
-        flavor: options.flavors.find(f => f.id.toString() === flavorId)?.name,
-        size: options.sizes.find(s => s.id.toString() === sizeId)?.name,
-        color: options.colors.find(c => c.id.toString() === colorId)?.name,
-        toppings: selectedToppings.map(tid => options.toppings.find(t => t.id.toString() === tid)?.name)
-      }
+      image_data_uri: cake.image_data_uri,
+      customizations: cake.customizable
+        ? {
+            flavor: selectedFlavor?.name || null,
+            size: selectedSize?.name || null,
+            color: selectedColor?.name || null,
+            toppings: selectedToppings
+              .map((toppingId) => options.toppings.find((item) => String(item.id) === toppingId)?.name)
+              .filter((name): name is string => Boolean(name)),
+          }
+        : undefined,
+      customizationSelectionIds: cake.customizable
+        ? {
+            flavorId: flavorId || null,
+            sizeId: sizeId || null,
+            colorId: colorId || null,
+            toppingIds: selectedToppings,
+          }
+        : undefined,
     };
-    
+
     localStorage.setItem('bakery_current_item', JSON.stringify(cartItem));
-    
-    await new Promise(resolve => setTimeout(resolve, 800));
-    toast({ title: "Masterpiece Ready", description: `${quantity}x ${cake.name} added to booking.` });
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    toast({ title: 'Added to booking', description: `${quantity} x ${cake.name} is ready for checkout.` });
     router.push('/checkout');
   };
 
-  const toggleTopping = (tid: string) => {
-    setSelectedToppings(prev => prev.includes(tid) ? prev.filter(id => id !== tid) : [...prev, tid]);
-  };
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[linear-gradient(180deg,#fffaf5_0%,#f3e6d8_100%)] flex items-center justify-center">
+        <div className="space-y-4 text-center">
+          <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
+          <p className="text-[0.72rem] font-semibold uppercase tracking-[0.34em] text-stone-500">
+            Loading cake details
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!cake || !options) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center">
+        <h1 className="text-4xl text-stone-950">This cake is unavailable.</h1>
+        <p className="mt-3 max-w-md text-sm leading-6 text-stone-500">
+          The page could not be loaded right now. Head back to the storefront to continue browsing.
+        </p>
+        <Link href="/" className="mt-6">
+          <Button className="rounded-full px-6">Back to storefront</Button>
+        </Link>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-stone-50/50 pb-20 selection:bg-primary selection:text-white">
-      <header className="sticky top-0 z-50 bg-white border-b shadow-sm">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest hover:text-primary transition-colors">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#fffaf5_0%,#f3e6d8_100%)] px-5 pb-16 pt-6 md:px-6 md:pt-8">
+      <div className="container mx-auto space-y-8">
+        <header className="flex items-center justify-between">
+          <Link href="/" className="inline-flex items-center gap-2 text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-stone-500 transition-colors hover:text-primary">
             <ArrowLeft className="h-4 w-4" />
-            <span className="no-wrap">Catalog</span>
+            Back to menu
           </Link>
-          <div className="text-xl font-black font-headline text-primary tracking-tighter">WhiskeDelights</div>
-          <div className="w-16" />
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-8 grid lg:grid-cols-2 gap-12 items-start">
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
-          <div className="relative aspect-square w-full rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-white bg-white">
-            <Image 
-              src={cake.image_data_uri || 'https://picsum.photos/seed/cake/800/800'} 
-              alt={cake.name}
-              fill
-              className="object-cover"
-              priority
-            />
-            <div className="absolute bottom-6 left-6 right-6">
-               <div className="bg-white/95 backdrop-blur-md p-5 rounded-2xl border shadow-xl flex items-center justify-between">
-                  <div>
-                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-primary mb-0.5">Base Selection</p>
-                    <p className="text-xl font-black">{formatPrice(cake.base_price)}</p>
-                  </div>
-                  <div className="h-10 w-10 bg-primary rounded-xl flex items-center justify-center text-white">
-                    <Sparkles className="h-5 w-5" />
-                  </div>
-               </div>
-            </div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white/70 px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-stone-500">
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            Calm ordering experience
           </div>
-        </motion.div>
+        </header>
 
-        <div className="space-y-8">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Badge className="bg-primary text-white font-black px-3 py-0.5 text-[8px] uppercase tracking-widest border-none">{cake.category}</Badge>
-              <div className="flex items-center text-[11px] font-black text-stone-700">
-                <Star className="h-3 w-3 text-primary fill-primary mr-1" />
-                {cake.rating || 'New'}
+        <main className="grid gap-8 xl:grid-cols-[1.08fr_0.92fr]">
+          <motion.section
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="section-shell overflow-hidden p-4 md:p-5"
+          >
+            <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+              <div className="space-y-4">
+                <div className="relative aspect-[4/5] overflow-hidden rounded-[1.8rem] bg-stone-100">
+                  <Image
+                    src={cake.image_data_uri || 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&q=80&w=1200'}
+                    alt={cake.name}
+                    fill
+                    className="object-cover"
+                    priority
+                  />
+                  <div className="absolute inset-x-5 bottom-5 rounded-[1.2rem] border border-white/50 bg-white/82 p-4 backdrop-blur">
+                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-stone-500">
+                      Starting from
+                    </p>
+                    <div className="mt-1 flex items-end justify-between gap-4">
+                      <p className="text-3xl font-semibold text-primary">{formatPrice(cake.base_price)}</p>
+                      <p className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-stone-500">
+                        {cake.ready_time} lead time
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="soft-panel rounded-[1.5rem] p-5">
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-primary">
+                    Bakery notes
+                  </p>
+                  <p className="mt-3 text-sm leading-6 text-stone-600">
+                    {cake.customizable
+                      ? 'Choose your flavor, size, color, and finishing touches. The total updates live as you build.'
+                      : 'This design is offered as a ready style. You still choose quantity and delivery details, but the bakery keeps the signature finish intact.'}
+                  </p>
+                </div>
               </div>
-            </div>
-            <h1 className="text-4xl font-black font-headline leading-none text-stone-900">{cake.name}</h1>
-            <p className="text-stone-500 font-black text-[11px] leading-relaxed uppercase tracking-widest opacity-70">{cake.description}</p>
-          </div>
 
-          <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-xl border space-y-8">
-            {cake.customizable ? (
-              <div className="space-y-10">
+              <div className="space-y-6 p-2 md:p-4">
                 <div className="space-y-4">
-                  <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-900 block border-l-4 border-primary pl-3">1. Flavor Profile</Label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {options.flavors?.map(flavor => (
-                      <div key={flavor.id} onClick={() => setFlavorId(flavor.id.toString())} className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all cursor-pointer ${flavorId === flavor.id.toString() ? 'border-primary bg-primary/5 shadow-inner' : 'border-stone-100 hover:border-stone-200 bg-stone-50/30'}`}>
-                        <div className="space-y-0.5">
-                          <Label className="font-black text-[11px] cursor-pointer block no-wrap">{flavor.name}</Label>
-                        </div>
-                        <span className="text-[10px] font-black text-primary">+{formatPrice(flavor.price)}</span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge className="rounded-full border-none bg-primary/10 px-3 py-1 text-[0.66rem] font-semibold uppercase tracking-[0.2em] text-primary">
+                      {cake.category}
+                    </Badge>
+                    <div className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-3 py-1 text-[0.66rem] font-semibold uppercase tracking-[0.2em] text-stone-600">
+                      <Star className="h-3.5 w-3.5 text-primary" />
+                      {cake.rating || 'New'}
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <h1 className="text-5xl leading-[0.94] text-stone-950">{cake.name}</h1>
+                    <p className="max-w-2xl text-base leading-7 text-stone-600">{cake.description}</p>
+                  </div>
+                </div>
+
+                {cake.customizable ? (
+                  <div className="space-y-5">
+                    <OptionSection title="Flavor" subtitle="Choose the core taste profile.">
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {options.flavors.map((flavor) => {
+                          const isSelected = flavorId === String(flavor.id);
+                          return (
+                            <SelectableCard
+                              key={flavor.id}
+                              selected={isSelected}
+                              title={flavor.name}
+                              price={flavor.price}
+                              description={flavor.description || 'Signature bakery flavor'}
+                              onClick={() => setFlavorId(String(flavor.id))}
+                            />
+                          );
+                        })}
                       </div>
-                    ))}
-                  </div>
-                </div>
+                    </OptionSection>
 
-                <div className="space-y-4">
-                  <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-900 block border-l-4 border-primary pl-3">2. Dimensions</Label>
-                  <div className="grid grid-cols-3 gap-3">
-                    {options.sizes?.map(size => (
-                      <div key={size.id} onClick={() => setSizeId(size.id.toString())} className={`flex flex-col items-center p-3 rounded-xl border-2 transition-all cursor-pointer text-center ${sizeId === size.id.toString() ? 'border-primary bg-primary/5 shadow-inner' : 'border-stone-100 hover:border-stone-200 bg-stone-50/30'}`}>
-                        <span className="font-black text-[9px] uppercase tracking-widest no-wrap">{size.name}</span>
-                        <span className="text-[8px] font-black text-primary mt-1">{formatPrice(size.price)}</span>
+                    <OptionSection title="Size" subtitle="Pick the cake size that fits the moment.">
+                      <div className="grid gap-3 md:grid-cols-3">
+                        {options.sizes.map((size) => {
+                          const isSelected = sizeId === String(size.id);
+                          return (
+                            <SelectableCard
+                              key={size.id}
+                              selected={isSelected}
+                              title={size.name}
+                              price={size.price}
+                              description={size.serves}
+                              compact
+                              onClick={() => setSizeId(String(size.id))}
+                            />
+                          );
+                        })}
                       </div>
-                    ))}
+                    </OptionSection>
+
+                    <OptionSection title="Color" subtitle="Set the final look for the cake finish.">
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {options.colors.map((color) => {
+                          const isSelected = colorId === String(color.id);
+                          return (
+                            <button
+                              key={color.id}
+                              type="button"
+                              onClick={() => setColorId(String(color.id))}
+                              className={`flex items-center justify-between rounded-[1.2rem] border px-4 py-4 text-left transition-all ${
+                                isSelected
+                                  ? 'border-primary bg-primary/8 shadow-[0_12px_30px_rgba(168,95,46,0.12)]'
+                                  : 'border-stone-200 bg-white hover:border-stone-300'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <span
+                                  className="h-5 w-5 rounded-full border border-stone-200"
+                                  style={{ backgroundColor: color.hex_value }}
+                                />
+                                <div>
+                                  <p className="text-sm font-semibold text-stone-900">{color.name}</p>
+                                  <p className="text-[0.72rem] uppercase tracking-[0.18em] text-stone-400">Finish color</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-sm font-semibold text-primary">{formatPrice(color.price)}</p>
+                                {isSelected ? <Check className="ml-auto mt-1 h-4 w-4 text-primary" /> : null}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </OptionSection>
+
+                    <OptionSection title="Toppings" subtitle="Optional finishing touches.">
+                      <div className="grid gap-3">
+                        {options.toppings.map((topping) => {
+                          const isSelected = selectedToppings.includes(String(topping.id));
+                          return (
+                            <label
+                              key={topping.id}
+                              className={`flex cursor-pointer items-center justify-between rounded-[1.2rem] border px-4 py-4 transition-all ${
+                                isSelected ? 'border-primary bg-primary/8' : 'border-stone-200 bg-white'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <Checkbox
+                                  checked={isSelected}
+                                  onCheckedChange={() => toggleTopping(String(topping.id))}
+                                />
+                                <span className="text-sm font-medium text-stone-800">{topping.name}</span>
+                              </div>
+                              <span className="text-sm font-semibold text-primary">{formatPrice(topping.price)}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </OptionSection>
                   </div>
-                </div>
-
-                <div className="space-y-4">
-                  <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-900 block border-l-4 border-primary pl-3">3. Theme</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {options.colors?.map(color => (
-                      <button key={color.id} onClick={() => setColorId(color.id.toString())} className={`flex items-center gap-2 px-4 py-2 rounded-full border-2 transition-all ${colorId === color.id.toString() ? 'border-primary bg-primary/5' : 'border-stone-100 hover:border-stone-200'}`}>
-                        <div className="h-3 w-3 rounded-full border" style={{ backgroundColor: color.hex_value }} />
-                        <span className="text-[9px] font-black uppercase tracking-widest no-wrap">{color.name}</span>
-                      </button>
-                    ))}
+                ) : (
+                  <div className="soft-panel flex gap-4 rounded-[1.5rem] p-5">
+                    <Info className="mt-1 h-5 w-5 shrink-0 text-primary" />
+                    <div className="space-y-2">
+                      <p className="text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-primary">
+                        Signature format
+                      </p>
+                      <p className="text-sm leading-6 text-stone-600">
+                        This cake is intentionally fixed in flavor and styling, which keeps the ordering flow shorter and the pricing simple.
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
-            ) : (
-              <div className="p-6 bg-stone-950 text-white rounded-2xl flex items-start gap-4">
-                <Info className="h-6 w-6 text-primary shrink-0" />
-                <div>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-primary mb-1">Signature Recipe</p>
-                  <p className="text-stone-400 font-black uppercase text-[10px] tracking-widest leading-relaxed">Crafted to specific profile. No variants.</p>
-                </div>
-              </div>
-            )}
-
-            <div className="pt-8 border-t space-y-6">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-4 bg-stone-100 p-1.5 rounded-2xl border border-stone-200">
-                  <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl bg-white shadow-sm" onClick={() => setQuantity(Math.max(1, quantity - 1))}><Minus className="h-4 w-4" /></Button>
-                  <span className="text-xl font-black w-8 text-center">{quantity}</span>
-                  <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl bg-white shadow-sm" onClick={() => setQuantity(quantity + 1)}><Plus className="h-4 w-4" /></Button>
-                </div>
-                <div className="text-right">
-                  <p className="text-[9px] font-black text-stone-400 uppercase tracking-widest">Final Value</p>
-                  <p className="text-3xl font-black text-primary tracking-tighter">{formatPrice(totalPrice)}</p>
-                </div>
-              </div>
-
-              <Button size="lg" className="w-full h-16 text-lg font-black gap-3 shadow-xl rounded-2xl uppercase tracking-widest" onClick={handleAddToCart} disabled={isAdding}>
-                {isAdding ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShoppingCart className="h-5 w-5" />}
-                {isAdding ? 'Processing...' : 'Secure Booking'}
-              </Button>
             </div>
-          </div>
+          </motion.section>
+
+          <motion.aside
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.08 }}
+            className="space-y-5 xl:sticky xl:top-24 xl:self-start"
+          >
+            <div className="section-shell p-6 md:p-7">
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-primary">Your selection</p>
+              <div className="mt-4 space-y-5">
+                <div className="flex items-center justify-between rounded-[1.2rem] bg-stone-50 px-4 py-3">
+                  <span className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-stone-500">Quantity</span>
+                  <div className="flex items-center gap-2 rounded-full bg-white p-1 shadow-sm">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 rounded-full"
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <span className="w-10 text-center text-lg font-semibold text-stone-900">{quantity}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 rounded-full"
+                      onClick={() => setQuantity(quantity + 1)}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-3 rounded-[1.4rem] bg-stone-950 p-5 text-white">
+                  <div className="flex items-end justify-between gap-3">
+                    <div>
+                      <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-white/60">Current total</p>
+                      <p className="mt-2 text-4xl font-semibold text-[#f2c27b]">{formatPrice(totalPrice)}</p>
+                    </div>
+                    <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-white/60">
+                      {cake.ready_time}
+                    </p>
+                  </div>
+                  <p className="text-sm leading-6 text-white/72">
+                    Deposit payment happens on the next screen after delivery details are confirmed.
+                  </p>
+                </div>
+
+                <div className="grid gap-3 rounded-[1.2rem] border border-stone-200 bg-white p-4">
+                  <SummaryRow label="Cake" value={cake.name} />
+                  {cake.customizable ? (
+                    <>
+                      <SummaryRow label="Flavor" value={selectedFlavor?.name || 'Not selected'} />
+                      <SummaryRow label="Size" value={selectedSize?.name || 'Not selected'} />
+                      <SummaryRow label="Color" value={selectedColor?.name || 'Not selected'} />
+                      <SummaryRow
+                        label="Toppings"
+                        value={selectedToppings.length > 0
+                          ? selectedToppings
+                              .map((toppingId) => options.toppings.find((item) => String(item.id) === toppingId)?.name)
+                              .filter(Boolean)
+                              .join(', ')
+                          : 'None'}
+                      />
+                    </>
+                  ) : (
+                    <SummaryRow label="Style" value="Ready-made signature finish" />
+                  )}
+                </div>
+
+                <Button
+                  size="lg"
+                  className="h-14 w-full rounded-[1rem] text-[0.74rem] font-semibold uppercase tracking-[0.24em]"
+                  onClick={handleAddToCart}
+                  disabled={isAdding}
+                >
+                  {isAdding ? <Loader2 className="h-4.5 w-4.5 animate-spin" /> : <ShoppingCart className="h-4.5 w-4.5" />}
+                  {isAdding ? 'Preparing booking' : 'Continue to checkout'}
+                </Button>
+              </div>
+            </div>
+          </motion.aside>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function OptionSection({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="space-y-3">
+      <div className="space-y-1">
+        <Label className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-primary">{title}</Label>
+        <p className="text-sm text-stone-500">{subtitle}</p>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function SelectableCard({
+  selected,
+  title,
+  description,
+  price,
+  compact = false,
+  onClick,
+}: {
+  selected: boolean;
+  title: string;
+  description: string;
+  price: number;
+  compact?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-[1.2rem] border px-4 py-4 text-left transition-all ${
+        selected
+          ? 'border-primary bg-primary/8 shadow-[0_12px_30px_rgba(168,95,46,0.12)]'
+          : 'border-stone-200 bg-white hover:border-stone-300'
+      }`}
+    >
+      <div className={`flex ${compact ? 'flex-col gap-3' : 'items-start justify-between gap-4'}`}>
+        <div className="space-y-1">
+          <p className="text-sm font-semibold text-stone-900">{title}</p>
+          <p className="text-sm leading-6 text-stone-500">{description}</p>
         </div>
-      </main>
+        <div className={`${compact ? 'flex items-center justify-between' : 'text-right'} min-w-fit`}>
+          <p className="text-sm font-semibold text-primary">{formatPrice(price)}</p>
+          {selected ? <Check className={`${compact ? '' : 'ml-auto'} mt-1 h-4 w-4 text-primary`} /> : null}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <span className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-stone-400">{label}</span>
+      <span className="max-w-[16rem] text-right text-sm font-medium text-stone-700">{value}</span>
     </div>
   );
 }

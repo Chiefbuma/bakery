@@ -8,7 +8,7 @@ import type { OrderPayload } from './types';
 export async function placeOrder(payload: OrderPayload): Promise<{ success: boolean; orderNumber: string; error?: string; depositAmount: number }> {
   try {
     // Determine the base URL for the server environment
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://whiskedelights.co.ke/api';
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
     
     const response = await fetch(`${baseUrl}/orders`, {
         method: 'POST',

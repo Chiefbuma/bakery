@@ -65,17 +65,23 @@ export interface Customizations {
   toppings: string[];
 }
 
+export interface CustomizationSelectionIds {
+  flavorId: string | null;
+  sizeId: string | null;
+  colorId: string | null;
+  toppingIds: string[];
+}
+
 export interface DeliveryInfo {
   name: string;
   phone: string;
-  address: string;
-  delivery_date: string;
-  delivery_time: string;
   delivery_method: 'delivery' | 'pickup';
-  pickup_location: string;
-  special_instructions: string;
-  latitude: number | null;
-  longitude: number | null;
+  address?: string;
+  date: string;
+  pickup_location?: string;
+  special_instructions?: string;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export interface CartItem {
@@ -83,16 +89,60 @@ export interface CartItem {
   name: string;
   quantity: number;
   price: number;
+  totalPrice?: number;
   image_data_uri?: string | null;
   cakeId: string;
   customizations?: Customizations;
+  customizationSelectionIds?: CustomizationSelectionIds;
 }
 
 export interface OrderPayload {
-    items: CartItem[];
-    deliveryInfo: DeliveryInfo;
-    totalPrice: number;
-    depositAmount: number;
+  items: CartItem[];
+  deliveryInfo: DeliveryInfo;
+  paymentMethod?: 'paystack' | 'mpesa_paybill';
+  paymentConfirmed?: boolean;
+  paymentReference?: string | null;
+}
+
+export interface PlaceOrderResult {
+  orderNumber: string;
+  depositAmount: number;
+  totalAmount: number;
+  paymentStatus: 'pending' | 'paid';
+}
+
+export interface CheckoutSessionData {
+  items: CartItem[];
+  deliveryInfo: DeliveryInfo;
+  estimatedTotal?: number;
+}
+
+export interface ResolvedCustomizationOption {
+  id: string;
+  name: string;
+  price: number;
+}
+
+export interface ResolvedCustomizations {
+  flavor: ResolvedCustomizationOption | null;
+  size: ResolvedCustomizationOption | null;
+  color: ResolvedCustomizationOption | null;
+  toppings: ResolvedCustomizationOption[];
+}
+
+export interface OrderQuoteItem {
+  cakeId: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+  customizations: ResolvedCustomizations | null;
+}
+
+export interface OrderQuote {
+  items: OrderQuoteItem[];
+  totalAmount: number;
+  depositAmount: number;
 }
 
 export interface Order {
@@ -122,4 +172,14 @@ export interface LoginCredentials {
 export interface SpecialOfferUpdatePayload {
     cake_id: string;
     discount_percentage: number;
+}
+
+export type UserRole = 'admin' | 'staff';
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  createdAt: string;
 }
