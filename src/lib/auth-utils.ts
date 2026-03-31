@@ -25,14 +25,37 @@ function getTokenFromRequest(req: NextRequest) {
   return req.cookies.get(AUTH_COOKIE_NAME)?.value || null;
 }
 
-function isAllowedOrigin(originHeader: string) {
+function getRequestOrigins(req: NextRequest) {
+  const origins = new Set<string>();
+  const nextOrigin = req.nextUrl?.origin;
+
+  if (nextOrigin) {
+    origins.add(nextOrigin);
+  }
+
+  const forwardedProto = req.headers.get('x-forwarded-proto');
+  const forwardedHost = req.headers.get('x-forwarded-host');
+  if (forwardedProto && forwardedHost) {
+    origins.add(`${forwardedProto}://${forwardedHost}`);
+  }
+
+  const host = req.headers.get('host');
+  if (host) {
+    const protocol = forwardedProto || (req.nextUrl?.protocol?.replace(/:$/, '') || 'https');
+    origins.add(`${protocol}://${host}`);
+  }
+
+  return Array.from(origins).filter(Boolean);
+}
+
+function isOriginAllowed(originHeader: string, allowedOrigins: string[]) {
   if (!originHeader) {
     return false;
   }
 
   try {
     const origin = new URL(originHeader).origin;
-    return getAllowedOrigins().includes(origin);
+    return allowedOrigins.includes(origin);
   } catch {
     return false;
   }
@@ -90,15 +113,19 @@ export function verifyAuth(
 
     const isMutation = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method.toUpperCase());
     const origin = req.headers.get('origin') || req.headers.get('referer') || '';
-    const allowedOrigins = getAllowedOrigins();
+    const configuredOrigins = getAllowedOrigins();
+    const allowedOrigins = Array.from(new Set([...configuredOrigins, ...getRequestOrigins(req)]));
 
     if (isMutation) {
-      if (process.env.NODE_ENV === 'production' && allowedOrigins.length === 0) {
-        return { authenticated: false, error: 'Server origin policy is not configured', status: 500 };
+      if (origin && !isOriginAllowed(origin, allowedOrigins)) {
+        return { authenticated: false, error: 'Forbidden origin', status: 403 };
       }
 
-      if (allowedOrigins.length > 0 && !isAllowedOrigin(origin)) {
-        return { authenticated: false, error: 'Forbidden origin', status: 403 };
+      if (!origin) {
+        const fetchSite = req.headers.get('sec-fetch-site');
+        if (fetchSite && !['same-origin', 'same-site', 'none'].includes(fetchSite)) {
+          return { authenticated: false, error: 'Forbidden origin', status: 403 };
+        }
       }
     }
 
