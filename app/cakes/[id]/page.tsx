@@ -8,7 +8,6 @@ import { motion } from 'framer-motion';
 import {
   ArrowLeft,
   Check,
-  Info,
   Loader2,
   Minus,
   Plus,
@@ -206,22 +205,6 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
                       className="object-cover"
                       priority
                     />
-                    <div className="absolute inset-x-5 bottom-5 rounded-[1.2rem] border border-white/50 bg-white/84 p-4 backdrop-blur">
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <div>
-                          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-stone-500">
-                            Starting from
-                          </p>
-                          <p className="mt-1 text-3xl font-semibold text-primary">{formatPrice(cake.base_price)}</p>
-                        </div>
-                        <div className="sm:text-right">
-                          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-stone-500">
-                            Lead time
-                          </p>
-                          <p className="mt-1 text-lg font-semibold text-stone-900">{cake.ready_time}</p>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 </div>
 
@@ -242,23 +225,6 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
                     </h1>
                     <p className="max-w-2xl text-base leading-7 text-stone-600 xl:text-lg">
                       {cake.description}
-                    </p>
-                  </div>
-
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <HeroStat label="Starting from" value={formatPrice(cake.base_price)} />
-                    <HeroStat label="Lead time" value={cake.ready_time} />
-                    <HeroStat label="Style" value={cake.customizable ? 'Customizable' : 'Signature'} />
-                  </div>
-
-                  <div className="soft-panel rounded-[1.5rem] p-5">
-                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-primary">
-                      Bakery notes
-                    </p>
-                    <p className="mt-3 text-sm leading-6 text-stone-600">
-                      {cake.customizable
-                        ? 'Build the final look with flavor, size, color, and finishing touches.'
-                        : 'This design keeps its signature finish, so the flow stays short and simple.'}
                     </p>
                   </div>
                 </div>
@@ -366,21 +332,7 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
                   </OptionSection>
                 </div>
               </div>
-            ) : (
-              <div className="section-shell p-5 md:p-6 xl:p-7">
-                <div className="soft-panel flex gap-4 rounded-[1.5rem] p-5">
-                  <Info className="mt-1 h-5 w-5 shrink-0 text-primary" />
-                  <div className="space-y-2">
-                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-primary">
-                      Signature format
-                    </p>
-                    <p className="text-sm leading-6 text-stone-600">
-                      This cake is intentionally fixed in flavor and styling, which keeps the ordering flow shorter and the pricing simple.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
+            ) : null}
           </motion.section>
 
           <motion.aside
@@ -449,9 +401,7 @@ export default function CakeDetailPage({ params }: { params: Promise<{ id: strin
                           : 'None'}
                       />
                     </>
-                  ) : (
-                    <SummaryRow label="Style" value="Ready-made signature finish" />
-                  )}
+                  ) : null}
                 </div>
 
                 <Button
@@ -489,15 +439,6 @@ function OptionSection({
       </div>
       {children}
     </section>
-  );
-}
-
-function HeroStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-[1.3rem] border border-stone-200 bg-white/78 px-4 py-4">
-      <p className="text-[0.66rem] font-semibold uppercase tracking-[0.24em] text-stone-500">{label}</p>
-      <p className="mt-2 text-lg font-semibold text-stone-900">{value}</p>
-    </div>
   );
 }
 

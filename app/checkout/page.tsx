@@ -209,8 +209,8 @@ export default function CheckoutPage() {
     if (method === 'delivery' && !formData.address) {
       toast({
         variant: 'destructive',
-        title: 'Delivery address needed',
-        description: 'Please enter the address or landmark for delivery.',
+        title: 'Delivery location needed',
+        description: 'Type the location or add a GPS pin to continue.',
       });
       return;
     }
@@ -308,13 +308,6 @@ export default function CheckoutPage() {
                 </div>
 
                 <div className="flex flex-col justify-between gap-6">
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <InfoTile label="Total" value={formatPrice(estimatedTotal)} />
-                    <InfoTile label="Deposit" value={formatPrice(estimatedDeposit)} highlight />
-                    <InfoTile label="Date" value={formatReadableDate(formData.date)} />
-                    <InfoTile label="Method" value={method === 'pickup' ? 'Bakery pickup' : 'Delivery'} />
-                  </div>
-
                   {customizationSummary.length > 0 && (
                     <div className="rounded-[1.6rem] border border-stone-200/80 bg-white/70 p-4">
                       <div className="flex flex-wrap gap-2">
@@ -392,7 +385,7 @@ export default function CheckoutPage() {
                     active={method === 'delivery'}
                     icon={<Truck className="h-5 w-5" />}
                     title="Delivery"
-                    description="Add your address and GPS pin."
+                    description="Type your location or use GPS for a precise pin."
                   />
                 </RadioGroup>
 
@@ -420,30 +413,37 @@ export default function CheckoutPage() {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        <Input
-                          value={formData.address}
-                          onChange={(event) => setFormData((prev) => ({ ...prev, address: event.target.value }))}
-                          placeholder="Location from GPS"
-                          className="h-12 rounded-xl border-stone-200 bg-white"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={handleGetCurrentLocation}
-                          disabled={isGettingLocation || isResolvingAddress}
-                          className="h-11 w-full rounded-xl border-dashed border-stone-300 bg-white text-[0.72rem] font-semibold uppercase tracking-[0.18em]"
-                        >
-                          {isGettingLocation || isResolvingAddress ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          ) : (
-                            <LocateFixed className="mr-2 h-4 w-4" />
-                          )}
-                          {isResolvingAddress
-                            ? 'Finding location'
-                            : formData.latitude
-                              ? 'Refresh GPS pin'
-                              : 'Add GPS pin'}
-                        </Button>
+                        <div className="flex items-stretch gap-3">
+                          <Input
+                            value={formData.address}
+                            onChange={(event) => setFormData((prev) => ({ ...prev, address: event.target.value }))}
+                            placeholder="Type estate, street, or landmark"
+                            className="h-12 min-w-0 flex-1 rounded-xl border-stone-200 bg-white"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleGetCurrentLocation}
+                            disabled={isGettingLocation || isResolvingAddress}
+                            className="h-12 shrink-0 rounded-xl border-dashed border-stone-300 bg-white px-4 text-[0.72rem] font-semibold uppercase tracking-[0.12em]"
+                          >
+                            {isGettingLocation || isResolvingAddress ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <LocateFixed className="h-4 w-4" />
+                            )}
+                            <span className="ml-2 hidden sm:inline">
+                              {isResolvingAddress
+                                ? 'Finding'
+                                : formData.latitude
+                                  ? 'Refresh GPS'
+                                  : 'Use GPS'}
+                            </span>
+                          </Button>
+                        </div>
+                        <p className="text-xs text-stone-500">
+                          Type the location yourself or tap GPS for a precise pin.
+                        </p>
                       </div>
                     )}
                   </FieldShell>
@@ -561,23 +561,6 @@ function MethodCard({
         </div>
       </div>
     </label>
-  );
-}
-
-function InfoTile({
-  label,
-  value,
-  highlight,
-}: {
-  label: string;
-  value: string;
-  highlight?: boolean;
-}) {
-  return (
-    <div className={`rounded-[1.4rem] border px-4 py-4 ${highlight ? 'border-amber-200 bg-amber-50' : 'border-stone-200 bg-white/70'}`}>
-      <p className="text-[0.66rem] font-semibold uppercase tracking-[0.24em] text-stone-500">{label}</p>
-      <p className={`mt-2 text-lg font-semibold ${highlight ? 'text-primary' : 'text-stone-900'}`}>{value}</p>
-    </div>
   );
 }
 

@@ -535,8 +535,8 @@ export default function PaymentPage() {
                 <div className="grid gap-3 sm:grid-cols-2">
                   <PaymentModeCard
                     active={paymentMode === 'paystack'}
-                    icon={<CreditCard className="h-4 w-4" />}
-                    title="Paystack"
+                    icon={<Smartphone className="h-4 w-4" />}
+                    title="M-PESA STK Push"
                     subtitle="Instant"
                     onClick={() => setPaymentMode('paystack')}
                   />
@@ -601,7 +601,7 @@ export default function PaymentPage() {
                           ? 'Saving'
                           : isProcessingPayment
                             ? 'Opening'
-                            : 'Pay with Paystack'}
+                            : 'Pay with M-PESA STK Push'}
                     </Button>
                   </>
                 ) : (
