@@ -7,16 +7,10 @@ export function InstagramIcon(props: SVGProps<SVGSVGElement>) {
       width="24"
       height="24"
       viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      fill="currentColor"
       {...props}
     >
-      <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
-      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-      <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+      <path d="M7.75 2h8.5A5.75 5.75 0 0 1 22 7.75v8.5A5.75 5.75 0 0 1 16.25 22h-8.5A5.75 5.75 0 0 1 2 16.25v-8.5A5.75 5.75 0 0 1 7.75 2Zm-.14 1.95A3.66 3.66 0 0 0 3.95 7.6v8.79a3.66 3.66 0 0 0 3.66 3.66h8.79a3.66 3.66 0 0 0 3.66-3.66V7.6a3.66 3.66 0 0 0-3.66-3.66H7.6Zm9.47 1.46a1.2 1.2 0 1 1 0 2.39 1.2 1.2 0 0 1 0-2.39ZM12 7.04A4.96 4.96 0 1 1 7.04 12 4.97 4.97 0 0 1 12 7.04Zm0 1.95A3.01 3.01 0 1 0 15.01 12 3.02 3.02 0 0 0 12 8.99Z" />
     </svg>
   );
 }

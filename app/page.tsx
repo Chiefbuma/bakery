@@ -8,6 +8,7 @@ import {
   ArrowRight,
   Clock3,
   Loader2,
+  Phone,
   Search,
   Sparkles,
   Star,
@@ -21,7 +22,13 @@ import { getCakes, getSpecialOffer } from '@/services/cake-service';
 import type { Cake, SpecialOffer } from '@/lib/types';
 import { formatPrice } from '@/lib/utils';
 import { InstagramIcon } from '@/components/icons/instagram-icon';
+import { TiktokIcon } from '@/components/icons/tiktok-icon';
 import { WhatsappIcon } from '@/components/icons/whatsapp-icon';
+
+const WHATSAPP_DISPLAY_NUMBER = '0796280138';
+const WHATSAPP_LINK_NUMBER = `254${WHATSAPP_DISPLAY_NUMBER.replace(/\D/g, '').replace(/^0/, '')}`;
+const TIKTOK_URL = 'https://www.tiktok.com/@whiske.delights.b?_r=1&_t=ZS-95J7JgZZEiS';
+const INSTAGRAM_URL = 'https://www.instagram.com/whiske_delights?igsh=MWY0MzdqdGR3dXRvYQ==';
 
 export default function BakeryLandingPage() {
   const [filter, setFilter] = useState('All');
@@ -330,9 +337,6 @@ export default function BakeryLandingPage() {
                 </p>
               </div>
             </div>
-            <p className="max-w-md text-sm leading-7 text-stone-600">
-              Premium cakes, clearer pages, and a booking flow that feels simple enough to trust on the first try.
-            </p>
           </div>
 
           <div className="space-y-4">
@@ -346,13 +350,48 @@ export default function BakeryLandingPage() {
 
           <div className="space-y-4">
             <p className="text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-stone-500">Follow</p>
-            <div className="flex gap-3">
-              <Link href="#" className="flex h-12 w-12 items-center justify-center rounded-2xl border border-stone-200 bg-white transition-colors hover:text-primary">
+            <div className="space-y-3">
+              <Link
+                href={`https://wa.me/${WHATSAPP_LINK_NUMBER}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-3 rounded-2xl border border-green-200 bg-white px-4 py-3 text-sm font-medium text-stone-700 transition-colors hover:border-green-300 hover:bg-green-50"
+              >
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#25D366] text-white">
+                  <WhatsappIcon className="h-5 w-5" />
+                </span>
+                <span>WhatsApp</span>
+                <span className="text-stone-400">{WHATSAPP_DISPLAY_NUMBER}</span>
+              </Link>
+              <Link
+                href={TIKTOK_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-3 rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm font-medium text-stone-700 transition-colors hover:border-stone-300 hover:bg-stone-50"
+              >
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#111111] text-[#25F4EE] shadow-[inset_-2px_-2px_0_#FE2C55]">
+                  <TiktokIcon className="h-5 w-5" />
+                </span>
+                <span>TikTok</span>
+              </Link>
+              <Link
+                href={INSTAGRAM_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-3 rounded-2xl border border-fuchsia-200 bg-white px-4 py-3 text-sm font-medium text-stone-700 transition-colors hover:border-fuchsia-300 hover:bg-rose-50"
+              >
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#F58529,#FEDA77,#DD2A7B,#8134AF,#515BD4)] text-white">
                 <InstagramIcon className="h-5 w-5" />
+                </span>
+                <span>Instagram</span>
               </Link>
-              <Link href="#" className="flex h-12 w-12 items-center justify-center rounded-2xl border border-stone-200 bg-white transition-colors hover:text-green-600">
-                <WhatsappIcon className="h-5 w-5" />
-              </Link>
+              <div className="flex items-center gap-3 rounded-2xl border border-sky-200 bg-white px-4 py-3 text-sm font-medium text-stone-700">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500 text-white">
+                  <Phone className="h-5 w-5" />
+                </span>
+                <span>Call</span>
+                <span className="text-stone-400">0722834109 / 0755845053</span>
+              </div>
             </div>
           </div>
         </div>
